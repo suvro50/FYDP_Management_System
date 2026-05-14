@@ -511,9 +511,9 @@
                   </div>
                   <!-- File preview bar (hidden by default) -->
                   <div id="gcFilePreview" style="display:none; align-items:center; gap:10px; padding:8px 14px; background:#1e2235; border-top:1px solid rgba(255,255,255,0.07); font-size:0.82rem; color:#a0aec0;">
-                    <i class="fas fa-paperclip" style="color:#7c3aed;"></i>
-                    <span id="gcFilePreviewName" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
-                    <button onclick="gcClearFile()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1.1rem;line-height:1;padding:0 4px;" title="Remove file">&times;</button>
+                    <i id="gcFilePreviewIcon" class="fas fa-file-alt" style="color:#a78bfa; font-size:1.1rem;"></i>
+                    <span id="gcFilePreviewName" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight: 500; color:#e2e8f0;"></span>
+                    <button onclick="gcClearFile()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:24px; height:24px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size: 14px;"><i class="fas fa-times"></i></button>
                   </div>
                   <div class="gc-input-bar">
                     <button class="gc-attach-btn" onclick="document.getElementById('gcFileInput').click()" title="Attach file">
@@ -1118,10 +1118,16 @@
       if (msg.attachment_path) {
         const ext = (msg.attachment_name || '').split('.').pop().toLowerCase();
         const isImg = ['png','jpg','jpeg','gif','webp'].includes(ext);
+        const isPdf = ext === 'pdf';
         if (isImg) {
-          body += `<br><img src="${msg.attachment_path}" style="max-width:180px;border-radius:8px;margin-top:6px;cursor:pointer;" onclick="openPdf('${msg.attachment_path}','Image')"/>`;
+          body += `<br><img src="${msg.attachment_path}" style="max-width:180px;border-radius:8px;margin-top:6px;cursor:pointer;" onclick="viewPdf('${msg.attachment_path}','Image')"/>`;
         } else {
-          body += `<br><a href="${msg.attachment_path}" target="_blank" style="color:#a78bfa;font-size:0.8rem;"><i class="fas fa-paperclip"></i> ${escapeHtml(msg.attachment_name || 'Attachment')}</a>`;
+          body += `<div class="msg-attachment" style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.78rem;border:1px solid rgba(255,255,255,0.05);">
+            <i class="fas fa-${isPdf ? 'file-pdf' : 'file'}" style="color:${isPdf ? '#ff5252' : '#a29bfe'}; font-size:1.2rem;"></i>
+            <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(msg.attachment_name || 'File')}</span>
+            ${isPdf ? `<a href="#" onclick="event.stopPropagation();viewPdf('${msg.attachment_path}','${escapeHtml(msg.attachment_name||'')}');return false;" style="color:#a29bfe; font-weight:600; text-decoration:none;">View</a>` : ''}
+            <a href="${msg.attachment_path}" download="${escapeHtml(msg.attachment_name||'file')}" style="color:#a29bfe; font-weight:600; text-decoration:none;" onclick="event.stopPropagation()">Download</a>
+          </div>`;
         }
       }
 
@@ -1194,6 +1200,9 @@
       if (input.files && input.files[0]) {
         gcPendingFile = input.files[0];
         // Show the preview bar
+        const isPdf = gcPendingFile.name.toLowerCase().endsWith('.pdf');
+        document.getElementById('gcFilePreviewIcon').className = isPdf ? 'fas fa-file-pdf' : 'fas fa-file-alt';
+        document.getElementById('gcFilePreviewIcon').style.color = isPdf ? '#ff5252' : '#a78bfa';
         document.getElementById('gcFilePreviewName').textContent = gcPendingFile.name;
         document.getElementById('gcFilePreview').style.display = 'flex';
         // Keep placeholder neutral
