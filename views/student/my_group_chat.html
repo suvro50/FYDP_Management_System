@@ -380,7 +380,7 @@
       if (!text && !file) return;
       if (!groupId) return;
       const fd = new FormData();
-      fd.append('message_text', text || '📎 File attached');
+      fd.append('message_text', text || '');
       fd.append('chat_type', 'STUDENT_ONLY');
       if (file) fd.append('attachment', file);
       input.value = ''; input.style.height = 'auto'; clearAttach();

@@ -6,35 +6,116 @@
   <title>Course Teacher Dashboard — FYDP System</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    .section-badge { padding:4px 14px;border-radius:20px;font-size:0.75rem;font-weight:700;letter-spacing:0.04em;display:inline-block; }
-    .section-fydp1 { background:#0f1d2e;color:#93c5fd; }
-    .section-fydp2 { background:#0a1912;color:#86efac; }
-    .section-fydp3 { background:#12052a;color:#d8b4fe; }
-    
-    .inbox-item { 
-      border-left:4px solid #1e2240;
-      padding:14px 18px;
-      margin-bottom:12px;
-      border-radius:0 8px 8px 0;
-      background:#161929;
-      cursor:pointer;
-      transition:all 0.2s; 
-      border: 1px solid #1e2240;
-      border-left-width: 4px;
-    }
-    .inbox-item:hover { background:#1e2240; transform:translateX(2px); }
-    .inbox-item.pending { border-left-color:#ff9800; }
-    .inbox-item.reviewed { border-left-color:#4caf50; }
-    .inbox-item.flagged { border-left-color:#f44336; }
-    
-    /* Fix section card background */
-    #sectionsCard div[style*="background:#f8f9fa"] {
-      background: #1c2033 !important;
-      border: 1px solid #1e2240 !important;
-    }
-    #sectionsCard strong { color: #fff !important; }
-  </style>e>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background:#0d0f1e !important; color:#e2e8f0 !important; font-family:'Inter','Segoe UI',sans-serif; }
+    .main-content { background:#0d0f1e !important; overflow-x:auto !important; }
+    .page-content { background:#0d0f1e !important; padding:20px 24px !important; max-width:100% !important; min-width:0 !important; }
+    .top-header { background:#0d0f1e !important; border-bottom:1px solid #1e2240 !important; }
+
+    /* SIDEBAR */
+    .sidebar { background:#12152a !important; border-right:1px solid #1e2240 !important; position:fixed !important; transition:width 0.25s ease !important; width:230px !important; }
+    .sidebar-header { padding:16px !important; }
+    .sidebar-nav { padding:8px 10px !important; }
+    .sidebar-nav .nav-label { padding:8px 10px 4px !important; font-size:0.62rem !important; }
+    .sidebar-nav a { padding:9px 12px !important; margin-bottom:1px !important; font-size:0.83rem !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; display:flex !important; align-items:center !important; gap:10px !important; border-radius:8px !important; }
+    .sidebar-nav a .nav-icon { font-size:16px !important; width:18px !important; flex-shrink:0 !important; }
+    .sidebar-footer { padding:12px 14px !important; }
+    .main-content { margin-left:230px !important; width:calc(100% - 230px) !important; max-width:calc(100% - 230px) !important; }
+    .sidebar.sidebar-collapsed { width:64px !important; }
+    .sidebar.sidebar-collapsed .brand-text,
+    .sidebar.sidebar-collapsed .nav-label,
+    .sidebar.sidebar-collapsed .sidebar-user .user-info,
+    .sidebar.sidebar-collapsed a span:last-child { display:none !important; }
+    .sidebar.sidebar-collapsed .sidebar-nav a { justify-content:center; padding:12px 0; }
+    .sidebar.sidebar-collapsed .brand { justify-content:center; }
+    .sidebar.sidebar-collapsed + .main-content { margin-left:64px !important; width:calc(100% - 64px) !important; max-width:calc(100% - 64px) !important; }
+    /* Force sidebar always visible on dashboard */
+    .sidebar { width:230px !important; }
+    .sidebar.sidebar-collapsed { width:230px !important; }
+    .sidebar.sidebar-collapsed .brand-text,
+    .sidebar.sidebar-collapsed .nav-label,
+    .sidebar.sidebar-collapsed .sidebar-user .user-info,
+    .sidebar.sidebar-collapsed a span:last-child { display:initial !important; }
+    .sidebar.sidebar-collapsed .sidebar-nav a { justify-content:flex-start !important; padding:9px 12px !important; }
+    .sidebar.sidebar-collapsed .brand { justify-content:flex-start !important; }
+    .main-content { margin-left:230px !important; width:calc(100% - 230px) !important; max-width:calc(100% - 230px) !important; }
+
+    /* HEADER SEARCH */
+    .dash-search { flex:1; max-width:380px; display:flex; align-items:center; background:#1a1d2e; border:1px solid #2d3354; border-radius:10px; padding:8px 14px; gap:10px; margin:0 24px; }
+    .dash-search input { background:none; border:none; outline:none; color:#e2e8f0; font-size:0.88rem; width:100%; }
+    .dash-search input::placeholder { color:#475569; }
+    .dash-search i { color:#475569; }
+
+    /* STAT CARDS */
+    .tch-stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    .tch-stat-card { border-radius:12px; padding:12px 14px; display:flex; align-items:center; gap:12px; }
+    .tch-stat-card.blue   { background:linear-gradient(135deg,#0a1a3a,#0f2855); border:1px solid #1e3a7c; }
+    .tch-stat-card.amber  { background:linear-gradient(135deg,#2a1800,#3d2200); border:1px solid #7c4000; }
+    .tch-stat-card.green  { background:linear-gradient(135deg,#0a2a18,#0f3d22); border:1px solid #166534; }
+    .tch-stat-card.purple { background:linear-gradient(135deg,#180e40,#22145c); border:1px solid #4c1d95; }
+    .tsc-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .tsc-icon.blue   { background:linear-gradient(135deg,#3b82f6,#2563eb); }
+    .tsc-icon.amber  { background:linear-gradient(135deg,#f59e0b,#d97706); }
+    .tsc-icon.green  { background:linear-gradient(135deg,#10b981,#059669); }
+    .tsc-icon.purple { background:linear-gradient(135deg,#a855f7,#7c3aed); }
+    .tsc-icon i { color:#fff; font-size:0.9rem; }
+    .tsc-trend { font-size:0.6rem; font-weight:600; margin-bottom:2px; }
+    .tsc-trend.blue   { color:#60a5fa; }
+    .tsc-trend.amber  { color:#fbbf24; }
+    .tsc-trend.green  { color:#10b981; }
+    .tsc-trend.purple { color:#c084fc; }
+    .tsc-num  { font-size:1.5rem; font-weight:900; color:#fff; line-height:1; }
+    .tsc-lbl  { font-size:0.75rem; font-weight:700; margin-top:2px; }
+    .tsc-lbl.blue   { color:#93c5fd; }
+    .tsc-lbl.amber  { color:#fcd34d; }
+    .tsc-lbl.green  { color:#34d399; }
+    .tsc-lbl.purple { color:#c084fc; }
+    .tsc-sub  { font-size:0.65rem; color:#64748b; }
+
+    /* SECTION ROWS */
+    .sec-row { background:#161929; border:1px solid #1e2240; border-radius:12px; padding:10px 14px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px; }
+    .sec-row-header { display:flex; align-items:center; gap:10px; }
+    .sec-num { width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.9rem; font-weight:900; color:#fff; flex-shrink:0; }
+    .sec-num.s1 { background:linear-gradient(135deg,#3b82f6,#2563eb); }
+    .sec-num.s2 { background:linear-gradient(135deg,#f59e0b,#d97706); }
+    .sec-num.s3 { background:linear-gradient(135deg,#10b981,#059669); }
+    .sec-info h4 { font-size:0.85rem; font-weight:800; color:#fff; margin:0; }
+    .sec-info p  { font-size:0.7rem; color:#64748b; margin:0; }
+    .sec-count { margin-left:auto; font-size:1.1rem; font-weight:900; }
+    .sec-count.s1 { color:#60a5fa; }
+    .sec-count.s2 { color:#f59e0b; }
+    .sec-count.s3 { color:#10b981; }
+    .sec-bar-wrap { height:6px; background:#1e2240; border-radius:3px; overflow:hidden; margin:4px 0 2px; }
+    .sec-bar { height:100%; border-radius:3px; transition:width 0.6s ease; }
+    .sec-bar.s1 { background:linear-gradient(90deg,#3b82f6,#93c5fd); }
+    .sec-bar.s2 { background:linear-gradient(90deg,#f59e0b,#fcd34d); }
+    .sec-bar.s3 { background:linear-gradient(90deg,#10b981,#34d399); }
+    .sec-progress-row { display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:#64748b; }
+
+    /* CHART CARD */
+    .chart-card { background:#161929; border:1px solid #1e2240; border-radius:12px; padding:14px; margin-bottom:10px; }
+    .chart-card-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
+    .chart-card-header h3 { font-size:0.9rem; font-weight:800; color:#fff; margin:0 0 4px; }
+    .chart-card-header p  { font-size:0.7rem; color:#64748b; margin:0; }
+    .chart-legend { display:flex; gap:16px; font-size:0.78rem; color:#94a3b8; }
+    .chart-legend span { display:flex; align-items:center; gap:6px; }
+    .cl-dot { width:10px; height:10px; border-radius:50%; }
+    .chart-note { font-size:0.72rem; color:#475569; text-align:center; margin-top:10px; }
+
+    /* QUICK ACTION CARDS */
+    .quick-actions { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:16px; }
+    .quick-card { background:#161929; border:1px solid #1e2240; border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:14px; text-decoration:none; color:#e2e8f0; transition:all 0.2s; cursor:pointer; }
+    .quick-card:hover { background:#1e2240; border-color:#3d4470; transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+    .quick-card-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .quick-card-icon.blue   { background:linear-gradient(135deg,#3b82f6,#2563eb); }
+    .quick-card-icon.teal   { background:linear-gradient(135deg,#14b8a6,#0d9488); }
+    .quick-card-icon i { color:#fff; font-size:1.1rem; }
+    .quick-card-title { font-size:0.9rem; font-weight:700; color:#fff; }
+    .quick-card-sub   { font-size:0.75rem; color:#64748b; margin-top:2px; }
+    .quick-card-arrow { margin-left:auto; color:#475569; font-size:0.8rem; }
+  </style>
 </head>
 <body>
   <div class="app-layout">
@@ -47,12 +128,19 @@
       </div>
       <nav class="sidebar-nav">
         <div class="nav-label">Main</div>
-        <a href="/teacher/dashboard" class="active"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+        <a href="/teacher/dashboard" class="active" style="position:relative;">
+          <span class="nav-icon"><i class="fas fa-th-large"></i></span> Dashboard
+          <span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;display:inline-block;margin-left:auto;flex-shrink:0;"></span>
+        </a>
         <a href="/teacher/announcements"><span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Announcements</a>
         <a href="/teacher/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
         <a href="/teacher/students"><span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Student List</a>
-        <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span> Student Messages</a>
+        <a href="/teacher/student-inbox">
+          <span class="nav-icon"><i class="fas fa-comments"></i></span> Student Messages
+          <span id="sidebarMsgBadge" class="badge" style="display:none;margin-left:auto;font-size:0.65rem;padding:2px 6px;background:#ef4444;color:#fff;border-radius:10px;">0</span>
+        </a>
         <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> Chat with Supervisors</a>
+        <div class="nav-label" style="margin-top:20px;">Account</div>
         <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
         <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>
       </nav>
@@ -60,6 +148,7 @@
         <div class="sidebar-user">
           <div class="user-avatar" id="userAvatar">CT</div>
           <div class="user-info"><h4 id="userName">Course Teacher</h4><p>Course Teacher</p></div>
+          <button onclick="logout()" style="background:none;border:none;cursor:pointer;color:#475569;margin-left:auto;" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
         </div>
       </div>
     </aside>
@@ -67,6 +156,10 @@
     <div class="main-content">
       <header class="top-header">
         <div class="breadcrumb"><i class="fas fa-home"></i> Teacher / <span>Dashboard</span></div>
+        <div class="dash-search">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search sections, groups..." id="headerSearch">
+        </div>
         <div class="header-actions">
           <div class="notif-wrap">
             <button onclick="toggleNotifDropdown()" id="notifBell">
@@ -80,13 +173,10 @@
               </div>
               <div class="notif-dropdown-body" id="notifDropdownBody">
                 <div style="padding:20px;text-align:center;color:#64748b;">
-                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
-                  Loading...
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>Loading...
                 </div>
               </div>
-              <div class="notif-dropdown-footer">
-                <a href="/notifications">View All Notifications</a>
-              </div>
+              <div class="notif-dropdown-footer"><a href="/notifications">View All Notifications</a></div>
             </div>
           </div>
           <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
@@ -94,105 +184,330 @@
       </header>
 
       <div class="page-content">
-        <div class="page-title">
-          <h1><i class="fas fa-chalkboard-teacher" style="color:var(--primary);margin-right:8px;"></i> Course Teacher Dashboard</h1>
-          <p>Overview of your sections, groups, and escalated report packages</p>
-        </div>
 
-        <!-- Top Stats -->
-        <div class="stats-grid grid-3">
-          <div class="stat-card blue">
-            <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
-            <div class="stat-value" id="statSections">—</div>
-            <div class="stat-label">My Sections</div>
-          </div>
-          <div class="stat-card green">
-            <div class="stat-icon"><i class="fas fa-users"></i></div>
-            <div class="stat-value" id="statGroups">—</div>
-            <div class="stat-label">Total Groups</div>
-          </div>
-          <div class="stat-card purple">
-            <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
-            <div class="stat-value" id="statStudents">—</div>
-            <div class="stat-label">Total Students</div>
-          </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="stats-grid grid-2" style="margin-bottom:28px;">
-          <a href="/teacher/groups" class="action-btn">
-            <i class="fas fa-users" style="color:#1565c0;"></i>
-            <span>View Groups</span>
-          </a>
-          <a href="/teacher/supervisor-chat" class="action-btn">
-            <i class="fas fa-comments" style="color:#2e7d32;"></i>
-            <span>Supervisor Chat</span>
-          </a>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
-          <!-- My Sections -->
-          <div class="card">
-            <div class="card-header"><h3>📋 My Sections</h3></div>
-            <div class="card-body" id="sectionsCard">
-              <div style="text-align:center;color:#999;padding:30px;">Loading...</div>
+        <!-- PAGE TITLE -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;">
+              <i class="fas fa-th-large" style="color:#fff;font-size:1rem;"></i>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="font-size:1.4rem;font-weight:800;color:#fff;margin:0;">Course Teacher Dashboard</h1>
+                <span style="background:#3b82f620;color:#93c5fd;border:1px solid #3b82f640;padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;">✦ Live</span>
+              </div>
+              <p style="color:#64748b;font-size:0.82rem;margin:3px 0 0;">Overview of your sections, groups, and escalated report packages</p>
             </div>
           </div>
-
-          <!-- Recent Escalated Packages (Removed) -->
+          <div style="text-align:right;">
+            <div style="font-size:0.88rem;font-weight:700;color:#e2e8f0;" id="dashDate">—</div>
+            <div style="font-size:0.78rem;color:#64748b;" id="dashSemester">Spring Semester</div>
+          </div>
         </div>
 
-      </div>
-    </div>
-  </div>
+        <!-- STAT CARDS -->
+        <div class="tch-stat-grid">
+          <!-- My Sections -->
+          <div class="tch-stat-card blue">
+            <div class="tsc-icon blue"><i class="fas fa-layer-group"></i></div>
+            <div style="min-width:0;">
+              <div class="tsc-trend blue">↗ Assigned sections</div>
+              <div class="tsc-num" id="statSections">—</div>
+              <div class="tsc-lbl blue">My Sections</div>
+              <div class="tsc-sub">Active teaching</div>
+            </div>
+          </div>
+          <!-- Total Groups -->
+          <div class="tch-stat-card amber">
+            <div class="tsc-icon amber"><i class="fas fa-users"></i></div>
+            <div style="min-width:0;">
+              <div class="tsc-trend amber">↗ Across all sections</div>
+              <div class="tsc-num" id="statGroups">—</div>
+              <div class="tsc-lbl amber">Total Groups</div>
+              <div class="tsc-sub">Under supervision</div>
+            </div>
+          </div>
+          <!-- Pending Inbox -->
+          <div class="tch-stat-card green">
+            <div class="tsc-icon green"><i class="fas fa-inbox"></i></div>
+            <div style="min-width:0;">
+              <div class="tsc-trend green">↑ Awaiting review</div>
+              <div class="tsc-num" id="statPending">—</div>
+              <div class="tsc-lbl green">Pending Packages</div>
+              <div class="tsc-sub">Escalated reports</div>
+            </div>
+          </div>
+          <!-- Total Students -->
+          <div class="tch-stat-card purple">
+            <div class="tsc-icon purple"><i class="fas fa-graduation-cap"></i></div>
+            <div style="min-width:0;">
+              <div class="tsc-trend purple">↗ All sections</div>
+              <div class="tsc-num" id="statStudents">—</div>
+              <div class="tsc-lbl purple">Total Students</div>
+              <div class="tsc-sub">Enrolled students</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="quick-actions">
+          <a href="/teacher/groups" class="quick-card">
+            <div class="quick-card-icon blue"><i class="fas fa-users"></i></div>
+            <div>
+              <div class="quick-card-title">View All Groups</div>
+              <div class="quick-card-sub">Browse groups in your sections</div>
+            </div>
+            <i class="fas fa-chevron-right quick-card-arrow"></i>
+          </a>
+          <a href="/teacher/supervisor-chat" class="quick-card">
+            <div class="quick-card-icon teal"><i class="fas fa-user-tie"></i></div>
+            <div>
+              <div class="quick-card-title">Supervisor Chat</div>
+              <div class="quick-card-sub">Chat directly with supervisors</div>
+            </div>
+            <i class="fas fa-chevron-right quick-card-arrow"></i>
+          </a>
+        </div>
+
+        <!-- 2-COLUMN: SECTIONS (left) + CHART (right) -->
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:14px;margin-bottom:20px;">
+          <!-- Left: Section rows -->
+          <div style="display:flex;flex-direction:column;gap:0;" id="sectionRowsWrap">
+            <div class="sec-row" style="opacity:0.5;">
+              <div class="sec-row-header">
+                <div class="sec-num s1">—</div>
+                <div class="sec-info"><h4>Loading sections...</h4><p>Please wait</p></div>
+              </div>
+            </div>
+          </div>
+          <!-- Right: Chart -->
+          <div class="chart-card" style="margin:0;">
+            <div class="chart-card-header">
+              <div>
+                <h3>Groups per Section</h3>
+                <p>Distribution across your sections</p>
+              </div>
+              <div class="chart-legend">
+                <span><span class="cl-dot" style="background:#3b82f6;"></span>Groups</span>
+                <span><span class="cl-dot" style="background:#10b981;"></span>Students</span>
+              </div>
+            </div>
+            <canvas id="sectionChart" height="160"></canvas>
+            <p class="chart-note">↑ Data from active sections</p>
+          </div>
+        </div>
+
+        <!-- GROUPS TABLE -->
+        <div style="background:#161929;border:1px solid #1e2240;border-radius:16px;overflow:hidden;">
+          <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e2240;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <h3 style="font-size:1rem;font-weight:800;color:#fff;margin:0;">All Groups — My Sections</h3>
+              <span style="background:#3b82f620;color:#93c5fd;border:1px solid #3b82f640;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;" id="groupCountBadge">0 GROUPS</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <input id="groupSearch" type="text" placeholder="Search group..." oninput="filterGroups()" style="background:#0d0f1e;border:1px solid #2d3354;color:#e2e8f0;border-radius:8px;padding:6px 12px;font-size:0.8rem;outline:none;width:150px;">
+              <select id="sectionFilter" onchange="filterGroups()" style="background:#0d0f1e;border:1px solid #2d3354;color:#e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.8rem;outline:none;">
+                <option value="">All Sections</option>
+              </select>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:#0d0f1e;">
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">STATUS</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">GROUP</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">DOMAIN</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">STAGE</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">SECTION</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">SUPERVISOR</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">MEMBERS</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="groupsTableBody">
+                <tr><td colspan="8" style="padding:40px;text-align:center;color:#475569;">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /page-content -->
+    </div><!-- /main-content -->
+  </div><!-- /app-layout -->
 
   <script src="/js/main.js"></script>
   <script>
+    // ── Init ──────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
       const user = await getCurrentUser();
       if (user) {
         document.getElementById('userName').textContent = user.full_name;
         document.getElementById('userAvatar').textContent = getInitials(user.full_name);
       }
+      setDashDate();
       loadDashboard();
-      // Global main.js handles notification badge and dropdown auto-init
     });
+
+    function setDashDate() {
+      const now = new Date();
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const el = document.getElementById('dashDate');
+      const sem = document.getElementById('dashSemester');
+      if (el) el.textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+      const weekOfYear = Math.ceil((now - new Date(now.getFullYear(), 0, 1)) / (7*86400000));
+      const semWeek = Math.max(1, (weekOfYear % 20) || 1);
+      if (sem) sem.textContent = `Spring Semester • Week ${semWeek}`;
+    }
+
+    // ── Data ──────────────────────────────────────────────────────────────
+    let allGroupsData = [];
 
     async function loadDashboard() {
       try {
         showLoading();
-        const [stats, sections] = await Promise.all([
+        const [stats, sections, groupsData] = await Promise.all([
           apiFetch('/api/teacher/stats'),
-          apiFetch('/api/teacher/sections')
+          apiFetch('/api/teacher/sections'),
+          apiFetch('/api/teacher/groups')
         ]);
 
-        document.getElementById('statSections').textContent = stats.totalSections;
-        document.getElementById('statGroups').textContent = stats.totalGroups;
-        document.getElementById('statStudents').textContent = stats.totalStudents;
+        // Stat cards
+        document.getElementById('statSections').textContent = stats.totalSections ?? '0';
+        document.getElementById('statGroups').textContent   = stats.totalGroups   ?? '0';
+        document.getElementById('statPending').textContent  = stats.pendingInbox  ?? '0';
+        document.getElementById('statStudents').textContent = stats.totalStudents ?? '0';
 
-        // Sections
-        const stageClass = s => ({'FYDP-1':'section-fydp1','FYDP-2':'section-fydp2','FYDP-3':'section-fydp3'}[s]||'');
-        const sc = document.getElementById('sectionsCard');
-        if (!sections.sections.length) {
-          sc.innerHTML = '<p style="color:#999;text-align:center;padding:20px;">No sections assigned yet.</p>';
-        } else {
-          sc.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">${sections.sections.map(s => `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#f8f9fa;border-radius:8px;">
-              <div>
-                <strong style="font-size:1rem;">${escapeHtml(s.section_code)}</strong>
-                <span class="section-badge ${stageClass(s.stage_name)}" style="margin-left:10px;">${s.stage_name}</span>
-              </div>
-              <span class="badge badge-blue">${s.group_count} groups</span>
-            </div>`).join('')}</div>`;
-        }
+        // Sections rows
+        renderSectionRows(sections.sections || []);
 
-        // Removed Inbox logic
+        // Groups table
+        allGroupsData = groupsData.groups || [];
+        renderGroupsTable(allGroupsData);
+
+        // Populate section filter
+        const secFilter = document.getElementById('sectionFilter');
+        const secCodes = [...new Set(allGroupsData.map(g => g.section_code).filter(Boolean))].sort();
+        secCodes.forEach(sc => {
+          const opt = document.createElement('option');
+          opt.value = sc; opt.textContent = sc;
+          secFilter.appendChild(opt);
+        });
+
+        // Badge
+        const badge = document.getElementById('groupCountBadge');
+        if (badge) badge.textContent = `${allGroupsData.length} GROUPS`;
+
+        // Chart
+        buildChart(sections.sections || []);
 
       } catch(err) {
-        showToast(err.message, 'error');
+        buildChart([]);
       } finally {
         hideLoading();
       }
+    }
+
+    // ── Section Rows ──────────────────────────────────────────────────────
+    const sClasses = ['s1','s2','s3'];
+    function renderSectionRows(sections) {
+      const wrap = document.getElementById('sectionRowsWrap');
+      if (!wrap) return;
+      if (!sections.length) {
+        wrap.innerHTML = '<div class="sec-row"><div class="sec-row-header"><div class="sec-info"><h4>No sections assigned</h4><p>Contact admin</p></div></div></div>';
+        return;
+      }
+      wrap.innerHTML = sections.map((s, i) => {
+        const cls = sClasses[i % 3];
+        const groupCount = s.group_count || 0;
+        const pct = Math.min(100, groupCount * 20);
+        return `<div class="sec-row">
+          <div class="sec-row-header">
+            <div class="sec-num ${cls}">${i+1}</div>
+            <div class="sec-info"><h4>${escapeHtml(s.section_code)}</h4><p>${escapeHtml(s.stage_name || 'FYDP')}</p></div>
+            <span class="sec-count ${cls}">${groupCount}</span>
+          </div>
+          <div class="sec-progress-row"><span>Groups</span><span style="font-weight:700;">${groupCount} group${groupCount!==1?'s':''}</span></div>
+          <div class="sec-bar-wrap"><div class="sec-bar ${cls}" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Chart ────────────────────────────────────────────────────────────
+    let dashChart = null;
+    function buildChart(sections) {
+      const ctx = document.getElementById('sectionChart').getContext('2d');
+      if (dashChart) dashChart.destroy();
+      const labels   = sections.map(s => s.section_code);
+      const grpData  = sections.map(s => s.group_count || 0);
+      if (labels.length === 0) { labels.push('No Data'); grpData.push(0); }
+      dashChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Groups',
+            data: grpData,
+            backgroundColor: 'rgba(59,130,246,0.5)',
+            borderColor: '#3b82f6',
+            borderWidth: 2,
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { backgroundColor:'#161929', titleColor:'#fff', bodyColor:'#cbd5e1', borderColor:'#2d3354', borderWidth:1, padding:12 }
+          },
+          scales: {
+            x: { grid:{ color:'rgba(30,34,64,0.8)' }, ticks:{ color:'#64748b', font:{size:11} }, border:{color:'transparent'} },
+            y: { grid:{ color:'rgba(30,34,64,0.8)' }, ticks:{ color:'#64748b', font:{size:11}, stepSize:1 }, beginAtZero:true, border:{color:'transparent'} }
+          }
+        }
+      });
+    }
+
+    // ── Groups Table ──────────────────────────────────────────────────────
+    function renderGroupsTable(groups) {
+      const tbody = document.getElementById('groupsTableBody');
+      if (!tbody) return;
+      if (!groups.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="padding:40px;text-align:center;color:#475569;">No groups found</td></tr>';
+        return;
+      }
+      const stageColors = { 'FYDP-1':'#93c5fd', 'FYDP-2':'#fbbf24', 'FYDP-3':'#34d399' };
+      tbody.innerHTML = groups.map(g => {
+        const hasPending = (g.pending_inbox || 0) > 0;
+        const dotColor   = hasPending ? '#f59e0b' : '#10b981';
+        const sc = stageColors[g.stage_name] || '#94a3b8';
+        const memberCount = g.member_count || 0;
+        const avatars = Array.from({length:Math.min(memberCount,4)}).map((_,i) =>
+          `<span style="width:24px;height:24px;border-radius:50%;background:hsl(${i*60+200},60%,45%);display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;border:2px solid #161929;margin-left:${i?-6:0}px;">${String.fromCharCode(65+i)}</span>`
+        ).join('');
+        return `<tr style="border-bottom:1px solid #1e2240;transition:background 0.15s;" onmouseover="this.style.background='#1a1d2e'" onmouseout="this.style.background=''">
+          <td style="padding:12px 16px;"><span style="width:10px;height:10px;border-radius:50%;background:${dotColor};display:inline-block;"></span></td>
+          <td style="padding:12px 16px;"><a href="/teacher/groups/${g.group_id}" style="color:#60a5fa;font-weight:700;text-decoration:none;font-size:0.85rem;">${escapeHtml(g.group_code||'—')}</a></td>
+          <td style="padding:12px 16px;color:${sc};font-size:0.82rem;font-weight:700;text-transform:uppercase;">${escapeHtml(g.domain_name||'—')}</td>
+          <td style="padding:12px 16px;"><span style="background:${sc}20;color:${sc};border:1px solid ${sc}40;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">${escapeHtml(g.stage_name||'—')}</span></td>
+          <td style="padding:12px 16px;color:#94a3b8;font-size:0.82rem;">${escapeHtml(g.section_code||'—')}</td>
+          <td style="padding:12px 16px;color:#94a3b8;font-size:0.82rem;">${escapeHtml(g.supervisor_name||'—')}</td>
+          <td style="padding:12px 16px;"><div style="display:flex;align-items:center;">${avatars}<span style="margin-left:8px;color:#94a3b8;font-size:0.78rem;">${memberCount}</span></div></td>
+          <td style="padding:12px 16px;"><a href="/teacher/groups/${g.group_id}" style="width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:#1e2240;border:1px solid #2d3354;border-radius:8px;color:#94a3b8;text-decoration:none;" title="View"><i class="fas fa-eye" style="font-size:0.8rem;"></i></a></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterGroups() {
+      const q    = (document.getElementById('groupSearch')?.value || '').toLowerCase();
+      const sec  = document.getElementById('sectionFilter')?.value || '';
+      const filtered = allGroupsData.filter(g =>
+        (!q   || (g.group_code||'').toLowerCase().includes(q) || (g.domain_name||'').toLowerCase().includes(q)) &&
+        (!sec || g.section_code === sec)
+      );
+      renderGroupsTable(filtered);
     }
   </script>
 </body>

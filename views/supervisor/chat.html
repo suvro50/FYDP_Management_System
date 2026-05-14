@@ -397,7 +397,7 @@
 
       const formData = new FormData();
       formData.append('receiver_id', activeContact);
-      formData.append('message_text', text || '📎 File attached');
+      formData.append('message_text', text || '');
       if (selectedFile) formData.append('attachment', selectedFile);
 
       try {

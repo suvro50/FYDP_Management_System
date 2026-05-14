@@ -14,20 +14,14 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-  fileFilter: (req, file, cb) => {
-    const allowed = ['.pdf', '.png', '.jpg', '.jpeg', '.doc', '.docx'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowed.includes(ext)) cb(null, true);
-    else cb(new Error('Only PDF, images, and documents are allowed'));
-  }
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
 // Helper for upload with error handling
 const uploadSingle = (field) => (req, res, next) => {
   upload.single(field)(req, res, (err) => {
     if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ error: 'File too large (max 10MB)' });
+      if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ error: 'File too large (max 50MB)' });
       return res.status(400).json({ error: err.message });
     } else if (err) {
       return res.status(400).json({ error: err.message });
@@ -136,8 +130,8 @@ router.post('/direct/send', uploadSingle('attachment'), async (req, res) => {
   try {
     const myId = req.session.user.user_id;
     const { receiver_id, message_text } = req.body;
-    if (!receiver_id || !message_text) {
-      return res.status(400).json({ error: 'receiver_id and message_text are required' });
+    if (!receiver_id || (!message_text && !req.file)) {
+      return res.status(400).json({ error: 'receiver_id and message or file are required' });
     }
     let attachmentPath = null, attachmentName = null;
     if (req.file) {
@@ -146,7 +140,7 @@ router.post('/direct/send', uploadSingle('attachment'), async (req, res) => {
     }
     const [result] = await db.query(
       `INSERT INTO direct_messages (sender_id, receiver_id, message_text, attachment_path, attachment_name) VALUES (?, ?, ?, ?, ?)`,
-      [myId, receiver_id, message_text, attachmentPath, attachmentName]
+      [myId, receiver_id, message_text || '', attachmentPath, attachmentName]
     );
     const io = req.app.get('io');
     if (io) {
@@ -172,8 +166,8 @@ router.post('/messages', uploadSingle('attachment'), async (req, res) => {
     const myId = req.session.user.user_id;
     const { receiver_id, message_text } = req.body;
 
-    if (!receiver_id || !message_text) {
-      return res.status(400).json({ error: 'receiver_id and message_text are required' });
+    if (!receiver_id || (!message_text && !req.file)) {
+      return res.status(400).json({ error: 'receiver_id and message or file are required' });
     }
 
     let attachmentPath = null, attachmentName = null;
@@ -185,7 +179,7 @@ router.post('/messages', uploadSingle('attachment'), async (req, res) => {
     const [result] = await db.query(
       `INSERT INTO direct_messages (sender_id, receiver_id, message_text, attachment_path, attachment_name)
        VALUES (?, ?, ?, ?, ?)`,
-      [myId, receiver_id, message_text, attachmentPath, attachmentName]
+      [myId, receiver_id, message_text || '', attachmentPath, attachmentName]
     );
 
     // Create notification for receiver
@@ -461,14 +455,14 @@ router.get('/group/:groupId/messages', async (req, res) => {
 });
 
 // POST /api/chat/group/:groupId/messages — Send group chat message
-router.post('/group/:groupId/messages', upload.single('attachment'), async (req, res) => {
+router.post('/group/:groupId/messages', uploadSingle('attachment'), async (req, res) => {
   try {
     const myId = req.session.user.user_id;
     const groupId = req.params.groupId;
     const { message_text, chat_type } = req.body;
     const type = chat_type || 'STUDENT_ONLY';
 
-    if (!message_text) return res.status(400).json({ error: 'Message text required' });
+    if (!message_text && !req.file) return res.status(400).json({ error: 'Message or file required' });
 
     let attachmentPath = null, attachmentName = null;
     if (req.file) {
@@ -479,7 +473,7 @@ router.post('/group/:groupId/messages', upload.single('attachment'), async (req,
     const [result] = await db.query(
       `INSERT INTO group_chat_messages (group_id, sender_id, message_text, attachment_path, attachment_name, chat_type)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [groupId, myId, message_text, attachmentPath, attachmentName, type]
+      [groupId, myId, message_text || '', attachmentPath, attachmentName, type]
     );
 
     // Socket emission
@@ -509,7 +503,7 @@ router.post('/group/:groupId/messages', upload.single('attachment'), async (req,
     );
     const notifyUsers = members.map(m => m.user_id);
 
-    if (type === 'SUPERVISOR') {
+    if (type === 'WITH_SUPERVISOR') {
       const [sup] = await db.query('SELECT supervisor_id FROM project_groups WHERE group_id = ?', [groupId]);
       if (sup.length > 0 && sup[0].supervisor_id && sup[0].supervisor_id !== myId) {
         notifyUsers.push(sup[0].supervisor_id);

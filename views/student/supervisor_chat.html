@@ -103,7 +103,7 @@
         <div class="chat-input-area">
           <label class="attach-btn" title="Attach file">
             <i class="fas fa-paperclip"></i>
-            <input type="file" id="fileInput" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" onchange="handleAttach(this)">
+            <input type="file" id="fileInput" style="display:none" onchange="handleAttach(this)">
           </label>
           <textarea class="chat-input" id="msgInput" placeholder="Type a message to your supervisor..." rows="1"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"
@@ -387,7 +387,7 @@
       if (!supervisorId) { showToast('Supervisor not found', 'error'); return; }
       const fd = new FormData();
       fd.append('receiver_id', supervisorId);
-      fd.append('message_text', text || '📎 File attached');
+      fd.append('message_text', text || '');
       if (file) fd.append('attachment', file);
       input.value = ''; input.style.height = 'auto'; clearAttach();
       try {
@@ -396,7 +396,7 @@
         if (!res.ok) { showToast(result.error || 'Failed to send message', 'error'); if (text) input.value = text; return; }
         if (result.success) {
           appendMessage({ message_id: result.message_id, sender_id: currentUser.user_id, sender_name: currentUser.full_name,
-            message_text: text || '📎 File attached', attachment_path: result.attachment_path,
+            message_text: text || '', attachment_path: result.attachment_path,
             attachment_name: result.attachment_name, is_read: 0, created_at: new Date().toISOString() }, false);
         }
       } catch (err) { showToast('Failed to send message', 'error'); }
