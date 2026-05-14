@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Messages — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .inbox-layout { display:flex;flex:1;min-height:0;overflow:hidden; background: #0d0f1e; }
+    .inbox-sidebar { width:320px;flex-shrink:0;background:#161929;border-right:1px solid #1e2240;display:flex;flex-direction:column; }
+    .inbox-sidebar-header { padding:16px 20px;background:#0d0f1e;color:#fff;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:10px; border-bottom: 1px solid #1e2240; }
+    .inbox-search { padding:10px 14px;border-bottom:1px solid #1e2240;background:#0d0f1e; }
+    .inbox-search input { width:100%;padding:8px 18px;border-radius:20px;border:1px solid #1e2240;font-size:0.85rem;outline:none;background:#1c2033; color: #fff; transition: all 0.3s; }
+    .inbox-search input:focus { border-color:#6c5ce7; box-shadow: 0 0 0 4px rgba(108,92,231,0.1); }
+    .conv-list { flex:1;overflow-y:auto; }
+    .conv-item { display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border-bottom:1px solid #1e2240;transition:all 0.2s;position:relative; }
+    .conv-item:hover { background:rgba(255,255,255,0.02); }
+    .conv-item.active { background:#1a2744; border-left:3px solid #6c5ce7; }
+    .conv-item.unread { background:rgba(108,92,231,0.05); }
+    .conv-avatar { width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;color:#fff;background:linear-gradient(135deg,#6c5ce7,#a29bfe); }
+    .conv-info { flex:1;min-width:0; }
+    .conv-name { font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; color: #fff; }
+    .conv-preview { font-size:0.78rem;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px; }
+    .conv-uid { font-size:0.72rem;color:#64748b; }
+    .conv-meta { display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0; }
+    .conv-time { font-size:0.68rem;color:#64748b;white-space:nowrap; }
+    .conv-badge { background:#6c5ce7;color:#fff;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:10px;min-width:18px;text-align:center; }
+    
+    .inbox-main { flex:1;display:flex;flex-direction:column;background:#0d0f1e;min-height:0;overflow:hidden; position: relative; }
+    .inbox-placeholder { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;min-height:0; }
+    .inbox-placeholder i { font-size:4rem;margin-bottom:16px;opacity:0.1; color: #6c5ce7; }
+    
+    .chat-header-bar { padding:14px 20px;background:#161929;border-bottom:1px solid #1e2240;display:flex;align-items:center;gap:14px;flex-shrink:0; }
+    .chat-header-bar h3 { color: #fff; }
+    .chat-header-avatar { width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#6c5ce7,#a29bfe);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:0.85rem;flex-shrink:0; }
+    
+    .chat-messages { flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:6px;background:#0d0f1e; scrollbar-width: thin; scrollbar-color: #1e2240 transparent; }
+    .msg-bubble { padding:9px 14px;border-radius:10px;font-size:0.88rem;line-height:1.5;max-width:65%;word-break:break-word; position: relative; }
+    .msg-bubble.sent { align-self:flex-end;background:#6c5ce7;color:#fff;border-top-right-radius:0; box-shadow: 0 4px 12px rgba(108,92,231,0.2); }
+    .msg-bubble.received { align-self:flex-start;background:#161929;color:#e2e8f0;border-top-left-radius:0; border: 1px solid #1e2240; }
+    .msg-time { font-size:0.62rem;color:#94a3b8;margin-top:3px;text-align:right; }
+    .msg-bubble.sent .msg-time { color:rgba(255,255,255,0.7); }
+    .msg-tick { font-family: sans-serif; }
+    
+    .date-divider { text-align:center;margin:20px 0; position: relative; display: flex; align-items: center; justify-content: center; }
+    .date-divider::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #1e2240; z-index: 1; }
+    .date-divider span { background:#0d0f1e;color:#64748b;font-size:0.7rem;padding:3px 12px;border-radius:10px;font-weight:600; position: relative; z-index: 2; border: 1px solid #1e2240; }
+    
+    .chat-input-bar { padding:12px 20px;background:#161929;border-top:1px solid #1e2240;display:flex;gap:10px;align-items:center;flex-shrink:0; }
+    .chat-input-bar input { flex:1;padding:10px 18px;border:1px solid #1e2240;border-radius:24px;font-size:0.9rem;outline:none; background: #1c2033; color: #fff; transition: all 0.3s; }
+    .chat-input-bar input:focus { border-color: #6c5ce7; box-shadow: 0 0 0 4px rgba(108,92,231,0.1); }
+    
+    .attach-btn { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#94a3b8; cursor:pointer; transition:all 0.2s; }
+    .attach-btn:hover { background:rgba(255,255,255,0.05); color:#6c5ce7; }
+    
+    .file-preview-bar { padding:8px 20px; background:rgba(108,92,231,0.1); border-top:1px solid rgba(108,92,231,0.2); display:flex; align-items:center; gap:10px; font-size:0.82rem; color:#a29bfe; }
+    .file-preview-bar button { background:none; border:none; color:#fca5a5; cursor:pointer; font-size:1.1rem; }
+    
+    .msg-attachment { display:flex; align-items:center; gap:8px; margin-top:6px; padding:8px 12px; background:rgba(0,0,0,0.15); border-radius:8px; font-size:0.82rem; border:1px solid rgba(255,255,255,0.05); }
+    .msg-attachment i { color:#a29bfe; }
+    .msg-attachment a { font-weight:600; color:#a29bfe; text-decoration:none; margin-left:auto; }
+    .msg-attachment a:hover { text-decoration:underline; }
+    
+    .send-btn { width:42px;height:42px;border-radius:50%;border:none;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s; box-shadow: 0 4px 12px rgba(108,92,231,0.3); }
+    .send-btn:hover { transform:scale(1.05); box-shadow: 0 6px 16px rgba(108,92,231,0.4); }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Course Teacher</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/teacher/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+        <a href="/teacher/announcements"><span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Announcements</a>
+        <a href="/teacher/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+        <a href="/teacher/students"><span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Student List</a>
+        <a href="/teacher/student-inbox" class="active"><span class="nav-icon"><i class="fas fa-comments"></i></span> Student Messages</a>
+        <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> Chat with Supervisors</a>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+        <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">CT</div>
+          <div class="user-info"><h4 id="userName">Course Teacher</h4><p>Course Teacher</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content" style="display:flex;flex-direction:column;padding:0;height:100vh;overflow:hidden;">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Teacher / <span>Student Messages</span></div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="inbox-layout">
+        <div class="inbox-sidebar">
+          <div class="inbox-sidebar-header"><i class="fas fa-comments"></i> Student Messages</div>
+          <div class="inbox-search">
+            <input type="text" id="searchInput" placeholder="🔍 Search students..." oninput="filterConversations()">
+          </div>
+          <div class="conv-list" id="convList">
+            <div style="padding:40px;text-align:center;color:#999;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+          </div>
+        </div>
+
+        <div class="inbox-main" id="inboxMain">
+          <div class="inbox-placeholder" id="placeholder">
+            <i class="fas fa-comments"></i>
+            <p>Select a student to view their messages</p>
+          </div>
+          <div id="chatWindow" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+            <div class="chat-header-bar">
+              <div class="chat-header-avatar" id="chatAvatar">?</div>
+              <div>
+                <h3 id="chatName" style="font-size:0.95rem;margin-bottom:1px;">Student</h3>
+                <p id="chatSub" style="font-size:0.75rem;color:#999;">—</p>
+              </div>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div id="filePreview" class="file-preview-bar" style="display:none">
+              <i class="fas fa-file-alt"></i>
+              <span id="fileName" style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+              <button onclick="clearFile()">&times;</button>
+            </div>
+            <div class="chat-input-bar">
+              <label class="attach-btn" for="fileInput" title="Attach file"><i class="fas fa-paperclip"></i></label>
+              <input type="file" id="fileInput" style="display:none" onchange="handleFileSelect()">
+              <input type="text" id="msgInput" placeholder="Type a reply..."
+                onkeydown="if(event.key==='Enter'){event.preventDefault();sendMsg();}">
+              <button class="send-btn" onclick="sendMsg()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/main.js"></script>
+  <script>
+    let currentUser = null;
+    let activeStudentId = null;
+    let allConversations = [];
+    let selectedFile = null;
+    let socket = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      currentUser = await getCurrentUser();
+      if (currentUser) {
+        document.getElementById('userName').textContent = currentUser.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(currentUser.full_name);
+      }
+      await loadInbox();
+
+      if (typeof io !== 'undefined') {
+        socket = io();
+        socket.emit('join_user', currentUser.user_id);
+        socket.on('new_dm', (msg) => {
+          updateConvPreview(msg);
+          if (activeStudentId && (msg.sender_id == activeStudentId || msg.receiver_id == activeStudentId)) {
+            appendMsg(msg, false);
+          }
+        });
+        socket.on('messages_read', ({ by, sender }) => {
+          if (sender === currentUser.user_id) {
+            document.querySelectorAll('.msg-bubble.sent .msg-tick').forEach(tick => {
+              tick.textContent = '✓✓'; tick.style.color = '#1976d2'; tick.title = 'Seen';
+            });
+          }
+        });
+      }
+    });
+
+    async function loadInbox() {
+      try {
+        const data = await apiFetch('/api/chat/teacher/student-inbox');
+        allConversations = data.conversations || [];
+        renderConvList(allConversations);
+      } catch(e) {
+        document.getElementById('convList').innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Failed to load</div>';
+      }
+    }
+
+    function renderConvList(list) {
+      const el = document.getElementById('convList');
+      if (!list.length) {
+        el.innerHTML = '<div style="padding:40px;text-align:center;color:#bbb;"><i class="fas fa-comment-slash" style="font-size:2rem;display:block;margin-bottom:8px;opacity:0.3;"></i>No student messages yet</div>';
+        return;
+      }
+      el.innerHTML = '';
+      list.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'conv-item' + (c.unread_count > 0 ? ' unread' : '') + (c.user_id == activeStudentId ? ' active' : '');
+        div.dataset.uid = c.user_id;
+        div.onclick = () => openChat(c);
+        const timeStr = c.last_time ? formatTime(c.last_time) : '';
+        const preview = c.last_message ? escapeHtml(c.last_message).substring(0,40) + (c.last_message.length>40?'…':'') : 'No messages';
+        div.innerHTML = `
+          <div class="conv-avatar">${getInitials(c.full_name)}</div>
+          <div class="conv-info">
+            <div class="conv-name">${escapeHtml(c.full_name)}</div>
+            <div class="conv-uid">${escapeHtml(c.university_id||'')}${c.group_code ? ' • ' + c.group_code : ''}</div>
+            <div class="conv-preview">${preview}</div>
+          </div>
+          <div class="conv-meta">
+            <div class="conv-time">${timeStr}</div>
+            ${c.unread_count > 0 ? `<div class="conv-badge">${c.unread_count}</div>` : ''}
+          </div>`;
+        el.appendChild(div);
+      });
+    }
+
+    function filterConversations() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allConversations.filter(c =>
+        c.full_name.toLowerCase().includes(q) ||
+        (c.university_id||'').toLowerCase().includes(q) ||
+        (c.group_code||'').toLowerCase().includes(q)
+      );
+      renderConvList(filtered);
+    }
+
+    async function openChat(c) {
+      activeStudentId = c.user_id;
+      document.querySelectorAll('.conv-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.uid == c.user_id);
+        if (el.dataset.uid == c.user_id) { el.classList.remove('unread'); el.querySelector('.conv-badge')?.remove(); }
+      });
+      document.getElementById('placeholder').style.display = 'none';
+      const win = document.getElementById('chatWindow');
+      win.style.display = 'flex'; win.style.flexDirection = 'column'; win.style.flex = '1';
+      document.getElementById('chatAvatar').textContent = getInitials(c.full_name);
+      document.getElementById('chatName').textContent = c.full_name;
+      document.getElementById('chatSub').textContent = (c.university_id||'') + (c.group_code ? ' • ' + c.group_code : '');
+      document.getElementById('chatMessages').innerHTML = '<div style="text-align:center;padding:20px;color:#999;"><i class="fas fa-spinner fa-spin"></i></div>';
+      try {
+        const data = await apiFetch(`/api/chat/teacher/student-messages/${c.user_id}`);
+        renderMessages(data.messages);
+      } catch(e) {
+        document.getElementById('chatMessages').innerHTML = '<div style="text-align:center;color:#d32f2f;padding:20px;">Failed to load</div>';
+      }
+    }
+
+    function renderMessages(messages) {
+      const c = document.getElementById('chatMessages');
+      if (!messages.length) { c.innerHTML = '<div style="text-align:center;color:#999;margin-top:40px;">No messages yet. Start the conversation!</div>'; return; }
+      c.innerHTML = '';
+      let lastDate = '';
+      messages.forEach(m => {
+        const d = m.created_at ? new Date(m.created_at).toLocaleDateString('en-BD',{day:'2-digit',month:'short',year:'numeric'}) : '';
+        if (d && d !== lastDate) { lastDate = d; c.innerHTML += `<div class="date-divider"><span>${d}</span></div>`; }
+        appendMsg(m, true);
+      });
+      scrollBottom();
+    }
+
+    function appendMsg(m, isHistory) {
+      if (document.querySelector(`.msg-bubble[data-msg-id="${m.message_id}"]`)) return;
+      const c = document.getElementById('chatMessages');
+      const isSent = m.sender_id === currentUser.user_id;
+      const isRead = m.is_read == 1;
+      const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-BD',{hour:'2-digit',minute:'2-digit',hour12:true}) : '';
+      
+      let content = m.message_text ? `<div>${escapeHtml(m.message_text)}</div>` : '';
+      if (m.attachment_path) {
+        content += `<div class="msg-attachment"><i class="fas fa-paperclip"></i> ${escapeHtml(m.attachment_name||'File')} <a href="${m.attachment_path}" target="_blank">View</a></div>`;
+      }
+
+      const tick = isSent ? (isRead
+        ? '<span class="msg-tick" style="color:#1976d2;font-size:0.7rem;margin-left:3px;" title="Seen">✓✓</span>'
+        : '<span class="msg-tick" style="color:rgba(0,0,0,0.35);font-size:0.7rem;margin-left:3px;" title="Delivered">✓</span>') : '';
+      const div = document.createElement('div');
+      div.className = `msg-bubble ${isSent ? 'sent' : 'received'}`;
+      div.dataset.msgId = m.message_id;
+      div.innerHTML = `${content}<div class="msg-time">${time}${tick}</div>`;
+      c.appendChild(div);
+      if (!isHistory) scrollBottom();
+    }
+
+    async function sendMsg() {
+      const inp = document.getElementById('msgInput');
+      const text = inp.value.trim();
+      if ((!text && !selectedFile) || !activeStudentId) return;
+
+      const messageText = text || '📎 File attached';
+      inp.value = ''; inp.focus();
+      
+      try {
+        const fd = new FormData();
+        fd.append('receiver_id', activeStudentId);
+        fd.append('message_text', messageText);
+        if (selectedFile) fd.append('attachment', selectedFile);
+
+        const resp = await fetch('/api/chat/direct/send', { method:'POST', body:fd, credentials:'same-origin' });
+        const result = await resp.json();
+
+        if (!resp.ok) {
+          showToast(result.error || 'Failed to send message', 'error');
+          if (text) inp.value = text;
+          return;
+        }
+
+        if (result.success) {
+          clearFile();
+          appendMsg({ 
+            message_id: result.message_id, 
+            sender_id: currentUser.user_id, 
+            receiver_id: activeStudentId, 
+            message_text: messageText, 
+            attachment_path: result.attachment_path,
+            attachment_name: result.attachment_name,
+            is_read: false, 
+            created_at: new Date().toISOString() 
+          }, false);
+          
+          const conv = allConversations.find(c => c.user_id == activeStudentId);
+          if (conv) {
+            conv.last_message = messageText; conv.last_time = new Date().toISOString();
+            const item = document.querySelector(`.conv-item[data-uid="${activeStudentId}"]`);
+            if (item) {
+              const prev = item.querySelector('.conv-preview');
+              if (prev) prev.textContent = messageText.substring(0,40);
+              item.parentNode.prepend(item);
+            }
+          }
+        }
+      } catch(e) { showToast('Failed to send','error'); }
+    }
+
+    function updateConvPreview(msg) {
+      const otherId = msg.sender_id === currentUser.user_id ? msg.receiver_id : msg.sender_id;
+      const item = document.querySelector(`.conv-item[data-uid="${otherId}"]`);
+      if (item) {
+        const preview = item.querySelector('.conv-preview');
+        if (preview) preview.textContent = msg.message_text?.substring(0,40) || 'File';
+        if (msg.sender_id !== currentUser.user_id && otherId != activeStudentId) {
+          item.classList.add('unread');
+          let badge = item.querySelector('.conv-badge');
+          if (!badge) { badge = document.createElement('div'); badge.className='conv-badge'; item.querySelector('.conv-meta').appendChild(badge); }
+          badge.textContent = (parseInt(badge.textContent)||0) + 1;
+        }
+        item.parentNode.prepend(item);
+      } else { loadInbox(); }
+    }
+
+    function scrollBottom() { const e = document.getElementById('chatMessages'); if (e) e.scrollTop = e.scrollHeight; }
+
+    function handleFileSelect() {
+      const f = document.getElementById('fileInput').files[0];
+      if (f) {
+        selectedFile = f;
+        document.getElementById('fileName').textContent = f.name;
+        document.getElementById('filePreview').style.display = 'flex';
+      }
+    }
+
+    function clearFile() {
+      selectedFile = null;
+      const fileInput = document.getElementById('fileInput');
+      if (fileInput) fileInput.value = '';
+      document.getElementById('filePreview').style.display = 'none';
+    }
+
+    function formatTime(ts) {
+      if (!ts) return '';
+      const d = new Date(ts), now = new Date();
+      if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString('en-BD',{hour:'2-digit',minute:'2-digit',hour12:true});
+      const yest = new Date(now); yest.setDate(now.getDate()-1);
+      if (d.toDateString() === yest.toDateString()) return 'Yesterday';
+      return d.toLocaleDateString('en-BD',{day:'2-digit',month:'short'});
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { background:#0d0f1e !important; color:#e2e8f0 !important; }
+    .main-content { background:#0d0f1e !important; }
+    .page-content { background:#0d0f1e !important; }
+    .top-header { background:#12152a !important; border-bottom:1px solid #1e2240 !important; }
+
+    .profile-hero {
+      background:linear-gradient(135deg,#1a1040,#2d1a5e,#3b2080);
+      padding:48px 40px 32px;border-radius:16px;color:#fff;margin-bottom:28px;position:relative;overflow:hidden;
+      border:1px solid #3b2080;
+    }
+    .profile-hero::before { content:'';position:absolute;top:-50%;right:-10%;width:300px;height:300px;background:rgba(255,255,255,0.03);border-radius:50%; }
+    .profile-hero-inner { display:flex;align-items:center;gap:28px;position:relative;z-index:1; }
+    .profile-photo-wrap { position:relative; }
+    .profile-photo {
+      width:120px;height:120px;border-radius:50%;border:4px solid rgba(167,139,250,0.4);
+      object-fit:cover;background:#3b2080;display:flex;align-items:center;justify-content:center;
+      font-size:2.5rem;font-weight:700;color:#fff;overflow:hidden;
+    }
+    .profile-photo img { width:100%;height:100%;object-fit:cover; }
+    .photo-edit-btn {
+      position:absolute;bottom:4px;right:4px;width:32px;height:32px;border-radius:50%;
+      background:#a78bfa;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;
+      justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.4);
+      display:none;
+    }
+    .profile-hero-inner:hover .photo-edit-btn.editable { display:flex; }
+    .profile-name { font-size:1.6rem;font-weight:700;margin-bottom:4px;color:#fff; }
+    .profile-role { font-size:0.9rem;opacity:0.8;color:#c4b5fd; }
+    .profile-id { font-size:0.8rem;opacity:0.6;margin-top:4px;color:#a78bfa; }
+
+    .profile-grid { display:grid;grid-template-columns:1fr 1fr;gap:20px; }
+    .info-card { background:#161929;border-radius:12px;border:1px solid #1e2240;padding:24px; }
+    .info-card h3 { font-size:1rem;margin-bottom:16px;color:#a78bfa; }
+    .info-row { display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #1e2240; }
+    .info-row:last-child { border-bottom:none; }
+    .info-label { color:#64748b;font-size:0.85rem; }
+    .info-value { font-weight:600;font-size:0.85rem;color:#e2e8f0; }
+
+    .bio-textarea { width:100%;border:2px solid #2d3354;border-radius:8px;padding:12px;font-family:Inter,sans-serif;font-size:0.88rem;resize:vertical;min-height:80px;background:#0d0f1e;color:#e2e8f0; }
+    .bio-textarea:focus { outline:none;border-color:#7c3aed; }
+    .form-control { background:#0d0f1e !important;border-color:#2d3354 !important;color:#e2e8f0 !important; }
+    .form-control:focus { border-color:#7c3aed !important; }
+    label { color:#94a3b8 !important; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p id="panelLabel">Panel</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <div class="user-info"><h4 id="userName">User</h4><p id="userRole">Role</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> <span>My Profile</span></div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <!-- Profile Hero -->
+        <div class="profile-hero">
+          <div class="profile-hero-inner">
+            <div class="profile-photo-wrap">
+              <div class="profile-photo" id="profilePhoto"></div>
+              <button class="photo-edit-btn editable" id="photoEditBtn" onclick="document.getElementById('photoInput').click()">
+                <i class="fas fa-camera"></i>
+              </button>
+              <input type="file" id="photoInput" accept=".jpg,.jpeg,.png,.gif" style="display:none" onchange="uploadPhoto()">
+            </div>
+            <div>
+              <div class="profile-name" id="profileName">Loading...</div>
+              <div class="profile-role" id="profileRole"></div>
+              <div class="profile-id" id="profileId"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-grid">
+          <!-- Info Card -->
+          <div class="info-card">
+            <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+            <div class="info-row"><span class="info-label">Full Name</span><span class="info-value" id="infoName">—</span></div>
+            <div class="info-row"><span class="info-label">Email</span><span class="info-value" id="infoEmail">—</span></div>
+            <div class="info-row"><span class="info-label">University ID</span><span class="info-value" id="infoUid">—</span></div>
+            <div class="info-row"><span class="info-label">Department</span><span class="info-value" id="infoDept">—</span></div>
+            <div class="info-row"><span class="info-label">Phone</span><span class="info-value" id="infoPhone">—</span></div>
+            <div class="info-row"><span class="info-label">Joined</span><span class="info-value" id="infoJoined">—</span></div>
+          </div>
+
+          <!-- Edit Card (own profile only) -->
+          <div class="info-card" id="editCard">
+            <h3><i class="fas fa-edit"></i> Edit Profile</h3>
+            <div class="form-group">
+              <label>Full Name</label>
+              <input class="form-control" id="editName" placeholder="Your full name">
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input class="form-control" id="editPhone" placeholder="Phone number">
+            </div>
+            <div class="form-group">
+              <label>Bio / About</label>
+              <textarea class="bio-textarea" id="editBio" placeholder="Tell something about yourself..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="saveProfile()" style="margin-top:12px;">
+              <i class="fas fa-save"></i> Save Changes
+            </button>
+          </div>
+        </div>
+
+        <!-- Bio Section -->
+        <div class="info-card" style="margin-top:20px;" id="bioCard">
+          <h3><i class="fas fa-quote-left"></i> About</h3>
+          <p id="bioText" style="line-height:1.8;color:#555;">No bio added yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let isOwnProfile = true;
+    let viewUserId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const currentUser = await getCurrentUser();
+      if (!currentUser) return;
+
+      // Check if viewing another user's profile
+      const params = new URLSearchParams(window.location.search);
+      viewUserId = params.get('id');
+
+      if (viewUserId && parseInt(viewUserId) !== currentUser.user_id) {
+        isOwnProfile = false;
+      } else {
+        viewUserId = null; // viewing own profile
+      }
+
+      // Setup sidebar
+      document.getElementById('userName').textContent = currentUser.full_name;
+      document.getElementById('userAvatar').textContent = getInitials(currentUser.full_name);
+      document.getElementById('userRole').textContent = currentUser.role;
+
+      const navMap = {
+        'ADMIN': `<div class="nav-label">Main</div>
+          <a href="/admin/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+          <a href="/profile" class="active"><span class="nav-icon"><i class="fas fa-user"></i></span> Profile</a>
+          <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`,
+        'SUPERVISOR': `<div class="nav-label">Main</div>
+          <a href="/supervisor/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+          <a href="/supervisor/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+          <a href="/supervisor/approvals"><span class="nav-icon"><i class="fas fa-check-circle"></i></span> Pending Approvals</a>
+          <a href="/supervisor/student-inbox"><span class="nav-icon"><i class="fas fa-inbox"></i></span> Student Messages</a>
+          <a href="/supervisor/chat"><span class="nav-icon"><i class="fas fa-comments"></i></span> Chat with Course Teachers</a>
+          <a href="/profile" class="active"><span class="nav-icon"><i class="fas fa-user"></i></span> Profile</a>
+          <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`,
+        'COURSE_TEACHER': `<div class="nav-label">Main</div>
+          <a href="/teacher/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+          <a href="/teacher/announcements"><span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Announcements</a>
+          <a href="/teacher/inbox"><span class="nav-icon"><i class="fas fa-inbox"></i></span> Inbox</a>
+          <a href="/teacher/students"><span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Student List</a>
+          <a href="/teacher/grades"><span class="nav-icon"><i class="fas fa-file-invoice"></i></span> Gradebook</a>
+          <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-comments"></i></span> Chat with Supervisors</a>
+          <a href="/profile" class="active"><span class="nav-icon"><i class="fas fa-user"></i></span> Profile</a>
+          <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`,
+        'STUDENT': `<div class="nav-label">MAIN</div>
+          <a href="/student/dashboard"><span class="nav-icon"><i class="fas fa-home"></i></span> Dashboard</a>
+          <a href="/student/submit-report"><span class="nav-icon"><i class="fas fa-upload"></i></span> Submit Report</a>
+          <a href="/student/reports"><span class="nav-icon"><i class="fas fa-file-alt"></i></span> My Reports</a>
+          <div class="nav-label" style="margin-top:12px;">CHATS</div>
+          <a href="/student/my-group-chat"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> Students Group</a>
+          <a href="/student/supervisor-group-chat"><span class="nav-icon"><i class="fas fa-users"></i></span> Group with Supervisor</a>
+          <a href="/student/teacher-group-chat"><span class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></span> Group with Course Teacher</a>
+          <a href="/student/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> DM Supervisor</a>
+          <a href="/student/teacher-chat"><span class="nav-icon"><i class="fas fa-comment-dots"></i></span> DM Course Teacher</a>
+          <div class="nav-label" style="margin-top:12px;">ACCOUNT</div>
+          <a href="/profile" class="active"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+          <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`
+      };
+      document.getElementById('sidebarNav').innerHTML = navMap[currentUser.role] || '';
+      document.getElementById('panelLabel').textContent = currentUser.role.replace('_', ' ');
+
+      loadProfile();
+    });
+
+    async function loadProfile() {
+      try {
+        const url = viewUserId ? `/api/profile/${viewUserId}` : '/api/profile/me';
+        const data = await apiFetch(url);
+        const u = data.user;
+
+        // Hero
+        const photoEl = document.getElementById('profilePhoto');
+        if (u.profile_photo) {
+          photoEl.innerHTML = `<img src="${u.profile_photo}" alt="Profile">`;
+        } else {
+          photoEl.textContent = getInitials(u.full_name);
+        }
+        document.getElementById('profileName').textContent = u.full_name;
+        document.getElementById('profileRole').textContent = u.role.replace('_', ' ');
+        document.getElementById('profileId').textContent = u.university_id || u.email;
+
+        // Info
+        document.getElementById('infoName').textContent = u.full_name;
+        document.getElementById('infoEmail').textContent = u.email;
+        document.getElementById('infoUid').textContent = u.university_id || '—';
+        document.getElementById('infoDept').textContent = u.department || '—';
+        document.getElementById('infoPhone').textContent = u.phone || '—';
+        document.getElementById('infoJoined').textContent = formatDate(u.created_at);
+
+        // Bio
+        document.getElementById('bioText').textContent = u.bio || 'No bio added yet.';
+
+        // Edit section — only for own profile
+        if (isOwnProfile) {
+          document.getElementById('editName').value = u.full_name;
+          document.getElementById('editPhone').value = u.phone || '';
+          document.getElementById('editBio').value = u.bio || '';
+        } else {
+          document.getElementById('editCard').style.display = 'none';
+          document.getElementById('photoEditBtn').classList.remove('editable');
+        }
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function saveProfile() {
+      try {
+        showLoading();
+        await apiFetch('/api/profile/update', {
+          method: 'PUT',
+          body: {
+            full_name: document.getElementById('editName').value,
+            phone: document.getElementById('editPhone').value,
+            bio: document.getElementById('editBio').value
+          }
+        });
+        showToast('Profile updated!', 'success');
+        loadProfile();
+      } catch (err) { showToast(err.message, 'error'); }
+      finally { hideLoading(); }
+    }
+
+    async function uploadPhoto() {
+      const fileInput = document.getElementById('photoInput');
+      if (!fileInput.files[0]) return;
+
+      const formData = new FormData();
+      formData.append('photo', fileInput.files[0]);
+
+      try {
+        showLoading();
+        await fetch('/api/profile/photo', { method: 'POST', body: formData, credentials: 'same-origin' });
+        showToast('Photo updated!', 'success');
+        loadProfile();
+      } catch (err) { showToast('Upload failed', 'error'); }
+      finally { hideLoading(); }
+    }
+  </script>
+</body>
+</html>

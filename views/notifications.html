@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ══ FORCE DARK THEME ══ */
+    :root {
+      --bg-dark: #0d0f1e;
+      --card-bg: #161929;
+      --sidebar-bg: #12152a;
+      --border-color: #1e2240;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --accent-color: #6c5ce7;
+    }
+    body { background: #0d0f1e !important; color: #e2e8f0 !important; font-family: 'Inter', sans-serif; margin:0; }
+    .app-layout { display:flex; min-height:100vh; }
+    .main-content { background: #0d0f1e !important; margin-left: 220px; width: calc(100% - 220px); min-height:100vh; display:flex; flex-direction:column; }
+    .top-header { background: #0d0f1e !important; border-bottom: 1px solid #1e2240 !important; }
+    .page-content { background: #0d0f1e !important; }
+    .page-title h1 { color: #e2e8f0 !important; }
+    .page-title p { color: #94a3b8 !important; }
+    .card { background: #161929 !important; border: 1px solid #1e2240 !important; box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important; }
+    .card-body { background: #161929 !important; }
+    .pagination button { background: #161929 !important; border-color: #1e2240 !important; color: #94a3b8 !important; }
+    .pagination button.active { background: #6c5ce7 !important; color: #fff !important; border-color: #6c5ce7 !important; }
+    /* Notification item */
+    .notif-item {
+      display:flex;gap:14px;padding:16px 20px;
+      border-bottom:1px solid #1e2240;
+      transition:background 0.2s;cursor:pointer;align-items:flex-start;
+      background: #161929;
+    }
+    .notif-item:hover { background: #1a1f35; }
+    .notif-item.unread {
+      background: rgba(108,92,231,0.08);
+      border-left:3px solid #6c5ce7;
+    }
+    .notif-icon {
+      width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-size:18px;flex-shrink:0;
+    }
+    .notif-icon.blue { background:rgba(21,101,192,0.15);color:#60a5fa; }
+    .notif-icon.green { background:rgba(46,125,50,0.15);color:#4ade80; }
+    .notif-icon.red { background:rgba(183,28,28,0.15);color:#f87171; }
+    .notif-icon.yellow { background:rgba(230,81,0,0.15);color:#fb923c; }
+    .notif-icon.purple { background:rgba(123,31,162,0.15);color:#c084fc; }
+    .notif-icon.gray { background:rgba(255,255,255,0.05);color:#94a3b8; }
+    .notif-body { flex:1; }
+    .notif-body h4 { font-size:0.9rem;margin-bottom:2px;color:#e2e8f0; }
+    .notif-body p { font-size:0.82rem;color:#94a3b8;line-height:1.5; }
+    .notif-time { font-size:0.72rem;color:#64748b;white-space:nowrap; }
+    /* Always-dark sidebar */
+    .sidebar { background: #161929 !important; border-right: 1px solid #1e2240 !important; }
+    .sidebar-header { border-bottom: 1px solid #1e2240 !important; }
+    .sidebar-footer  { border-top:  1px solid #1e2240 !important; }
+    .sidebar-nav a   { color: #94a3b8 !important; }
+    .sidebar-nav a:hover, .sidebar-nav a.active { background:#1a1d2e !important; color:#fff !important; }
+    .sidebar-nav .nav-label { color: rgba(255,255,255,0.3) !important; }
+    .sidebar-user .user-info h4 { color: #fff !important; }
+    .sidebar-user .user-info p  { color: rgba(255,255,255,0.5) !important; }
+    /* Dark modal */
+    .modal-overlay { background: rgba(5,7,18,0.88) !important; }
+    .modal { background: #161929 !important; border: 1px solid #1e2240 !important; color: #e2e8f0 !important; }
+    .modal-header { background: #0d0f1e !important; border-bottom-color: #1e2240 !important; }
+    .modal-header h3 { color: #e2e8f0 !important; }
+    .modal-body { background: #161929 !important; color: #e2e8f0 !important; }
+    .modal-close { color: #64748b !important; }
+  </style>
+  <script>
+    /* Apply theme class immediately before first paint to prevent FOUC */
+    (function(){
+      var t = localStorage.getItem('theme');
+      document.documentElement.classList.add(t === 'light' ? 'light-init' : 'dark-init');
+    })();
+  </script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p id="panelLabel">Panel</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <div class="user-info"><h4 id="userName">User</h4><p id="userRole">Role</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> <span>Notifications</span></div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-title">
+          <h1>🔔 Notifications</h1>
+          <p>All your system notifications</p>
+        </div>
+
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div id="notifList">
+              <div style="text-align:center;color:#999;padding:40px;">Loading...</div>
+            </div>
+          </div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal (for rejection reasons etc.) -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <h3 id="detailTitle">Notification</h3>
+        <button class="modal-close" onclick="closeDetail()">&times;</button>
+      </div>
+      <div class="modal-body" id="detailBody"></div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let currentPage = 1;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (!user) return;
+
+      document.getElementById('userName').textContent = user.full_name;
+      document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      document.getElementById('userRole').textContent = user.role;
+
+      // Dynamic sidebar based on role
+      const navMap = {
+        'ADMIN': `<div class="nav-label">Main</div>
+          <a href="/admin/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+          <a href="/admin/users"><span class="nav-icon"><i class="fas fa-users"></i></span> Users</a>
+          <a href="/admin/groups"><span class="nav-icon"><i class="fas fa-folder"></i></span> Groups</a>
+          <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+          <a href="/notifications" class="active"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`,
+        'SUPERVISOR': `<div class="nav-label">Main</div>
+          <a href="/supervisor/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+          <a href="/supervisor/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+          <a href="/supervisor/approvals"><span class="nav-icon"><i class="fas fa-check-circle"></i></span> Pending Approvals</a>
+          <a href="/supervisor/student-inbox"><span class="nav-icon"><i class="fas fa-inbox"></i></span> Student Messages</a>
+          <a href="/supervisor/chat"><span class="nav-icon"><i class="fas fa-comments"></i></span> Chat with Course Teachers</a>
+          <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+          <a href="/notifications" class="active"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`,
+        'COURSE_TEACHER': `<div class="nav-label">Main</div>
+          <a href="/teacher/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+          <a href="/teacher/inbox"><span class="nav-icon"><i class="fas fa-inbox"></i></span> Escalated Inbox</a>
+          <a href="/teacher/announcements"><span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Announcements</a>
+          <a href="/teacher/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+          <a href="/teacher/students"><span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Student List</a>
+          <a href="/teacher/grades"><span class="nav-icon"><i class="fas fa-graduation-cap"></i></span> Gradebook</a>
+          <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span> Student Messages</a>
+          <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> Chat with Supervisors</a>
+          <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+          <a href="/notifications" class="active"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`,
+        'STUDENT': `<div class="nav-label">MAIN</div>
+          <a href="/student/dashboard"><span class="nav-icon"><i class="fas fa-home"></i></span> Dashboard</a>
+          <a href="/student/submit-report"><span class="nav-icon"><i class="fas fa-upload"></i></span> Submit Report</a>
+          <a href="/student/reports"><span class="nav-icon"><i class="fas fa-file-alt"></i></span> My Reports</a>
+          <div class="nav-label" style="margin-top:12px;">CHATS</div>
+          <a href="/student/my-group-chat"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> Students Group</a>
+          <a href="/student/supervisor-group-chat"><span class="nav-icon"><i class="fas fa-users"></i></span> Group with Supervisor</a>
+          <a href="/student/teacher-group-chat"><span class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></span> Group with Course Teacher</a>
+          <a href="/student/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> DM Supervisor</a>
+          <a href="/student/teacher-chat"><span class="nav-icon"><i class="fas fa-comment-dots"></i></span> DM Course Teacher</a>
+          <div class="nav-label" style="margin-top:12px;">ACCOUNT</div>
+          <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+          <a href="/notifications" class="active"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`,
+        'PRE_FYDP_STUDENT': `<div class="nav-label">TEAM BUILDING</div>
+          <a href="/pre-fydp/dashboard"><span class="nav-icon"><i class="fas fa-th-large"></i></span> Dashboard</a>
+          <a href="/pre-fydp/find-teammates"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> Find Teammates</a>
+          <a href="/pre-fydp/my-requests"><span class="nav-icon"><i class="fas fa-envelope"></i></span> My Requests</a>
+          <div class="nav-label" style="margin-top:12px;">ACCOUNT</div>
+          <a href="/pre-fydp/profile-settings"><span class="nav-icon"><i class="fas fa-cog"></i></span> Profile Settings</a>
+          <a href="/notifications" class="active"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`
+      };
+      document.getElementById('sidebarNav').innerHTML = navMap[user.role] || '';
+      document.getElementById('panelLabel').textContent = user.role.replace('_', ' ');
+
+      loadNotifications();
+    });
+
+    async function loadNotifications() {
+      try {
+        const user = await getCurrentUser();
+        const promises = [apiFetch(`/api/notifications?page=${currentPage}&limit=15`)];
+        
+        // Inject virtual notifications only on page 1
+        if (currentPage === 1) {
+          if (user.role === 'SUPERVISOR') {
+            promises.push(apiFetch('/api/chat/unread-count').catch(()=>null));
+            promises.push(apiFetch('/api/chat/group-unread-count').catch(()=>null));
+            promises.push(apiFetch('/api/supervisor/stats').catch(()=>null));
+          } else if (user.role === 'COURSE_TEACHER') {
+            promises.push(apiFetch('/api/chat/unread-count').catch(()=>null));
+            promises.push(apiFetch('/api/chat/group-unread-count').catch(()=>null));
+            promises.push(apiFetch('/api/teacher/stats').catch(()=>null));
+          } else if (user.role === 'STUDENT' || user.role === 'PRE_FYDP_STUDENT') {
+            promises.push(apiFetch('/api/chat/unread-count').catch(()=>null));
+            promises.push(apiFetch('/api/chat/group-unread-count').catch(()=>null));
+          }
+        }
+        
+        const results = await Promise.allSettled(promises);
+        const data = (results[0].status === 'fulfilled') ? results[0].value : { notifications: [], pagination: { totalPages: 0 } };
+        let notifs = data.notifications || [];
+        
+        if (currentPage === 1) {
+          const dm = results[1]?.value;
+          const grp = results[2]?.value;
+          const st = results[3]?.value;
+          
+          if (st && st.pendingReports > 0 && user.role === 'SUPERVISOR') {
+            notifs.unshift({ notification_id: 'appr', is_read: 0, title: '⏳ Pending Reports', message: `You have ${st.pendingReports} report(s) waiting for review.`, created_at: new Date().toISOString(), link: '/supervisor/approvals', notification_type: 'SYSTEM_ALERT' });
+          }
+          if (st && st.pendingInbox > 0 && user.role === 'COURSE_TEACHER') {
+            notifs.unshift({ notification_id: 'inbox', is_read: 0, title: '📥 Escalated Inbox', message: `You have ${st.pendingInbox} escalated package(s) waiting for review.`, created_at: new Date().toISOString(), link: '/teacher/inbox', notification_type: 'SYSTEM_ALERT' });
+          }
+          if (dm && dm.unread_count > 0) {
+            let dmLink = '/notifications';
+            if (user.role === 'SUPERVISOR') dmLink = '/supervisor/student-inbox';
+            else if (user.role === 'COURSE_TEACHER') dmLink = '/teacher/student-inbox';
+            else dmLink = '/student/supervisor-chat';
+            notifs.unshift({ notification_id: 'dm', is_read: 0, title: '💬 Direct Messages', message: `You have ${dm.unread_count} unread direct message(s).`, created_at: new Date().toISOString(), link: dmLink, notification_type: 'SYSTEM_ALERT' });
+          }
+          if (grp && grp.unread_count > 0) {
+            let grpLink = '/notifications';
+            if (user.role === 'SUPERVISOR') grpLink = '/supervisor/groups';
+            else if (user.role === 'COURSE_TEACHER') grpLink = '/teacher/groups';
+            else grpLink = '/student/my-group-chat';
+            notifs.unshift({ notification_id: 'grp', is_read: 0, title: '👥 Group Chats', message: `You have ${grp.unread_count} unread group message(s).`, created_at: new Date().toISOString(), link: grpLink, notification_type: 'SYSTEM_ALERT' });
+          }
+        }
+        
+        renderNotifications(notifs);
+        renderPagination(data.pagination);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function getNotifIcon(type, title) {
+      const map = {
+        'INVITATION_RECEIVED': { icon: '📩', cls: 'blue' },
+        'REPORT_APPROVED': { icon: '✅', cls: 'green' },
+        'REPORT_REJECTED': { icon: '❌', cls: 'red' },
+        'ESCALATION_COMPLETE': { icon: '📤', cls: 'yellow' },
+        'STAGE_PROMOTED': { icon: '⬆️', cls: 'purple' },
+        'SYSTEM_ALERT': { icon: '🔔', cls: 'gray' }
+      };
+      if (title && title.includes('Pending')) return { icon: '⏳', cls: 'yellow' };
+      if (title && title.includes('Direct Message')) return { icon: '💬', cls: 'blue' };
+      if (title && title.includes('Group Chat')) return { icon: '👥', cls: 'purple' };
+      return map[type] || { icon: '🔔', cls: 'gray' };
+    }
+
+    function renderNotifications(notifs) {
+      const el = document.getElementById('notifList');
+      if (notifs.length === 0) {
+        el.innerHTML = '<div style="text-align:center;color:#999;padding:60px;">🎉 No notifications</div>';
+        return;
+      }
+      el.innerHTML = notifs.map(n => {
+        const ic = getNotifIcon(n.notification_type, n.title);
+        const safeLink = escapeHtml(n.link || '/notifications');
+        const safeType = escapeHtml(n.notification_type || '');
+        const cleanTitle = n.title.replace(/^[^ ]+ /, '');
+        const encTitle = encodeURIComponent(cleanTitle);
+        const encMsg = encodeURIComponent(n.message || '');
+        return `
+          <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="readAndGoNotif('${n.notification_id}', '${safeLink}', '${safeType}', '${encTitle}', '${encMsg}')" style="cursor:pointer;">
+            <div class="notif-icon ${ic.cls}">${ic.icon}</div>
+            <div class="notif-body">
+              <h4>${escapeHtml(cleanTitle)}</h4>
+              <p>${escapeHtml(n.message)}</p>
+            </div>
+            <div class="notif-time">${formatDateTime(n.created_at)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function closeDetail() { document.getElementById('detailModal').classList.remove('active'); }
+
+    async function markAllRead() {
+      try {
+        await apiFetch('/api/notifications/read-all', { method: 'PUT' });
+        showToast('All notifications marked as read', 'success');
+        loadNotifications();
+        updateNotificationCount();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    function renderPagination(p) {
+      const el = document.getElementById('pagination');
+      if (p.totalPages <= 1) { el.innerHTML = ''; return; }
+      let html = `<button ${p.page<=1?'disabled':''} onclick="goPage(${p.page-1})">«</button>`;
+      for (let i = 1; i <= p.totalPages; i++) {
+        html += `<button class="${i===p.page?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      }
+      html += `<button ${p.page>=p.totalPages?'disabled':''} onclick="goPage(${p.page+1})">»</button>`;
+      el.innerHTML = html;
+    }
+    function goPage(p) { currentPage = p; loadNotifications(); }
+  </script>
+</body>
+</html>

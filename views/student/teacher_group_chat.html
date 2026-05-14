@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Group Chat — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/app-dark.css">
+  <link rel="stylesheet" href="/css/chat-dark.css">
+  <style>
+    body { overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Student Panel</p></div>
+        </div>
+        <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">MAIN</div>
+        <a href="/student/dashboard"><span class="nav-icon"><i class="fas fa-home"></i></span> Dashboard</a>
+        <a href="/student/submit-report"><span class="nav-icon"><i class="fas fa-upload"></i></span> Submit Report</a>
+        <a href="/student/reports"><span class="nav-icon"><i class="fas fa-file-alt"></i></span> My Reports</a>
+        <div class="nav-label" style="margin-top:20px;">CHATS</div>
+        <a href="/student/my-group-chat"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> Students Group</a>
+        <a href="/student/supervisor-group-chat"><span class="nav-icon"><i class="fas fa-users"></i></span> Group with Supervisor</a>
+        <a href="/student/teacher-group-chat" class="active"><span class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></span> Group with Course Teacher</a>
+        <a href="/student/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> DM Supervisor</a>
+        <a href="/student/teacher-chat"><span class="nav-icon"><i class="fas fa-comment-dots"></i></span> DM Course Teacher</a>
+        <div class="nav-label" style="margin-top:20px;">ACCOUNT</div>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">S</div>
+          <div class="user-info"><h4 id="userName">Student</h4><p id="userUid">—</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <!-- Standardized Top Header -->
+      <header class="top-header">
+        <div class="breadcrumb">
+          <button class="sidebar-toggle" style="margin-right:16px; background:none; border:none; color:var(--text-secondary); font-size:1.2rem; cursor:pointer;" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+          <a href="/student/dashboard"><i class="fas fa-home"></i></a>
+          <i class="fas fa-chevron-right" style="font-size:0.7rem; color:var(--border-color); margin:0 8px;"></i>
+          <span>Group with Course Teacher</span>
+        </div>
+        
+        <div class="header-actions">
+          <div style="position:relative;" id="studentNotifWrapper">
+            <button class="notification-bell" onclick="toggleStudentNotif()">
+              <i class="fas fa-bell"></i>
+              <span class="badge" id="studentNotifBadge" style="display:none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="studentNotifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifsRead()" style="background:none;border:none;color:var(--accent-color);font-size:0.8rem;cursor:pointer;font-weight:700;">Mark all read</button>
+              </div>
+              <div class="notif-dropdown-body" id="studentNotifList">
+                <div style="padding:24px;text-align:center;color:var(--text-secondary);font-size:0.9rem;">Loading notifications...</div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Activity</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="window.location.href='/logout'">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </header>
+
+      <div class="chat-container">
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <div class="chat-header-avatar"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div style="flex:1;">
+            <div style="font-weight:800; font-size:1.2rem; color:var(--text-primary); letter-spacing:-0.02em;" id="chatGroupName">Group — Course Teacher Chat</div>
+            <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:4px; font-weight:500;"><i class="fas fa-users" style="font-size:0.75rem; margin-right:4px;"></i> Group members + Course Teacher</div>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="chatMessages">
+          <div style="flex:1; display:flex; align-items:center; justify-content:center; opacity:0.3;">
+            <i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i>
+          </div>
+        </div>
+
+        <!-- Attachment Preview -->
+        <div id="attachPreview">
+          <i class="fas fa-paperclip"></i>
+          <span id="attachName" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+          <button onclick="clearAttach()" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+          <label class="attach-btn" title="Attach file">
+            <i class="fas fa-paperclip"></i>
+            <input type="file" id="fileInput" style="display:none" onchange="handleAttach(this)">
+          </label>
+          <textarea class="chat-input" id="msgInput" placeholder="Type a message (only group members and teacher can see this)..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"
+            oninput="autoResize(this)"></textarea>
+          <button class="chat-send-btn" onclick="sendMsg()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Delete Context Menu -->
+  <div id="msgCtxMenu" class="msg-ctx-menu" style="display:none;">
+    <div class="msg-ctx-item" onclick="confirmDelete()"><i class="fas fa-trash-alt"></i> Delete Message</div>
+  </div>
+
+  <!-- PDF Viewer Modal -->
+  <div class="pdf-overlay" id="pdfOverlay">
+    <div class="pdf-viewer">
+      <div class="pdf-viewer-header">
+        <h4 id="pdfTitle" style="margin:0; font-weight:700; display:flex; align-items:center; gap:10px;"><i class="fas fa-file-pdf" style="color:#ef4444;"></i> <span>Document</span></h4>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <a id="pdfDownload" href="#" download class="btn btn-sm" style="background:rgba(255,255,255,0.1); color:#fff; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:0.85rem; font-weight:600;"><i class="fas fa-download"></i> Download</a>
+          <button onclick="togglePdfFullscreen()" id="pdfFullscreenBtn" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:36px; height:36px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fas fa-expand"></i></button>
+          <button onclick="closePdf()" style="background:#ef4444; border:none; color:#fff; width:36px; height:36px; border-radius:8px; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+      </div>
+      <iframe id="pdfFrame" src=""></iframe>
+    </div>
+  </div>
+
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/main.js"></script>
+  <script>
+    let currentUser = null;
+    let groupId = null;
+    let socket = null;
+    let ctxTargetMsgId = null;
+    let longPressTimer = null;
+    const nameColors = ['#9c27b0','#7b1fa2','#8e24aa','#6a1b9a','#4a148c','#ab47bc','#ba68c8'];
+
+    // ── Context Menu ──
+    function showCtxMenu(e, msgId) {
+      e.preventDefault(); ctxTargetMsgId = msgId;
+      const menu = document.getElementById('msgCtxMenu');
+      menu.style.display = 'block';
+      const x = Math.min(e.clientX||(e.touches&&e.touches[0]?e.touches[0].clientX:0), window.innerWidth-160);
+      const y = Math.min(e.clientY||(e.touches&&e.touches[0]?e.touches[0].clientY:0), window.innerHeight-60);
+      menu.style.left=x+'px'; menu.style.top=y+'px';
+    }
+    function hideCtxMenu() { document.getElementById('msgCtxMenu').style.display='none'; ctxTargetMsgId=null; }
+    document.addEventListener('click', hideCtxMenu);
+    document.addEventListener('keydown', e => { if(e.key==='Escape') hideCtxMenu(); });
+
+    async function confirmDelete() {
+      if (!ctxTargetMsgId) return;
+      const msgId=ctxTargetMsgId; hideCtxMenu();
+      if (!confirm('Delete this message for everyone?')) return;
+      try {
+        const res = await fetch(`/api/chat/group/messages/${msgId}`, { method:'DELETE', credentials:'same-origin' });
+        if (!res.ok) { const d=await res.json(); showToast(d.error||'Delete failed','error'); return; }
+        markMsgDeleted(msgId); showToast('Message deleted','success');
+      } catch { showToast('Delete failed','error'); }
+    }
+
+    function markMsgDeleted(msgId) {
+      const row = document.querySelector(`.msg-row[data-msg-id="${msgId}"]`);
+      if (!row) return;
+      const bubble = row.querySelector('.msg-bubble');
+      if (bubble) bubble.innerHTML = '<span class="msg-deleted-text">🚫 This message was deleted</span>';
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      currentUser = await getCurrentUser();
+      if (currentUser) {
+        document.getElementById('userName').textContent = currentUser.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(currentUser.full_name);
+        document.getElementById('userUid').textContent = currentUser.university_id || '—';
+      }
+      if (typeof updateNotificationCount === 'function') updateNotificationCount();
+      loadStudentNotifDropdown();
+      await loadChat();
+      
+      // Close dropdowns on outside click
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#studentNotifWrapper')) {
+          const dd = document.getElementById('studentNotifDropdown');
+          if (dd) dd.style.display = 'none';
+        }
+      });
+      if (typeof io !== 'undefined' && groupId) {
+        socket = io();
+        socket.emit('join_user', currentUser.user_id);
+        socket.emit('join_group', groupId);
+        socket.on('message_deleted', ({ message_id }) => { markMsgDeleted(message_id); });
+        socket.on('new_group_message', (msg) => {
+          if (msg.group_id == groupId && msg.chat_type === 'WITH_TEACHER') { appendMsg(msg, false); scrollToBottom(); }
+        });
+      }
+    });
+
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      sb.classList.toggle('collapsed');
+      localStorage.setItem('sidebarCollapsed', sb.classList.contains('collapsed'));
+    }
+    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+      const sb = document.getElementById('sidebar');
+      if (sb) sb.classList.add('collapsed');
+    }
+
+    function toggleStudentNotif() {
+      const dd = document.getElementById('studentNotifDropdown');
+      dd.style.display = (dd.style.display === 'block') ? 'none' : 'block';
+    }
+
+    async function loadStudentNotifDropdown() {
+      try {
+        const res = await fetch('/api/notifications');
+        const data = await res.json();
+        const list = document.getElementById('studentNotifList');
+        const badge = document.getElementById('studentNotifBadge');
+        if (!data || data.length === 0) {
+          list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:0.9rem;">No notifications</div>';
+          badge.style.display = 'none';
+          return;
+        }
+        let unread = 0;
+        list.innerHTML = data.map(n => {
+          if (!n.is_read) unread++;
+          return `
+            <div style="padding:16px 24px; border-bottom:1px solid var(--border-color); background:${n.is_read ? 'transparent' : 'rgba(124,58,237,0.05)'}; cursor:pointer; transition:all 0.2s;" onclick="markNotifRead(${n.notification_id}, '${n.link || '#'}')">
+              <div style="font-weight:700; font-size:0.9rem; color:var(--text-primary); margin-bottom:4px;">${escapeHtml(n.title)}</div>
+              <div style="font-size:0.8rem; color:var(--text-secondary); line-height:1.4;">${escapeHtml(n.message)}</div>
+              <div style="font-size:0.7rem; color:var(--accent-color); margin-top:8px; font-weight:600;">${new Date(n.created_at).toLocaleDateString()}</div>
+            </div>
+          `;
+        }).join('');
+        if (unread > 0) {
+          badge.textContent = unread;
+          badge.style.display = 'block';
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Error loading notifications:', err);
+      }
+    }
+
+    async function markNotifRead(id, link) {
+      try {
+        await fetch(`/api/notifications/${id}/read`, { method: 'PUT' });
+        window.location.href = link;
+      } catch (err) {
+        console.error(err);
+        window.location.href = link;
+      }
+    }
+
+    async function markAllNotifsRead() {
+      try {
+        await fetch('/api/notifications/read-all', { method: 'PUT' });
+        loadStudentNotifDropdown();
+        if (typeof updateNotificationCount === 'function') updateNotificationCount();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadChat() {
+      try {
+        const data = await apiFetch('/api/student/group-chat?type=WITH_TEACHER');
+        groupId = data.group_id;
+        const dash = await apiFetch('/api/student/dashboard-data');
+        if (dash.group) document.getElementById('chatGroupName').textContent = `${dash.group.group_code} — Teacher Chat`;
+        renderMessages(data.messages);
+      } catch (err) {
+        document.getElementById('chatMessages').innerHTML = '<div style="text-align:center;color:#d32f2f;margin-top:40px;">Failed to load</div>';
+      }
+    }
+
+    function renderMessages(messages) {
+      const c = document.getElementById('chatMessages');
+      if (!messages.length) { c.innerHTML = '<div style="text-align:center;color:#888;margin-top:60px;"><i class="fas fa-lock" style="font-size:2.5rem;display:block;margin-bottom:10px;opacity:0.3;"></i>No messages. This is a private chat for your group only! 🔒</div>'; return; }
+      c.innerHTML = '';
+      let lastDate = '';
+      messages.forEach(m => {
+        const d = m.created_at ? new Date(m.created_at).toLocaleDateString('en-BD',{day:'2-digit',month:'short',year:'numeric'}) : '';
+        if (d && d !== lastDate) { lastDate = d; const div = document.createElement('div'); div.className = 'date-divider'; div.innerHTML = `<span>${d}</span>`; c.appendChild(div); }
+        appendMsg(m, true);
+      });
+      scrollToBottom();
+    }
+
+    function appendMsg(m, isH) {
+      if (document.querySelector(`.msg-row[data-msg-id="${m.message_id}"]`)) return;
+      const c = document.getElementById('chatMessages');
+      const isSent = m.sender_id === currentUser.user_id;
+      const color = nameColors[m.sender_id % nameColors.length];
+      const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-BD',{hour:'2-digit',minute:'2-digit',hour12:true}) : '';
+      const isDeleted = m.message_text === '🚫 This message was deleted';
+      let content = '';
+      if (isDeleted) {
+        content = '<span class="msg-deleted-text">🚫 This message was deleted</span>';
+      } else {
+        content = m.message_text ? `<div>${escapeHtml(m.message_text)}</div>` : '';
+        if (m.attachment_path) {
+          const isPdf = m.attachment_path.toLowerCase().endsWith('.pdf');
+          let attachLinks = `<a href="${m.attachment_path}" download style="color:var(--accent-color);text-decoration:none;font-weight:600;">Download</a>`;
+          if (isPdf) { attachLinks = `<a href="#" onclick="event.preventDefault();viewPdf('${m.attachment_path}', '${escapeHtml(m.attachment_name)}')" style="color:var(--accent-color);text-decoration:none;font-weight:600;margin-right:12px;">View</a> ` + attachLinks; }
+          content += `<div style="font-size:0.78rem;padding:6px 10px;background:rgba(255,255,255,0.05);border-radius:6px;margin-top:6px;display:flex;align-items:center;gap:8px;"><i class="fas fa-${isPdf?'file-pdf':'file'}" style="color:${isPdf?'#ff5252':'var(--accent-color)'};"></i> <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(m.attachment_name||'File')}</span> <div>${attachLinks}</div></div>`;
+        }
+      }
+      const div = document.createElement('div');
+      div.className = `msg-row ${isSent?'sent':'received'}`;
+      div.dataset.msgId = m.message_id;
+      if (isSent) {
+        div.innerHTML = `<div class="msg-bubble sent">${content}<div class="msg-meta">${time} &#10003;&#10003;</div></div>`;
+        if (!isDeleted) {
+          div.addEventListener('contextmenu', (e) => showCtxMenu(e, m.message_id));
+          div.addEventListener('touchstart', (e) => { longPressTimer=setTimeout(()=>showCtxMenu(e,m.message_id),600); }, {passive:true});
+          div.addEventListener('touchend', ()=>clearTimeout(longPressTimer));
+          div.addEventListener('touchmove', ()=>clearTimeout(longPressTimer));
+        }
+      } else {
+        div.innerHTML = `
+          <a href="/profile?id=${m.sender_id}" title="View ${escapeHtml(m.sender_name)}'s profile" style="text-decoration:none;">
+            <div class="msg-av clickable-avatar" style="background:${color}22;color:${color}; border:1px solid ${color}44;">${getInitials(m.sender_name)}</div>
+          </a>
+          <div>
+            <div class="msg-sender-label" style="color:${color}">${escapeHtml(m.sender_name)}</div>
+            <div class="msg-bubble received">${content}<div class="msg-meta">${time}</div></div>
+          </div>`;
+      }
+      c.appendChild(div);
+      if (!isH) scrollToBottom();
+    }
+
+    function scrollToBottom() { const e = document.getElementById('chatMessages'); e.scrollTop = e.scrollHeight; }
+    function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+    function handleAttach(i) { if (i.files[0]) { document.getElementById('attachName').textContent=i.files[0].name; document.getElementById('attachPreview').style.display='flex'; } }
+    function clearAttach() { document.getElementById('fileInput').value=''; document.getElementById('attachPreview').style.display='none'; }
+
+    async function sendMsg() {
+      const input = document.getElementById('msgInput');
+      const fileInput = document.getElementById('fileInput');
+      const text = input.value.trim();
+      const file = fileInput.files[0];
+      if (!text && !file) return;
+      if (!groupId) return;
+      const fd = new FormData();
+      fd.append('message_text', text || '📎 File attached');
+      fd.append('chat_type', 'WITH_TEACHER');
+      if (file) fd.append('attachment', file);
+      input.value = ''; input.style.height = 'auto'; clearAttach();
+      try {
+        await fetch(`/api/chat/group/${groupId}/messages`, { method:'POST', body:fd, credentials:'same-origin' });
+      } catch (err) { showToast('Send failed','error'); }
+    }
+
+    // PDF Viewer Functions
+    function viewPdf(path, name) {
+      document.querySelector('#pdfTitle span').textContent = name || 'Document';
+      document.getElementById('pdfFrame').src = path;
+      document.getElementById('pdfDownload').href = path;
+      document.getElementById('pdfOverlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closePdf() {
+      document.getElementById('pdfOverlay').classList.remove('active');
+      setTimeout(() => { document.getElementById('pdfFrame').src = ''; }, 300);
+      document.body.style.overflow = '';
+      if (document.fullscreenElement) { document.exitFullscreen(); }
+    }
+    function togglePdfFullscreen() {
+      const viewer = document.querySelector('.pdf-viewer');
+      const icon = document.querySelector('#pdfFullscreenBtn i');
+      if (!document.fullscreenElement) {
+        viewer.requestFullscreen().catch(err => console.log(err));
+        icon.classList.replace('fa-expand', 'fa-compress');
+        viewer.style.width = '100%';
+        viewer.style.height = '100%';
+        viewer.style.borderRadius = '0';
+      } else {
+        document.exitFullscreen();
+        icon.classList.replace('fa-compress', 'fa-expand');
+        viewer.style.width = '90%';
+        viewer.style.height = '90%';
+        viewer.style.borderRadius = '12px';
+      }
+    }
+    document.addEventListener('fullscreenchange', () => {
+      const viewer = document.querySelector('.pdf-viewer');
+      const icon = document.querySelector('#pdfFullscreenBtn i');
+      if (!document.fullscreenElement) {
+        icon.classList.replace('fa-compress', 'fa-expand');
+        viewer.style.width = '90%';
+        viewer.style.height = '90%';
+        viewer.style.borderRadius = '12px';
+      }
+    });
+  </script>
+</body>
+</html>

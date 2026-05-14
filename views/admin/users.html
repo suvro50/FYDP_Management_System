@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Users — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Admin Panel</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/admin/dashboard"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/admin/users" class="active"><span class="nav-icon">👥</span> Manage Users</a>
+        <a href="/admin/groups"><span class="nav-icon">📁</span> Manage Groups</a>
+        <div class="nav-label">Operations</div>
+        <a href="/admin/import"><span class="nav-icon">📥</span> Bulk Import</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">AD</div>
+          <div class="user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Admin / <span>Manage Users</span></div>
+        <div class="header-actions">
+          <button class="notification-bell"><i class="fas fa-bell"></i><span class="badge" style="display:none">0</span></button>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <h1>👥 Manage Users</h1>
+            <p>View, add, edit, and manage all system users</p>
+          </div>
+          <button class="btn btn-primary" onclick="openAddModal()">
+            <i class="fas fa-plus"></i> Add User
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-body" style="padding:16px 24px;">
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <input type="text" class="form-control" id="searchInput" placeholder="🔍 Search by name, ID, or email..." style="max-width:280px;" oninput="debounceSearch()">
+              <select class="form-control" id="filterRole" style="max-width:160px;" onchange="loadUsers()">
+                <option value="">All Roles</option>
+                <option value="STUDENT">Student</option>
+                <option value="SUPERVISOR">Supervisor</option>
+                <option value="COURSE_TEACHER">Course Teacher</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+              <select class="form-control" id="filterStatus" style="max-width:160px;" onchange="loadUsers()">
+                <option value="">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="SUSPENDED">Suspended</option>
+                <option value="DEACTIVATED">Deactivated</option>
+              </select>
+              <button class="btn btn-outline btn-sm" onclick="resetFilters()">Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>University ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                  <tr><td colspan="7" style="text-align:center;color:#999;padding:40px;">Loading users...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit User Modal -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add New User</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="userForm">
+          <input type="hidden" id="editUserId">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group">
+              <label>University ID *</label>
+              <input type="text" class="form-control" id="formUniId" required>
+            </div>
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input type="text" class="form-control" id="formName" required>
+            </div>
+            <div class="form-group">
+              <label>Email *</label>
+              <input type="email" class="form-control" id="formEmail" required>
+            </div>
+            <div class="form-group" id="passwordGroup">
+              <label>Password *</label>
+              <input type="password" class="form-control" id="formPassword">
+            </div>
+            <div class="form-group">
+              <label>Role *</label>
+              <select class="form-control" id="formRole" required>
+                <option value="STUDENT">Student</option>
+                <option value="SUPERVISOR">Supervisor</option>
+                <option value="COURSE_TEACHER">Course Teacher</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Department *</label>
+              <input type="text" class="form-control" id="formDept" value="CSE" required>
+            </div>
+            <div class="form-group">
+              <label>Batch</label>
+              <input type="text" class="form-control" id="formBatch" placeholder="e.g. B.Sc 57">
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="text" class="form-control" id="formPhone">
+            </div>
+            <div class="form-group" id="statusGroup" style="display:none;">
+              <label>Account Status</label>
+              <select class="form-control" id="formStatus">
+                <option value="ACTIVE">Active</option>
+                <option value="SUSPENDED">Suspended</option>
+                <option value="DEACTIVATED">Deactivated</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="saveBtn" onclick="saveUser()">
+          <i class="fas fa-save"></i> Save User
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let currentPage = 1;
+    let searchTimer = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      }
+      loadUsers();
+      updateNotificationCount();
+    });
+
+    function debounceSearch() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { currentPage = 1; loadUsers(); }, 300);
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterRole').value = '';
+      document.getElementById('filterStatus').value = '';
+      currentPage = 1;
+      loadUsers();
+    }
+
+    async function loadUsers() {
+      try {
+        const search = document.getElementById('searchInput').value;
+        const role = document.getElementById('filterRole').value;
+        const status = document.getElementById('filterStatus').value;
+        
+        let url = `/api/admin/users?page=${currentPage}&limit=10`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (role) url += `&role=${role}`;
+        if (status) url += `&status=${status}`;
+
+        const data = await apiFetch(url);
+        renderUsers(data.users);
+        renderPagination(data.pagination);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function renderUsers(users) {
+      const tbody = document.getElementById('usersTableBody');
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:40px;">No users found</td></tr>';
+        return;
+      }
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td><strong>${escapeHtml(u.university_id)}</strong></td>
+          <td>${escapeHtml(u.full_name)}</td>
+          <td style="font-size:0.8rem;">${escapeHtml(u.email)}</td>
+          <td><span class="badge ${getRoleBadgeClass(u.role)}">${u.role}</span></td>
+          <td>${escapeHtml(u.department)}</td>
+          <td>${getStatusBadge(u.account_status)}</td>
+          <td>
+            <button class="btn btn-outline btn-sm" onclick='editUser(${JSON.stringify(u)})' title="Edit">
+              <i class="fas fa-edit"></i>
+            </button>
+            ${u.role !== 'ADMIN' ? `
+              <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.user_id},'${escapeHtml(u.full_name)}')" title="Deactivate" style="margin-left:4px;">
+                <i class="fas fa-trash"></i>
+              </button>
+            ` : ''}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderPagination(p) {
+      const el = document.getElementById('pagination');
+      if (p.totalPages <= 1) { el.innerHTML = ''; return; }
+      let html = `<button ${p.page <= 1 ? 'disabled' : ''} onclick="goToPage(${p.page-1})">« Prev</button>`;
+      for (let i = 1; i <= p.totalPages; i++) {
+        html += `<button class="${i === p.page ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+      }
+      html += `<button ${p.page >= p.totalPages ? 'disabled' : ''} onclick="goToPage(${p.page+1})">Next »</button>`;
+      el.innerHTML = html;
+    }
+
+    function goToPage(page) { currentPage = page; loadUsers(); }
+
+    // ── Modal Functions ──────────────────────────────────────
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = 'Add New User';
+      document.getElementById('editUserId').value = '';
+      document.getElementById('userForm').reset();
+      document.getElementById('formDept').value = 'CSE';
+      document.getElementById('passwordGroup').style.display = '';
+      document.getElementById('statusGroup').style.display = 'none';
+      document.getElementById('userModal').classList.add('active');
+    }
+
+    function editUser(u) {
+      document.getElementById('modalTitle').textContent = 'Edit User';
+      document.getElementById('editUserId').value = u.user_id;
+      document.getElementById('formUniId').value = u.university_id;
+      document.getElementById('formName').value = u.full_name;
+      document.getElementById('formEmail').value = u.email;
+      document.getElementById('formRole').value = u.role;
+      document.getElementById('formDept').value = u.department;
+      document.getElementById('formBatch').value = u.batch || '';
+      document.getElementById('formPhone').value = u.phone || '';
+      document.getElementById('formStatus').value = u.account_status;
+      document.getElementById('passwordGroup').style.display = 'none';
+      document.getElementById('statusGroup').style.display = '';
+      document.getElementById('userModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('userModal').classList.remove('active');
+    }
+
+    async function saveUser() {
+      const userId = document.getElementById('editUserId').value;
+      const userData = {
+        university_id: document.getElementById('formUniId').value,
+        full_name: document.getElementById('formName').value,
+        email: document.getElementById('formEmail').value,
+        role: document.getElementById('formRole').value,
+        department: document.getElementById('formDept').value,
+        batch: document.getElementById('formBatch').value,
+        phone: document.getElementById('formPhone').value
+      };
+
+      if (!userData.university_id || !userData.full_name || !userData.email || !userData.department) {
+        showToast('Please fill all required fields', 'warning');
+        return;
+      }
+
+      try {
+        showLoading();
+        if (userId) {
+          // Edit
+          userData.account_status = document.getElementById('formStatus').value;
+          await apiFetch(`/api/admin/users/${userId}`, { method: 'PUT', body: userData });
+          showToast('User updated successfully', 'success');
+        } else {
+          // Add
+          userData.password = document.getElementById('formPassword').value;
+          if (!userData.password) { showToast('Password is required', 'warning'); hideLoading(); return; }
+          await apiFetch('/api/admin/users', { method: 'POST', body: userData });
+          showToast('User created successfully', 'success');
+        }
+        closeModal();
+        loadUsers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function deleteUser(id, name) {
+      if (!confirm(`Are you sure you want to deactivate "${name}"?`)) return;
+      try {
+        showLoading();
+        await apiFetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+        showToast(`${name} has been deactivated`, 'success');
+        loadUsers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+  </script>
+</body>
+</html>

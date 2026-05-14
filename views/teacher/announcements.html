@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Announcements — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .announcement-card { background:#161929;border-radius:12px;border:1px solid #1e2240;overflow:hidden;margin-bottom:20px;transition:all 0.3s; }
+    .announcement-card:hover { transform:translateY(-2px); border-color: #6c5ce7; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .ann-header { padding:16px 20px;border-bottom:1px solid #1e2240;display:flex;justify-content:space-between;align-items:flex-start; }
+    .ann-header h3 { color: #fff; }
+    .ann-body { padding:20px;line-height:1.6;color:#e2e8f0; }
+    .ann-footer { padding:12px 20px;background:rgba(255,255,255,0.02);border-top:1px solid #1e2240;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:#94a3b8; }
+    
+    .target-tag { padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.02em; }
+    .tag-all { background:#0a1912;color:#86efac; border: 1px solid rgba(134,239,172,0.1); }
+    .tag-student { background:#0f1d2e;color:#93c5fd; border: 1px solid rgba(147,197,253,0.1); }
+    .tag-supervisor { background:#1c1917;color:#fdba74; border: 1px solid rgba(253,186,116,0.1); }
+    
+    /* Modal & Form Dark Theme */
+    .modal { background: #161929 !important; border: 1px solid #1e2240 !important; color: #e2e8f0 !important; }
+    .modal-header { border-bottom-color: #1e2240 !important; }
+    .modal-footer { border-top-color: #1e2240 !important; }
+    .modal-header h3 { color: #fff !important; }
+    
+    .form-group label { color: #94a3b8 !important; }
+    .form-group input, .form-group textarea, .form-group select {
+      background: #1c2033 !important;
+      border: 1px solid #1e2240 !important;
+      color: #e2e8f0 !important;
+      padding: 10px 14px;
+      border-radius: 8px;
+      width: 100%;
+      outline: none;
+      transition: all 0.3s;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      border-color: #6c5ce7 !important;
+      box-shadow: 0 0 0 4px rgba(108,92,231,0.1) !important;
+    }
+    
+    h1 { color: #fff !important; }
+    .page-title p { color: #94a3b8 !important; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Course Teacher</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/teacher/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+        <a href="/teacher/announcements" class="active"><span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Announcements</a>
+        <a href="/teacher/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+        <a href="/teacher/students"><span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Student List</a>
+        <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span> Student Messages</a>
+        <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> Chat with Supervisors</a>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">CT</div>
+          <div class="user-info"><h4 id="userName">Course Teacher</h4><p>Course Teacher</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Teacher / <span>Announcements</span></div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="showCreateModal()"><i class="fas fa-plus"></i> New Announcement</button>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-title">
+          <h1><i class="fas fa-bullhorn" style="color:var(--primary);margin-right:8px;"></i> Announcements</h1>
+          <p>Broadcast messages to students and supervisors</p>
+        </div>
+
+        <div id="announcementsContainer">
+          <div style="text-align:center;padding:60px;color:#999;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Modal -->
+  <div class="modal-overlay" id="annModal">
+    <div class="modal" style="max-width:550px;">
+      <div class="modal-header">
+        <h3>📢 Create New Announcement</h3>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="annForm">
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="annTitle" placeholder="e.g. Midterm Submission Deadline" required>
+          </div>
+          <div class="form-group">
+            <label>Content</label>
+            <textarea id="annContent" rows="5" placeholder="Write your announcement message here..." required></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+            <div class="form-group">
+              <label>Target Audience</label>
+              <select id="annRole">
+                <option value="ALL">Everyone</option>
+                <option value="STUDENT">Students Only</option>
+                <option value="SUPERVISOR">Supervisors Only</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Specific Section (Optional)</label>
+              <input type="text" id="annSection" placeholder="e.g. A, B, C">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitAnnouncement()">Post Announcement</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      }
+      loadAnnouncements();
+    });
+
+    async function loadAnnouncements() {
+      try {
+        const data = await apiFetch('/api/teacher/announcements');
+        const container = document.getElementById('announcementsContainer');
+        const anns = data.announcements || [];
+        
+        if (!anns.length) {
+          container.innerHTML = '<div style="text-align:center;padding:80px;color:#999;"><i class="fas fa-bullhorn fa-3x" style="opacity:0.2;margin-bottom:15px;display:block;"></i><p>No announcements yet.</p></div>';
+          return;
+        }
+
+        container.innerHTML = anns.map(a => `
+          <div class="announcement-card">
+            <div class="ann-header">
+              <div>
+                <h3 style="margin-bottom:6px;">${escapeHtml(a.title)}</h3>
+                <span class="target-tag tag-${a.target_role.toLowerCase()}">${a.target_role}</span>
+                ${a.target_section ? `<span class="badge badge-gray" style="margin-left:8px;">Section ${a.target_section}</span>` : ''}
+              </div>
+              <button class="btn btn-sm btn-outline btn-red" onclick="deleteAnnouncement(${a.announcement_id})">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+            <div class="ann-body">${escapeHtml(a.content).replace(/\n/g, '<br>')}</div>
+            <div class="ann-footer">
+              <span><i class="fas fa-calendar-alt"></i> ${new Date(a.created_at).toLocaleDateString()} ${new Date(a.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            </div>
+          </div>
+        `).join('');
+      } catch(err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function showCreateModal() {
+      document.getElementById('annModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('annModal').classList.remove('active');
+      document.getElementById('annForm').reset();
+    }
+
+    async function submitAnnouncement() {
+      const title = document.getElementById('annTitle').value;
+      const content = document.getElementById('annContent').value;
+      const target_role = document.getElementById('annRole').value;
+      const target_section = document.getElementById('annSection').value;
+
+      if (!title || !content) return showToast('Please fill title and content', 'error');
+
+      try {
+        showLoading();
+        await apiFetch('/api/teacher/announcements', {
+          method: 'POST',
+          body: JSON.stringify({ title, content, target_role, target_section })
+        });
+        showToast('Announcement posted successfully', 'success');
+        closeModal();
+        loadAnnouncements();
+      } catch(err) {
+        showToast(err.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    async function deleteAnnouncement(id) {
+      if (!confirm('Are you sure you want to delete this announcement?')) return;
+      try {
+        await apiFetch('/api/teacher/announcements/' + id, { method: 'DELETE' });
+        showToast('Announcement deleted', 'success');
+        loadAnnouncements();
+      } catch(err) {
+        showToast(err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

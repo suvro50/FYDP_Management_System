@@ -1,0 +1,824 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Groups â€” Course Teacher | FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #0d0f1e; --card-bg: #161929; --sidebar-bg: #12152a;
+      --border: #1e2240; --text-primary: #e2e8f0; --text-secondary: #94a3b8;
+      --accent: #6c5ce7; --accent2: #a78bfa;
+    }
+    body { background:var(--bg-dark)!important; color:var(--text-primary)!important; font-family:'Inter',sans-serif; margin:0; }
+    .main-content { background:var(--bg-dark)!important; min-height:100vh; margin-left:230px!important; width:calc(100% - 230px)!important; padding:0; transition:all 0.3s; }
+    .top-header { background:var(--bg-dark)!important; border-bottom:1px solid var(--border)!important; height:60px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+    .page-content { background:var(--bg-dark)!important; padding:32px 40px!important; }
+
+    /* Sidebar */
+    .sidebar { background:var(--sidebar-bg)!important; border-right:1px solid var(--border)!important; position:fixed!important; left:0; top:0; bottom:0; width:230px!important; z-index:100; transition:all 0.25s ease; display:flex; flex-direction:column; }
+    .sidebar-header { padding:16px!important; border-bottom:1px solid var(--border); }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand-icon { width:32px; height:32px; background:linear-gradient(135deg,var(--accent),#a29bfe); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; }
+    .brand-text h3 { margin:0; font-size:0.95rem; color:#fff; font-weight:700; }
+    .brand-text p { margin:0; font-size:0.65rem; color:var(--text-secondary); }
+    .sidebar-nav { padding:8px 10px!important; flex:1; overflow-y:auto; }
+    .sidebar-nav .nav-label { padding:12px 10px 6px!important; font-size:0.62rem!important; color:#475569; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+    .sidebar-nav a { padding:10px 12px!important; margin-bottom:2px!important; font-size:0.83rem!important; color:var(--text-secondary); text-decoration:none; display:flex!important; align-items:center!important; gap:10px!important; border-radius:8px!important; transition:all 0.2s; }
+    .sidebar-nav a:hover { background:rgba(255,255,255,0.03); color:#fff; }
+    .sidebar-nav a.active { background:#1a2744!important; color:#fff!important; font-weight:600; }
+    .sidebar-nav a .nav-icon { font-size:16px!important; width:18px!important; flex-shrink:0!important; text-align:center; }
+    .sidebar-footer { padding:12px 14px!important; border-top:1px solid var(--border); }
+    .sidebar-user { display:flex; align-items:center; gap:10px; }
+    .user-avatar { width:32px; height:32px; border-radius:8px; background:var(--border); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:#fff; }
+    .user-info h4 { margin:0; font-size:0.8rem; color:#fff; }
+    .user-info p { margin:0; font-size:0.65rem; color:var(--text-secondary); }
+    .sidebar-collapsed { width:64px!important; }
+    .sidebar-collapsed .brand-text,.sidebar-collapsed .nav-label,.sidebar-collapsed .user-info,.sidebar-collapsed a span:last-child { display:none!important; }
+    .sidebar-collapsed .sidebar-nav a { justify-content:center; padding:12px; }
+    .sidebar-collapsed + .main-content { margin-left:64px!important; width:calc(100% - 64px)!important; }
+    .collapse-btn { position:absolute; right:-12px; top:50%; transform:translateY(-50%); width:24px; height:24px; background:var(--border); color:var(--text-secondary); border:1px solid #2d3354; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:100; transition:all 0.2s; }
+    .collapse-btn:hover { background:#2d3354; color:#fff; }
+
+    /* Views */
+    .view { display:none; }
+    .view.active { display:block; }
+
+    /* Breadcrumb */
+    .fydp-breadcrumb { display:flex; align-items:center; gap:8px; font-size:0.82rem; color:#64748b; margin-bottom:20px; flex-wrap:wrap; }
+    .fydp-breadcrumb a { color:#64748b; text-decoration:none; }
+    .fydp-breadcrumb a:hover { color:var(--accent2); }
+    .fydp-breadcrumb .sep { color:#2d3354; }
+    .fydp-breadcrumb .cur { color:#e2e8f0; font-weight:600; }
+
+    /* Back button */
+    .btn-back { display:flex; align-items:center; gap:8px; padding:8px 18px; background:#1a1d2e; border:1px solid #2d3354; border-radius:8px; color:#e2e8f0; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .btn-back:hover { background:#252847; border-color:var(--accent); }
+
+    /* Stage Cards (FYDP 1/2/3) */
+    .semester-label { font-size:0.72rem; font-weight:700; letter-spacing:2px; color:var(--accent); text-transform:uppercase; margin-bottom:8px; }
+    .semester-title { font-size:2rem; font-weight:800; color:#fff; margin-bottom:6px; }
+    .semester-subtitle { font-size:0.9rem; color:#64748b; margin-bottom:32px; }
+    .semester-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+    .sem-card { border-radius:18px; overflow:hidden; cursor:pointer; transition:transform 0.22s,box-shadow 0.22s; display:flex; flex-direction:column; border:1px solid #2d3354; }
+    .sem-card:hover { transform:translateY(-5px); box-shadow:0 20px 48px rgba(0,0,0,0.5); }
+    .sem-card-top { padding:28px 26px 24px; position:relative; overflow:hidden; min-height:170px; display:flex; flex-direction:column; }
+    .sem-card.fydp1 .sem-card-top { background:linear-gradient(145deg,#5b21b6,#7c3aed,#6d28d9)!important; }
+    .sem-card.fydp2 .sem-card-top { background:linear-gradient(145deg,#0e7490,#0891b2,#06b6d4)!important; }
+    .sem-card.fydp3 .sem-card-top { background:linear-gradient(145deg,#065f46,#047857,#059669)!important; }
+    .sem-card-top::before { content:''; position:absolute; top:-30px; right:-30px; width:160px; height:160px; border-radius:50%; background:rgba(255,255,255,0.07); pointer-events:none; }
+    .sem-card-icon { width:50px; height:50px; background:rgba(255,255,255,0.18); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin-bottom:18px; position:relative; z-index:1; }
+    .sem-card-title { font-size:2rem; font-weight:900; color:#fff; margin-bottom:4px; position:relative; z-index:1; }
+    .sem-card-sub { font-size:0.82rem; color:rgba(255,255,255,0.75); position:relative; z-index:1; }
+    .sem-card-bottom { background:#161929; padding:20px 22px 22px; display:flex; flex-direction:column; gap:14px; flex:1; }
+    .sem-card-info { font-size:0.75rem; color:#64748b; padding-bottom:12px; border-bottom:1px solid #1e2240; }
+    .sem-stats { display:flex; gap:8px; }
+    .sem-stat { flex:1; background:#0d0f1e; border:1px solid #1e2240; border-radius:10px; padding:12px 8px; text-align:center; }
+    .sem-stat-val { font-size:1.3rem; font-weight:800; color:#fff; display:block; }
+    .sem-stat-lbl { font-size:0.62rem; color:#475569; display:block; margin-top:3px; }
+    .sem-open-link { display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:700; color:#a78bfa; margin-top:auto; }
+    .sem-card.fydp2 .sem-open-link { color:#38bdf8; }
+    .sem-card.fydp3 .sem-open-link { color:#34d399; }
+
+    /* Section Cards (Layer 2) */
+    .section-cards-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+    .section-item-card { background:#161929; border:1px solid #1e2240; border-radius:14px; padding:24px; cursor:pointer; transition:all 0.2s; }
+    .section-item-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+    .sec-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; margin-bottom:16px; }
+    .sec-code { font-size:1.4rem; font-weight:800; color:#fff; margin-bottom:4px; }
+    .sec-info { font-size:0.78rem; color:#64748b; margin-bottom:16px; }
+    .sec-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px; }
+    .sec-stat { background:#0d0f1e; border:1px solid #1e2240; border-radius:8px; padding:10px; text-align:center; }
+    .sec-stat-val { font-size:1.1rem; font-weight:800; color:#fff; display:block; }
+    .sec-stat-lbl { font-size:0.62rem; color:#475569; display:block; }
+    .sec-open-link { display:flex; align-items:center; gap:6px; font-size:0.82rem; font-weight:700; color:var(--accent2); }
+
+    /* Group Cards (Layer 3) */
+    .groups-page-title { font-size:1.8rem; font-weight:800; color:#fff; margin-bottom:4px; }
+    .groups-page-sub { font-size:0.85rem; color:#64748b; margin-bottom:20px; }
+    .groups-banner { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:linear-gradient(135deg,#4c1d95,#6d28d9); border-radius:12px; margin-bottom:24px; }
+    .groups-banner-left { display:flex; align-items:center; gap:10px; font-size:0.92rem; font-weight:600; color:#fff; }
+    .groups-banner-right { display:flex; align-items:center; gap:16px; font-size:0.78rem; color:rgba(255,255,255,0.8); }
+    .legend-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
+    .legend-dot.approved { background:#10b981; }
+    .legend-dot.pending { background:#f59e0b; }
+    .legend-dot.overdue { background:#ef4444; }
+    .group-cards-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+    .group-item-card { background:#161929; border:1px solid #1e2240; border-radius:14px; padding:20px; cursor:pointer; transition:all 0.2s; display:flex; flex-direction:column; gap:12px; }
+    .group-item-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+    .gic-header { display:flex; align-items:center; justify-content:space-between; }
+    .gic-title { font-size:1rem; font-weight:700; color:#fff; }
+    .gic-section { font-size:0.75rem; color:#64748b; margin-top:2px; }
+    .gic-status { padding:4px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; }
+    .gic-status.pending { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); }
+    .gic-status.approved { background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); }
+    .gic-status.overdue { background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); }
+    .gic-domain-badge { padding:3px 8px; border-radius:6px; font-size:0.68rem; font-weight:700; background:#1e2240; color:var(--accent2); border:1px solid #2d3354; }
+    .gic-domain-name { font-size:0.78rem; color:#64748b; }
+    .gic-avatars { display:flex; align-items:center; }
+    .gic-avatar { width:28px; height:28px; border-radius:50%; border:2px solid #161929; display:flex; align-items:center; justify-content:center; font-size:0.6rem; font-weight:700; color:#fff; margin-left:-6px; }
+    .gic-avatar:first-child { margin-left:0; }
+    .gic-members-label { font-size:0.75rem; color:#64748b; margin-left:8px; }
+    .gic-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .gic-stat { background:#0d0f1e; border-radius:8px; padding:10px; text-align:center; }
+    .gic-stat-val { font-size:1.1rem; font-weight:800; color:#fff; display:block; }
+    .gic-stat-lbl { font-size:0.65rem; color:#475569; display:block; margin-top:2px; }
+    .gic-progress-label { display:flex; justify-content:space-between; font-size:0.72rem; color:#64748b; margin-bottom:6px; }
+    .gic-progress-bar { height:4px; background:#1e2240; border-radius:2px; overflow:hidden; }
+    .gic-progress-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,#6c5ce7,#a78bfa); transition:width 0.5s ease; }
+    .gic-view-link { display:flex; align-items:center; justify-content:flex-end; gap:6px; font-size:0.8rem; color:#6c5ce7; font-weight:600; }
+
+    /* Group Detail (Layer 4) */
+    .group-detail-layout { display:grid; grid-template-columns:280px 1fr; gap:20px; align-items:start; }
+    .gd-left-card { background:#161929; border:1px solid #1e2240; border-radius:14px; overflow:hidden; }
+    .gd-left-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #1e2240; }
+    .gd-left-header h4 { font-size:0.9rem; font-weight:700; color:#e2e8f0; }
+    .gd-count-badge { width:26px; height:26px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700; color:#fff; }
+    .gd-member-item { display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid #1e2240; }
+    .gd-member-item:last-child { border-bottom:none; }
+    .gd-m-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:#fff; flex-shrink:0; }
+    .gd-m-info { flex:1; min-width:0; }
+    .gd-m-name { font-size:0.88rem; font-weight:600; color:#e2e8f0; }
+    .gd-m-id { font-size:0.72rem; color:#64748b; }
+    .gd-m-email { font-size:0.7rem; color:#475569; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .gd-m-badge { padding:3px 10px; border-radius:20px; font-size:0.65rem; font-weight:700; flex-shrink:0; }
+    .gd-m-badge.leader { background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); }
+    .gd-m-badge.member { background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); }
+    .gd-right-card { background:#161929; border:1px solid #1e2240; border-radius:14px; overflow:hidden; }
+    .gd-tabs { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid #1e2240; }
+    .gd-tab { display:flex; align-items:center; justify-content:center; gap:8px; padding:16px; font-size:0.88rem; font-weight:600; color:#64748b; cursor:pointer; transition:all 0.2s; border-bottom:2px solid transparent; }
+    .gd-tab:hover { color:var(--accent2); }
+    .gd-tab.active { color:var(--accent2); border-bottom-color:var(--accent); background:rgba(108,92,231,0.08); }
+    .gd-tab-panel { display:none; padding:20px; }
+    .gd-tab-panel.active { display:block; }
+
+    /* Week Grid */
+    .week-legend { display:flex; align-items:center; gap:16px; margin-bottom:16px; font-size:0.75rem; color:#64748b; }
+    .week-legend span { display:flex; align-items:center; gap:5px; }
+    .wl-dot { width:8px; height:8px; border-radius:50%; }
+    .wl-dot.all-approved { background:#10b981; }
+    .wl-dot.none { background:#1e2240; border:1px solid #2d3354; }
+    .week-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+    .week-card { background:#0d0f1e; border:1px solid #1e2240; border-radius:10px; padding:14px 12px; cursor:pointer; transition:all 0.2s; }
+    .week-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+    .week-card.all-approved { border-color:rgba(16,185,129,0.4); background:rgba(16,185,129,0.05); }
+    .week-card.no-sub { opacity:0.5; cursor:default; }
+    .wk-label { font-size:0.6rem; font-weight:700; letter-spacing:1px; color:#475569; text-transform:uppercase; }
+    .wk-num { font-size:1.5rem; font-weight:800; color:#fff; line-height:1; margin:4px 0; }
+    .wk-num.all-approved { color:#10b981; }
+    .wk-stats { font-size:0.7rem; color:#64748b; }
+    .wk-dot { width:6px; height:6px; border-radius:50%; display:inline-block; margin-top:6px; }
+    .wk-dot.green { background:#10b981; }
+    .wk-dot.gray { background:#1e2240; border:1px solid #2d3354; }
+
+    /* Task form */
+    .at-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+    .at-icon { width:40px; height:40px; background:linear-gradient(135deg,#6c5ce7,#a78bfa); border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; }
+    .at-title { font-size:1rem; font-weight:700; color:#fff; }
+    .at-sub { font-size:0.75rem; color:#64748b; }
+    .at-field { margin-bottom:14px; }
+    .at-label { font-size:0.7rem; font-weight:700; letter-spacing:1px; color:#6c5ce7; text-transform:uppercase; margin-bottom:6px; display:block; }
+    .at-input { width:100%; padding:11px 14px; background:#0d0f1e; border:1px solid #2d3354; border-radius:8px; color:#e2e8f0; font-size:0.88rem; font-family:inherit; outline:none; transition:border-color 0.2s; box-sizing:border-box; }
+    .at-input:focus { border-color:#6c5ce7; }
+    .at-input::placeholder { color:#2d3354; }
+    .at-textarea { resize:vertical; min-height:90px; }
+    .at-actions { display:flex; gap:12px; margin-top:16px; }
+    .btn-attach { display:flex; align-items:center; gap:8px; padding:10px 18px; background:#1e2240; border:1px solid #2d3354; border-radius:8px; color:#94a3b8; font-size:0.85rem; cursor:pointer; transition:all 0.2s; }
+    .btn-attach:hover { border-color:#6c5ce7; color:var(--accent2); }
+    .btn-assign { display:flex; align-items:center; gap:8px; padding:10px 20px; background:linear-gradient(135deg,#6c5ce7,#7c3aed); border:none; border-radius:8px; color:#fff; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s; margin-left:auto; }
+    .btn-assign:hover { opacity:0.9; transform:translateY(-1px); }
+
+    /* Week report detail */
+    .wr-stat-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px; }
+    .wr-stat { background:#161929; border:1px solid #1e2240; border-radius:12px; padding:20px; }
+    .wr-stat-val { font-size:2rem; font-weight:800; color:#fff; display:block; }
+    .wr-stat-lbl { font-size:0.78rem; color:#64748b; display:block; margin-top:4px; }
+    .wr-success-banner { display:flex; align-items:center; gap:10px; padding:12px 18px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:10px; margin-bottom:20px; font-size:0.88rem; color:#10b981; font-weight:600; }
+    .wr-student-card { background:#161929; border:1px solid #1e2240; border-radius:12px; padding:20px; margin-bottom:12px; }
+    .wr-student-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    .wr-s-avatar { width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:#fff; flex-shrink:0; }
+    .wr-s-name { font-size:0.95rem; font-weight:700; color:#e2e8f0; }
+    .wr-s-id { font-size:0.75rem; color:#64748b; }
+    .wr-s-status { margin-left:auto; padding:5px 14px; border-radius:20px; font-size:0.75rem; font-weight:700; }
+    .wr-s-status.approved { background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); }
+    .wr-notes { background:#0d0f1e; border-radius:8px; padding:12px 16px; font-size:0.85rem; color:#94a3b8; margin-bottom:14px; border:1px solid #1e2240; }
+    .wr-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; }
+    .btn-view-report { display:flex; align-items:center; gap:6px; padding:8px 16px; background:#1e2240; border:1px solid #2d3354; border-radius:7px; color:#94a3b8; font-size:0.82rem; cursor:pointer; transition:all 0.2s; }
+    .btn-view-report:hover { border-color:#6c5ce7; color:var(--accent2); }
+
+    /* PDF overlay */
+    .pdf-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:2000; display:none; align-items:center; justify-content:center; }
+    .pdf-overlay.active { display:flex; }
+    .pdf-viewer { width:90%; height:90%; background:#1a1d2e; border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+    .pdf-viewer-header { padding:12px 20px; background:#0d0f1e; color:#fff; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #2d3354; }
+    .pdf-viewer iframe { flex:1; border:none; }
+
+    /* Dark modal overrides */
+    .modal-overlay { background:rgba(5,7,18,0.88)!important; }
+    .modal { background:#161929!important; border:1px solid #2d3354!important; }
+    .modal-header { background:#0d0f1e!important; border-bottom:1px solid #2d3354!important; color:#e2e8f0!important; }
+    .modal-header h3 { color:#e2e8f0!important; }
+    .modal-body { background:#161929!important; }
+    .modal-footer { background:#161929!important; border-top:1px solid #1e2240!important; }
+    .modal-close { color:#64748b!important; }
+    .form-control { background:#0d0f1e!important; border-color:#2d3354!important; color:#e2e8f0!important; }
+    .form-control:focus { border-color:#6c5ce7!important; }
+  </style>
+</head>
+<body>
+
+  <div class="app-layout">
+    <!-- â•â•â• SIDEBAR â•â•â• -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Course Teacher Panel</p></div>
+        </div>
+      </div>
+      <div class="collapse-btn" onclick="toggleSidebar()"><i class="fas fa-chevron-left"></i></div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/teacher/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span><span>Dashboard</span></a>
+        <a href="/teacher/groups" class="active"><span class="nav-icon"><i class="fas fa-users"></i></span><span>My Groups</span></a>
+        <a href="/teacher/supervising-groups"><span class="nav-icon"><i class="fas fa-user-tie"></i></span><span>Supervising Group</span></a>
+        <a href="/teacher/inbox"><span class="nav-icon"><i class="fas fa-clock"></i></span><span>Pending Approvals</span></a>
+        <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span><span>Student Messages</span></a>
+        <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span><span>Chat with Supervisors</span></a>
+        <div class="nav-label">Account</div>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span><span>My Profile</span></a>
+        <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span><span>Notifications</span></a>
+        <a href="/settings"><span class="nav-icon"><i class="fas fa-cog"></i></span><span>Settings</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">DT</div>
+          <div class="user-info"><h4 id="userName">Course Teacher</h4><p>Course Teacher</p></div>
+          <a href="#" onclick="logout()" style="margin-left:auto;color:#64748b;font-size:0.85rem;"><i class="fas fa-sign-out-alt"></i></a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- â•â•â• MAIN CONTENT â•â•â• -->
+    <div class="main-content" id="mainContent">
+      <header class="top-header">
+        <div class="fydp-breadcrumb" id="topBreadcrumb">
+          <i class="fas fa-home" style="color:#64748b;"></i>
+          <a href="/teacher/dashboard">Course Teacher</a><span class="sep">/</span>
+          <span class="cur">My Groups</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button onclick="window.location.href='/notifications'" style="background:none;border:none;color:#64748b;font-size:1.1rem;cursor:pointer;"><i class="fas fa-bell"></i></button>
+          <button class="btn-back" onclick="logout()" style="border-color:#ef4444;color:#ef4444;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+
+        <!-- â•â•â• VIEW 1: FYDP Stage Selection â•â•â• -->
+        <div class="view active" id="viewStages">
+          <div class="semester-label">Course Teacher Panel</div>
+          <div class="semester-title">My Groups</div>
+          <div class="semester-subtitle">Select a FYDP stage to view your assigned sections and groups</div>
+          <div class="semester-cards" id="stageCards">
+            <div style="text-align:center;color:#64748b;padding:60px;grid-column:1/-1;">
+              <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:10px;display:block;"></i> Loading stages...
+            </div>
+          </div>
+        </div>
+
+        <!-- â•â•â• VIEW 2: Sections within a Stage â•â•â• -->
+        <div class="view" id="viewSections">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div>
+              <div class="groups-page-title" id="sectionPageTitle">FYDP-1 â€” Sections</div>
+              <div class="groups-page-sub" id="sectionPageSub">Final Year Design Project I Â· Semester 7 Â· Fall 2025</div>
+            </div>
+            <button class="btn-back" onclick="goBack('stages')"><i class="fas fa-arrow-left"></i> Back</button>
+          </div>
+          <div class="groups-banner" style="margin-bottom:24px;">
+            <div class="groups-banner-left"><i class="fas fa-users" style="font-size:1.1rem;"></i> <span id="sectionBannerText">3 Sections Â· Semester 7 Â· Fall 2025</span></div>
+            <div class="groups-banner-right">
+              <span><span class="legend-dot approved"></span> Approved</span>
+              <span><span class="legend-dot pending"></span> Pending</span>
+              <span><span class="legend-dot overdue"></span> Overdue</span>
+            </div>
+          </div>
+          <div class="section-cards-grid" id="sectionCards"></div>
+        </div>
+
+        <!-- â•â•â• VIEW 3: Groups within a Section â•â•â• -->
+        <div class="view" id="viewGroups">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div>
+              <div class="groups-page-title" id="groupsPageTitle">FYDP-1 Â· Section A â€” Groups</div>
+              <div class="groups-page-sub" id="groupsPageSub">Final Year Design Project I Â· Semester 7 Â· Fall 2025</div>
+            </div>
+            <button class="btn-back" onclick="goBack('sections')"><i class="fas fa-arrow-left"></i> Back</button>
+          </div>
+          <div class="groups-banner">
+            <div class="groups-banner-left"><i class="fas fa-flask" style="font-size:1.1rem;"></i> <span id="groupsBannerText">7 Research Groups Â· Semester 7 Â· Fall 2025</span></div>
+            <div class="groups-banner-right">
+              <span><span class="legend-dot approved"></span> Approved</span>
+              <span><span class="legend-dot pending"></span> Pending</span>
+              <span><span class="legend-dot overdue"></span> Overdue</span>
+            </div>
+          </div>
+          <div class="group-cards-grid" id="groupCards" style="grid-template-columns:repeat(2,1fr);"></div>
+        </div>
+
+        <!-- â•â•â• VIEW 4: Group Detail â•â•â• -->
+        <div class="view" id="viewGroupDetail">
+          <div class="fydp-breadcrumb" id="detailBreadcrumb" style="margin-bottom:12px;"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div>
+              <div class="groups-page-title" id="detailTitle">UIU-G101</div>
+              <div style="display:flex;align-items:center;gap:12px;margin-top:8px;" id="detailMeta"></div>
+            </div>
+            <button class="btn-back" onclick="goBack('groups')"><i class="fas fa-arrow-left"></i> Back</button>
+          </div>
+          <div class="group-detail-layout" style="margin-top:20px;">
+            <!-- Left: Members -->
+            <div class="gd-left-card">
+              <div class="gd-left-header">
+                <h4><i class="fas fa-users" style="margin-right:6px;"></i> Group Members</h4>
+                <div class="gd-count-badge" id="detailMemberCount">0</div>
+              </div>
+              <div id="detailMembersList"></div>
+            </div>
+            <!-- Right: Tabs -->
+            <div class="gd-right-card">
+              <div class="gd-tabs">
+                <div class="gd-tab active" data-tab="weekly" onclick="switchDetailTab('weekly')"><i class="fas fa-calendar-alt"></i> Weekly Reports</div>
+                <div class="gd-tab" data-tab="tasks" onclick="switchDetailTab('tasks')"><i class="fas fa-tasks"></i> Assign Tasks</div>
+              </div>
+              <div class="gd-tab-panel active" id="panelWeekly"></div>
+              <div class="gd-tab-panel" id="panelTasks"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- â•â•â• VIEW 5: Week Detail (drill-down from weekly report) â•â•â• -->
+        <div class="view" id="viewWeekDetail">
+          <div class="fydp-breadcrumb" id="weekDetailBreadcrumb" style="margin-bottom:12px;"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <div class="groups-page-title" id="weekDetailTitle">Week 1 Reports</div>
+            <button class="btn-back" onclick="goBack('detail')"><i class="fas fa-arrow-left"></i> Back</button>
+          </div>
+          <div class="wr-stat-cards" id="weekStatCards" style="grid-template-columns:repeat(4,1fr);"></div>
+          <div id="weekSuccessBanner" style="display:none;" class="wr-success-banner"></div>
+          <div id="weekStudentReports"></div>
+        </div>
+
+      </div><!-- /page-content -->
+    </div><!-- /main-content -->
+  </div><!-- /app-layout -->
+
+  <!-- PDF Viewer Overlay -->
+  <div class="pdf-overlay" id="pdfOverlay">
+    <div class="pdf-viewer">
+      <div class="pdf-viewer-header">
+        <span id="pdfViewerTitle">Report</span>
+        <button onclick="closePdfViewer()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;"><i class="fas fa-times"></i></button>
+      </div>
+      <iframe id="pdfViewerFrame" src=""></iframe>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // GLOBAL STATE
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    let DATA = { stages: [] };
+    let NAV = { stage: null, section: null, group: null };
+    const AVATAR_COLORS = ['#e74c3c','#8e44ad','#2ecc71','#e67e22','#3498db','#1abc9c','#f39c12','#e91e63'];
+    function avatarColor(i) { return AVATAR_COLORS[i % AVATAR_COLORS.length]; }
+    function initials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+    function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+    const stageLabels = {'FYDP-1':'Final Year Design Project I','FYDP-2':'Final Year Design Project II','FYDP-3':'Final Year Design Project III'};
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // INIT
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          document.getElementById('userName').textContent = user.full_name;
+          document.getElementById('userAvatar').textContent = initials(user.full_name);
+        }
+      } catch(e) {}
+      loadData();
+    });
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // SIDEBAR
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('sidebar-collapsed');
+    }
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // VIEW SWITCHING
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    function showView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function goBack(to) {
+      if (to === 'stages')   showView('viewStages');
+      if (to === 'sections') showView('viewSections');
+      if (to === 'groups')   showView('viewGroups');
+      if (to === 'detail')   showView('viewGroupDetail');
+    }
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // DATA LOADING
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    async function loadData() {
+      try {
+        const res = await apiFetch('/api/teacher/groups-by-stage');
+        DATA = res;
+        renderStages();
+      } catch(e) {
+        document.getElementById('stageCards').innerHTML =
+          '<div style="color:#ef4444;text-align:center;padding:40px;grid-column:1/-1;">Failed to load data. Please refresh.</div>';
+      }
+    }
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // LAYER 1: FYDP STAGE CARDS
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    function renderStages() {
+      const c = document.getElementById('stageCards');
+      const stages = DATA.stages.filter(s => s.total_sections > 0);
+      if (!stages.length) {
+        c.innerHTML = '<div style="color:#64748b;text-align:center;padding:60px;grid-column:1/-1;">No stages assigned to you yet.</div>';
+        return;
+      }
+      const cls = ['fydp1','fydp2','fydp3'];
+      const icons = ['fa-lightbulb','fa-code','fa-trophy'];
+      const subtitles = ['Initial proposal & literature review','Implementation & development','Final presentation & thesis'];
+      c.innerHTML = stages.map((s,i) => {
+        const ci = s.stage_order - 1;
+        const totalGroups = s.sections.reduce((a,sec) => a + sec.groups.length, 0);
+        const totalStudents = s.sections.reduce((a,sec) => a + sec.groups.reduce((b,g) => b + g.member_count, 0), 0);
+        return `
+        <div class="sem-card ${cls[ci]}" onclick="openStage(${i})">
+          <div class="sem-card-top">
+            <div class="sem-card-icon"><i class="fas ${icons[ci]}"></i></div>
+            <div class="sem-card-title">${s.stage_name}</div>
+            <div class="sem-card-sub">${subtitles[ci]}</div>
+          </div>
+          <div class="sem-card-bottom">
+            <div class="sem-card-info">Semester ${6 + s.stage_order} Â· Fall 2025</div>
+            <div class="sem-stats">
+              <div class="sem-stat"><span class="sem-stat-val">${s.total_sections}</span><span class="sem-stat-lbl">Sections</span></div>
+              <div class="sem-stat"><span class="sem-stat-val">${totalGroups}</span><span class="sem-stat-lbl">Groups</span></div>
+              <div class="sem-stat"><span class="sem-stat-val">${totalStudents}</span><span class="sem-stat-lbl">Students</span></div>
+            </div>
+            <div class="sem-open-link">Open ${s.stage_name} <i class="fas fa-chevron-right"></i></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function openStage(idx) {
+      const stages = DATA.stages.filter(s => s.total_sections > 0);
+      NAV.stage = stages[idx];
+      renderSections();
+      showView('viewSections');
+    }
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // LAYER 2: SECTION CARDS
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    function renderSections() {
+      const s = NAV.stage;
+      const label = stageLabels[s.stage_name] || s.stage_name;
+      document.getElementById('sectionPageTitle').textContent = `${s.stage_name} â€” Sections`;
+      document.getElementById('sectionPageSub').textContent = `${label} Â· Semester ${6+s.stage_order} Â· Fall 2025`;
+      document.getElementById('sectionBannerText').textContent = `${s.total_sections} Sections Â· Semester ${6+s.stage_order} Â· Fall 2025`;
+
+      const c = document.getElementById('sectionCards');
+      c.innerHTML = s.sections.map((sec, i) => {
+        const groupCount = sec.groups.length;
+        return `
+        <div class="section-item-card" onclick="openSection(${i})">
+          <div class="sec-icon" style="background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;"><i class="fas fa-users"></i></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="sec-code">Section ${sec.section_code.replace('CSE-','')}</div>
+            <span style="padding:4px 10px;background:#1e2240;border:1px solid #2d3354;border-radius:6px;font-size:0.72rem;font-weight:700;color:#a78bfa;">${sec.section_code}</span>
+          </div>
+          <div class="sec-info">${groupCount} Research Groups</div>
+          <div class="sec-open-link">Open Section <i class="fas fa-chevron-right"></i></div>
+        </div>`;
+      }).join('');
+    }
+
+    function openSection(idx) {
+      NAV.section = NAV.stage.sections[idx];
+      renderGroups();
+      showView('viewGroups');
+    }
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // LAYER 3: GROUP CARDS
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    function renderGroups() {
+      const sec = NAV.section;
+      const s = NAV.stage;
+      document.getElementById('groupsPageTitle').textContent = `${s.stage_name} Â· Section ${sec.section_code.replace('CSE-','')} â€” Groups`;
+      document.getElementById('groupsPageSub').textContent = `${stageLabels[s.stage_name]} Â· Semester ${6+s.stage_order} Â· Fall 2025`;
+      document.getElementById('groupsBannerText').textContent = `${sec.groups.length} Research Groups Â· Semester ${6+s.stage_order} Â· Fall 2025`;
+
+      const c = document.getElementById('groupCards');
+      c.innerHTML = sec.groups.map((g, i) => {
+        const statusCls = g.color_status === 'green' ? 'approved' : g.color_status === 'yellow' ? 'pending' : 'overdue';
+        const statusLabel = g.color_status === 'green' ? 'Approved' : g.color_status === 'yellow' ? 'Pending' : 'Overdue';
+        const progress = g.total_weeks > 0 ? Math.round((g.approved_count / g.total_weeks) * 100) : 0;
+        const avatars = (g.members || []).slice(0,4).map((m,mi) =>
+          `<div class="gic-avatar" style="background:${avatarColor(mi)}">${initials(m.full_name)}</div>`
+        ).join('');
+        return `
+        <div class="group-item-card" onclick="openGroup(${i})">
+          <div class="gic-header">
+            <div><div class="gic-title">${esc(g.group_code)}</div><div class="gic-section">Section: ${esc(g.section_code)}</div></div>
+            <span class="gic-status ${statusCls}"><i class="fas fa-circle" style="font-size:6px;margin-right:4px;"></i> ${statusLabel}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="gic-domain-badge">${esc(g.domain_name?.substring(0,3) || 'CV')}</span>
+            <span class="gic-domain-name"><i class="fas fa-graduation-cap" style="margin-right:4px;"></i> Supervisor: ${esc(g.supervisor_name)}</span>
+          </div>
+          <div style="display:flex;align-items:center;">
+            <div class="gic-avatars">${avatars}</div>
+            <span class="gic-members-label">${g.member_count} members</span>
+          </div>
+          <div class="gic-stats">
+            <div class="gic-stat"><span class="gic-stat-val">${g.submitted_count||0}</span><span class="gic-stat-lbl">Submitted</span></div>
+            <div class="gic-stat"><span class="gic-stat-val">${g.approved_count||0}</span><span class="gic-stat-lbl">Approved</span></div>
+          </div>
+          <div>
+            <div class="gic-progress-label"><span>Overall Progress</span><span>${progress}%</span></div>
+            <div class="gic-progress-bar"><div class="gic-progress-fill" style="width:${progress}%"></div></div>
+          </div>
+          <div class="gic-view-link">View Group <i class="fas fa-chevron-right"></i></div>
+        </div>`;
+      }).join('');
+    }
+
+    function openGroup(idx) {
+      NAV.group = NAV.section.groups[idx];
+      renderGroupDetail();
+      showView('viewGroupDetail');
+    }
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // LAYER 4: GROUP DETAIL
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    function renderGroupDetail() {
+      const g = NAV.group;
+      const s = NAV.stage;
+      const sec = NAV.section;
+
+      // Breadcrumb
+      document.getElementById('detailBreadcrumb').innerHTML = `
+        <a href="#" onclick="showView('viewStages');return false;">Course Teacher</a><span class="sep">/</span>
+        <a href="#" onclick="showView('viewStages');return false;">My Groups</a><span class="sep">/</span>
+        <a href="#" onclick="showView('viewSections');return false;">${s.stage_name}</a><span class="sep">/</span>
+        <a href="#" onclick="showView('viewGroups');return false;">Section ${sec.section_code.replace('CSE-','')}</a><span class="sep">/</span>
+        <span class="cur">${esc(g.group_code)}</span>`;
+
+      // Title + meta
+      document.getElementById('detailTitle').textContent = g.group_code;
+      const statusCls = g.color_status==='green'?'approved':g.color_status==='yellow'?'pending':'overdue';
+      const statusLabel = g.color_status==='green'?'Approved':g.color_status==='yellow'?'Pending':'Overdue';
+      document.getElementById('detailMeta').innerHTML = `
+        <span class="gic-domain-badge">${esc(g.domain_name?.substring(0,3)||'CV')}</span>
+        <span style="font-size:0.85rem;color:#94a3b8;">Section: ${esc(g.section_code)}</span>
+        <span style="font-size:0.85rem;color:#94a3b8;"><i class="fas fa-graduation-cap" style="margin-right:4px;"></i> Supervisor: ${esc(g.supervisor_name)}</span>
+        <span class="gic-status ${statusCls}" style="font-size:0.75rem;"><i class="fas fa-circle" style="font-size:6px;margin-right:4px;"></i> ${statusLabel}</span>`;
+
+      // Members
+      document.getElementById('detailMemberCount').textContent = g.member_count;
+      const ml = document.getElementById('detailMembersList');
+      ml.innerHTML = (g.members||[]).map((m, i) => `
+        <div class="gd-member-item">
+          <div class="gd-m-avatar" style="background:${avatarColor(i)}">${initials(m.full_name)}</div>
+          <div class="gd-m-info">
+            <div class="gd-m-name">${esc(m.full_name)}</div>
+            <div class="gd-m-id">${esc(m.university_id)}</div>
+            <div class="gd-m-email">${esc(m.email||'')}</div>
+          </div>
+          <span class="gd-m-badge member">Member</span>
+        </div>`).join('');
+
+      // Reset tabs
+      switchDetailTab('weekly');
+      loadWeeklyReports(g.group_id);
+      loadTasks(g.group_id);
+    }
+
+    function switchDetailTab(tab) {
+      document.querySelectorAll('.gd-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      document.getElementById('panelWeekly').classList.toggle('active', tab === 'weekly');
+      document.getElementById('panelTasks').classList.toggle('active', tab === 'tasks');
+    }
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // WEEKLY REPORTS TAB
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    async function loadWeeklyReports(groupId) {
+      const panel = document.getElementById('panelWeekly');
+      panel.innerHTML = '<div style="text-align:center;color:#64748b;padding:30px;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+      try {
+        const res = await apiFetch(`/api/teacher/groups/${groupId}/weekly-summary`);
+        const totalWeeks = 12;
+        const weekMap = {};
+        (res.weeks||[]).forEach(w => { weekMap[w.week_no] = w; });
+
+        // Legend
+        let html = `<div class="week-legend">
+          <span><span class="wl-dot all-approved"></span> All Approved</span>
+          <span><span class="wl-dot" style="background:#f59e0b;"></span> Submitted</span>
+          <span><span class="wl-dot" style="background:#f59e0b;"></span> Pending</span>
+          <span><span class="wl-dot none"></span> No Submission</span>
+        </div><div class="week-grid">`;
+
+        for (let i = 1; i <= totalWeeks; i++) {
+          const w = weekMap[i];
+          const total = res.total_members || 4;
+          if (w) {
+            const allApproved = w.approved_count >= total;
+            const cardClass = allApproved ? 'all-approved' : '';
+            const dotClass = allApproved ? 'green' : 'gray';
+            const numClass = allApproved ? 'all-approved' : '';
+            html += `<div class="week-card ${cardClass}" onclick="openWeekDetail(${NAV.group.group_id}, ${i})">
+              <div class="wk-label">WEEK</div>
+              <div class="wk-num ${numClass}">${i}</div>
+              <div class="wk-stats">${w.approved_count}/${total}</div>
+              <div class="wk-dot ${dotClass}"></div>
+            </div>`;
+          } else {
+            html += `<div class="week-card no-sub">
+              <div class="wk-label">WEEK</div>
+              <div class="wk-num">${i}</div>
+              <div class="wk-stats">0/${total}</div>
+              <div class="wk-dot gray"></div>
+            </div>`;
+          }
+        }
+        html += '</div>';
+        panel.innerHTML = html;
+      } catch(e) {
+        panel.innerHTML = '<div style="color:#ef4444;padding:20px;">Failed to load reports.</div>';
+      }
+    }
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ASSIGN TASKS TAB
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    async function loadTasks(groupId) {
+      const panel = document.getElementById('panelTasks');
+      const g = NAV.group;
+      panel.innerHTML = `
+        <div class="at-header">
+          <div class="at-icon"><i class="fas fa-plus"></i></div>
+          <div>
+            <div class="at-title">Assign New Task</div>
+            <div class="at-sub">${esc(g.group_code)} Â· ${g.stage_name} Â· ${g.member_count} members</div>
+          </div>
+        </div>
+        <form id="taskForm" onsubmit="submitTask(event, ${groupId})">
+          <div class="at-field">
+            <label class="at-label">Task Title *</label>
+            <input class="at-input" name="title" placeholder="e.g. Complete Literature Review for Chapter 2" required>
+          </div>
+          <div class="at-field">
+            <label class="at-label">Description</label>
+            <textarea class="at-input at-textarea" name="description" placeholder="Describe the task, deliverables, references, and any specific instructions for the group..."></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="at-field">
+              <label class="at-label">Week Number *</label>
+              <input class="at-input" type="number" name="week_no" min="1" max="12" placeholder="Week" required>
+            </div>
+            <div class="at-field">
+              <label class="at-label">Due Date</label>
+              <input class="at-input" type="date" name="due_date">
+            </div>
+          </div>
+          <div class="at-actions">
+            <label class="btn-attach"><i class="fas fa-paperclip"></i> Attach PDF / Doc<input type="file" name="task_file" accept=".pdf,.doc,.docx" style="display:none;"></label>
+            <button type="submit" class="btn-assign"><i class="fas fa-plus"></i> Assign Task</button>
+          </div>
+        </form>`;
+    }
+
+    async function submitTask(e, groupId) {
+      e.preventDefault();
+      const form = e.target;
+      const fd = new FormData(form);
+      try {
+        const resp = await fetch(`/api/teacher/groups/${groupId}/tasks`, { method:'POST', body:fd, credentials:'same-origin' });
+        const data = await resp.json();
+        if (data.success) {
+          if (typeof showToast === 'function') showToast('Task assigned successfully!', 'success');
+          form.reset();
+        } else {
+          if (typeof showToast === 'function') showToast(data.error || 'Failed', 'error');
+        }
+      } catch(err) {
+        if (typeof showToast === 'function') showToast('Network error', 'error');
+      }
+    }
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // WEEK DETAIL VIEW (VIEW 5)
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    async function openWeekDetail(groupId, weekNo) {
+      showView('viewWeekDetail');
+      const g = NAV.group;
+      document.getElementById('weekDetailTitle').textContent = `Week ${weekNo} Reports`;
+      document.getElementById('weekDetailBreadcrumb').innerHTML = `
+        <a href="#" onclick="showView('viewGroupDetail');return false;">${esc(g.group_code)}</a>
+        <span class="sep">/</span>
+        <span class="cur">Week ${weekNo}</span>`;
+
+      // Stat cards loading
+      document.getElementById('weekStatCards').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#64748b;padding:20px;"><i class="fas fa-spinner fa-spin"></i></div>';
+      document.getElementById('weekStudentReports').innerHTML = '';
+      document.getElementById('weekSuccessBanner').style.display = 'none';
+
+      try {
+        const res = await apiFetch(`/api/teacher/groups/${groupId}/week/${weekNo}/reports`);
+
+        // Stat cards
+        document.getElementById('weekStatCards').innerHTML = `
+          <div class="wr-stat"><span class="wr-stat-val">${res.total_members}</span><span class="wr-stat-lbl"><i class="fas fa-users" style="margin-right:4px;"></i> Total Members</span></div>
+          <div class="wr-stat"><span class="wr-stat-val">${res.submitted}</span><span class="wr-stat-lbl"><i class="fas fa-check-circle" style="color:#10b981;margin-right:4px;"></i> Submitted</span></div>
+          <div class="wr-stat"><span class="wr-stat-val">${res.approved}</span><span class="wr-stat-lbl"><i class="fas fa-check-double" style="color:#10b981;margin-right:4px;"></i> Approved</span></div>
+          <div class="wr-stat"><span class="wr-stat-val">${res.missing}</span><span class="wr-stat-lbl"><i class="fas fa-exclamation-circle" style="color:#ef4444;margin-right:4px;"></i> Missing</span></div>`;
+
+        // Success banner
+        if (res.approved >= res.total_members && res.total_members > 0) {
+          const banner = document.getElementById('weekSuccessBanner');
+          banner.innerHTML = `<i class="fas fa-check-circle"></i> All reports approved for Week ${weekNo}!`;
+          banner.style.display = 'flex';
+        }
+
+        // Student reports
+        const rc = document.getElementById('weekStudentReports');
+        if (!res.reports.length) {
+          rc.innerHTML = '<div style="text-align:center;color:#64748b;padding:40px;">No reports submitted for this week yet.</div>';
+        } else {
+          rc.innerHTML = res.reports.map((r, i) => {
+            const statusBadge = r.supervisor_status === 'APPROVED'
+              ? '<span class="wr-s-status approved"><i class="fas fa-check-circle" style="margin-right:4px;"></i> Approved</span>'
+              : '<span class="wr-s-status" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-clock" style="margin-right:4px;"></i> Pending</span>';
+            const submitted = r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”';
+            const signed = r.supervisor_signed_at ? new Date(r.supervisor_signed_at).toLocaleString() : 'Not signed yet';
+            return `
+            <div class="wr-student-card">
+              <div class="wr-student-header">
+                <div class="wr-s-avatar" style="background:${avatarColor(i)}">${initials(r.student_name)}</div>
+                <div>
+                  <div class="wr-s-name">${esc(r.student_name)} <span class="gd-m-badge member" style="margin-left:6px;">Member</span></div>
+                  <div class="wr-s-id" style="margin-top:2px;">Submitted<br>${submitted}</div>
+                </div>
+                <div style="text-align:right;margin-left:auto;">
+                  <div style="font-size:0.75rem;color:#64748b;">Supervisor Signed</div>
+                  <div style="font-size:0.75rem;color:#94a3b8;">${signed}</div>
+                </div>
+                ${statusBadge}
+              </div>
+              ${r.supervisor_feedback ? `<div class="wr-notes"><strong>Feedback:</strong> ${esc(r.supervisor_feedback)}</div>` : ''}
+              <div class="wr-actions">
+                ${r.report_file_path ? `<button class="btn-view-report" onclick="openPdfViewer('${r.report_file_path}','${esc(r.report_title)}')"><i class="fas fa-file-pdf"></i> View Report</button>` : ''}
+              </div>
+            </div>`;
+          }).join('');
+        }
+      } catch(e) {
+        document.getElementById('weekStatCards').innerHTML = '<div style="grid-column:1/-1;color:#ef4444;padding:20px;">Failed to load week data.</div>';
+      }
+    }
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // PDF VIEWER
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    function openPdfViewer(url, title) {
+      document.getElementById('pdfViewerTitle').textContent = title || 'Report';
+      document.getElementById('pdfViewerFrame').src = url;
+      document.getElementById('pdfOverlay').classList.add('active');
+    }
+    function closePdfViewer() {
+      document.getElementById('pdfOverlay').classList.remove('active');
+      document.getElementById('pdfViewerFrame').src = '';
+    }
+  </script>
+</body>
+</html>

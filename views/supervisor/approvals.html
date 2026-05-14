@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pending Approvals — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #0d0f1e;
+      --card-bg: #161929;
+      --sidebar-bg: #12152a;
+      --border-color: #1e2240;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --accent-color: #6c5ce7;
+    }
+
+    body { background: var(--bg-dark) !important; color: var(--text-primary) !important; font-family: 'Inter', sans-serif; margin:0; }
+    .main-content { background: var(--bg-dark) !important; min-height: 100vh; margin-left: 230px !important; width: calc(100% - 230px) !important; padding: 0; transition: all 0.3s; }
+    .top-header { background: var(--bg-dark) !important; border-bottom: 1px solid var(--border-color) !important; padding: 0 24px; height: 60px; display:flex; align-items:center; justify-content:space-between; }
+    .card { background: var(--card-bg) !important; border: 1px solid var(--border-color) !important; border-radius: 16px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important; overflow: hidden; }
+    .card-body { background: var(--card-bg) !important; color: var(--text-primary) !important; }
+    select, .form-control { background: var(--bg-dark) !important; border: 1px solid var(--border-color) !important; color: var(--text-primary) !important; border-radius: 8px !important; }
+    select option { background: var(--card-bg); color: var(--text-primary); }
+    .page-content { padding: 32px 40px; max-width: 100% !important; margin: 0; }
+
+    .sidebar {
+      background: var(--sidebar-bg) !important; border-right: 1px solid var(--border-color) !important;
+      position:fixed !important; left:0; top:0; bottom:0; width: 230px !important; z-index:100;
+      transition: all 0.25s ease; display:flex; flex-direction:column;
+    }
+    .sidebar-header { padding: 16px !important; border-bottom: 1px solid var(--border-color); }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand-icon { width:32px; height:32px; background:linear-gradient(135deg,var(--accent-color),#a29bfe); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; }
+    .brand-text h3 { margin:0; font-size:0.95rem; color:#fff; }
+    .brand-text p { margin:0; font-size:0.65rem; color:var(--text-secondary); }
+
+    .sidebar-nav { padding: 8px 10px !important; flex:1; overflow-y:auto; }
+    .sidebar-nav .nav-label { padding: 12px 10px 6px !important; font-size: 0.62rem !important; color: #475569; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+    .sidebar-nav a {
+      padding: 10px 12px !important; margin-bottom:2px !important; font-size: 0.83rem !important;
+      color: var(--text-secondary); text-decoration:none; display:flex !important; align-items:center !important; gap:10px !important; border-radius:8px !important; transition:all 0.2s;
+    }
+    .sidebar-nav a:hover { background:rgba(255,255,255,0.03); color:#fff; }
+    .sidebar-nav a.active { background: #1a2744 !important; color: #fff !important; font-weight:600; }
+    .sidebar-nav a .nav-icon { font-size: 16px !important; width: 18px !important; flex-shrink: 0 !important; text-align:center; }
+
+    .sidebar-footer { padding: 12px 14px !important; border-top: 1px solid var(--border-color); }
+    .sidebar-user { display:flex; align-items:center; gap:10px; }
+    .user-avatar { width:32px; height:32px; border-radius:8px; background:var(--border-color); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:#fff; }
+    .user-info h4 { margin:0; font-size:0.8rem; color:#fff; }
+    .user-info p { margin:0; font-size:0.65rem; color:var(--text-secondary); }
+
+    .sidebar-collapsed { width: 64px !important; }
+    .sidebar-collapsed .brand-text, .sidebar-collapsed .nav-label, .sidebar-collapsed .user-info, .sidebar-collapsed a span:last-child { display: none !important; }
+    .sidebar-collapsed .nav-icon { margin-right: 0 !important; font-size: 1.2rem; }
+    .sidebar-collapsed .sidebar-nav a { justify-content: center; padding: 12px; }
+    .sidebar-collapsed + .main-content { margin-left: 64px !important; width: calc(100% - 64px) !important; }
+
+    .collapse-btn {
+      position: absolute; right: -12px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px;
+      background: var(--border-color); color: var(--text-secondary); border: 1px solid #2d3354; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      z-index: 100; transition: all 0.2s;
+    }
+    .collapse-btn:hover { background: #2d3354; color:#fff; }
+
+    .page-title h1 { font-size: 2rem; font-weight: 800; color:#fff; margin-bottom: 8px; }
+    .page-title p { color: var(--text-secondary); font-size: 1rem; margin-bottom: 32px; }
+
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: rgba(30, 34, 64, 0.5); color: var(--text-secondary); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    td { padding: 18px 20px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    .badge { padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 6px; }
+    .badge-blue { background: rgba(37, 99, 235, 0.15); color: #60a5fa; border: 1px solid rgba(37, 99, 235, 0.2); }
+    .badge-purple { background: rgba(124, 58, 237, 0.15); color: #a78bfa; border: 1px solid rgba(124, 58, 237, 0.2); }
+    .badge-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .badge-red { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .badge-yellow { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
+
+    .btn-review { background: var(--accent-color); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-review:hover { opacity:0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3); }
+
+    .pdf-overlay { position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:2000;display:none;align-items:center;justify-content:center; backdrop-filter: blur(8px); }
+    .pdf-overlay.active { display:flex; }
+    .pdf-viewer { width:90%;height:92%;background:#1e1e1e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column; box-shadow:0 20px 50px rgba(0,0,0,0.5); border: 1px solid #30363d; }
+    .pdf-viewer.fullscreen { width:100%; height:100%; border-radius:0; border: none; }
+    .pdf-viewer-header { padding:14px 24px;background:#0d1117;color:#fff;display:flex;align-items:center;justify-content:space-between; border-bottom:1px solid #30363d; }
+    
+    .modal { background: var(--card-bg) !important; border: 1px solid var(--border-color) !important; color: var(--text-primary) !important; border-radius: 20px !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5) !important; }
+    .modal-header { border-bottom: 1px solid var(--border-color) !important; padding: 20px 24px !important; }
+    .modal-footer { border-top: 1px solid var(--border-color) !important; padding: 20px 24px !important; }
+    .form-control { background: var(--bg-dark) !important; border: 1px solid var(--border-color) !important; color: var(--text-primary) !important; border-radius: 10px !important; padding: 12px 16px !important; }
+    .form-control:focus { border-color: var(--accent-color) !important; box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1) !important; }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: #1e2240; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2d3354; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <button class="collapse-btn" onclick="toggleSidebar()"><i class="fas fa-chevron-left" id="collapseIcon"></i></button>
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Supervisor Panel</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/supervisor/dashboard"><span class="nav-icon"><i class="fas fa-th-large"></i></span> Dashboard</a>
+        <a href="/supervisor/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+        <a href="/supervisor/approvals" class="active"><span class="nav-icon"><i class="fas fa-clipboard-check"></i></span> Pending Approvals <span class="badge badge-yellow" id="pendingBadgeSide" style="margin-left:auto;display:none"></span></a>
+        <a href="/supervisor/student-inbox"><span class="nav-icon"><i class="fas fa-inbox"></i></span> Student Messages <span id="sidebarBadge" class="badge" style="display:none;margin-left:auto;font-size:0.65rem;padding:2px 6px;background:#ef4444;color:#fff;border-radius:10px;">0</span></a>
+        <a href="/supervisor/chat"><span class="nav-icon"><i class="fas fa-comments"></i></span> Chat with Teachers</a>
+        <div class="nav-label" style="margin-top:20px;">Account</div>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+        <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>
+        <a href="/supervisor/settings" style="margin-top:8px"><span class="nav-icon"><i class="fas fa-cog"></i></span> Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">SV</div>
+          <div class="user-info"><h4 id="userName">Supervisor</h4><p>Supervisor</p></div>
+          <button onclick="logout()" style="background:none;border:none;cursor:pointer;color:#475569;margin-left:auto;"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Supervisor / <span>Pending Approvals</span></div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-title">
+          <h1>Pending Approvals</h1>
+          <p>Review and manage student weekly progress reports</p>
+        </div>
+
+        <div class="card" style="margin-bottom:24px;">
+          <div class="card-body" style="padding:16px 24px;">
+            <div style="display:flex;gap:12px;align-items:center;">
+              <span style="font-size:0.85rem; color:var(--text-secondary); font-weight:600;">FILTER STATUS:</span>
+              <select class="form-control" id="statusFilter" style="max-width:200px; padding:8px 12px !important;" onchange="loadReports()">
+                <option value="">All Reports</option>
+                <option value="PENDING" selected>Pending Review</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th><th>Group</th><th>Stage</th><th>Week</th>
+                  <th>Summary</th><th>Status</th><th>Submitted</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="reportsBody">
+                <tr><td colspan="8" style="text-align:center;color:var(--text-secondary);padding:60px;"><i class="fas fa-spinner fa-spin" style="font-size:2rem; margin-bottom:12px; display:block; opacity:0.3;"></i>Loading reports...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div class="modal-overlay" id="reviewModal">
+    <div class="modal" style="max-width:650px; width: 90%;">
+      <div class="modal-header">
+        <h3 style="display:flex;align-items:center;gap:12px;"><i class="fas fa-gavel" style="color:var(--accent-color);"></i> Review Report</h3>
+        <button class="modal-close" onclick="closeReview()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:24px;">
+        <div id="reportDetail" style="margin-bottom:24px;"></div>
+        <div id="rejectSection" style="display:none; animation: fadeIn 0.3s ease;">
+          <div class="form-group">
+            <label style="color:#f87171;font-weight:700;display:block;margin-bottom:8px;">❌ REJECTION FEEDBACK</label>
+            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:12px;">Please specify the required changes so the student can resubmit.</p>
+            <textarea class="form-control" id="feedbackText" rows="4" placeholder="e.g. Please elaborate on the methodology section..."></textarea>
+          </div>
+        </div>
+        <input type="hidden" id="reviewReportId">
+      </div>
+      <div class="modal-footer" style="background: rgba(0,0,0,0.1);">
+        <button class="btn btn-outline" onclick="closeReview()" style="border-color:var(--border-color); color:var(--text-primary);">Cancel</button>
+        <div style="margin-left:auto; display:flex; gap:12px;">
+          <button class="btn btn-danger" id="rejectBtn" onclick="showRejectForm()" style="background:#ef4444; border:none; padding:10px 20px; border-radius:10px;">
+            <i class="fas fa-times"></i> Reject
+          </button>
+          <button class="btn btn-success" onclick="submitReview('APPROVED')" style="background:#10b981; border:none; padding:10px 20px; border-radius:10px;">
+            <i class="fas fa-check"></i> Approve Report
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+
+  <!-- PDF Viewer -->
+  <div class="pdf-overlay" id="pdfOverlay">
+    <div class="pdf-viewer" id="pdfViewer">
+      <div class="pdf-viewer-header">
+        <h4 id="pdfTitle" style="margin:0; font-weight:700; display:flex; align-items:center; gap:10px;"><i class="fas fa-file-pdf" style="color:#ef4444;"></i> Document</h4>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <a id="pdfDownload" href="#" download class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:#fff;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:0.85rem;font-weight:600;">
+            <i class="fas fa-download"></i> Download
+          </a>
+          <button onclick="togglePdfFullscreen()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Toggle Fullscreen">
+            <i class="fas fa-expand" id="pdfFullscreenIcon"></i>
+          </button>
+          <button onclick="closePdf()" style="background:#ef4444;border:none;color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;">&times;</button>
+        </div>
+      </div>
+      <iframe id="pdfFrame" src=""></iframe>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // ── Sidebar Collapse Persistence ──
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.sidebar');
+      const icon = document.getElementById('collapseIcon');
+      const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('supervisor_sidebar_collapsed', isCollapsed);
+      if (isCollapsed) {
+        icon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+      } else {
+        icon.classList.replace('fa-chevron-right', 'fa-chevron-left');
+      }
+    }
+
+    // Apply sidebar state on load
+    (function() {
+      const isCollapsed = localStorage.getItem('supervisor_sidebar_collapsed') === 'true';
+      if (isCollapsed) {
+        document.querySelector('.sidebar').classList.add('sidebar-collapsed');
+        const icon = document.getElementById('collapseIcon');
+        if (icon) icon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+      }
+    })();
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      }
+      loadReports();
+      
+      // Load unread badge
+      if (typeof updateNotificationBadge === 'function') updateNotificationBadge();
+    });
+
+    async function loadReports() {
+      try {
+        const status = document.getElementById('statusFilter').value;
+        let url = '/api/supervisor/pending-reports';
+        if (status) url += `?status=${status}`;
+        const data = await apiFetch(url);
+        renderReports(data.reports);
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    function renderReports(reports) {
+      const tbody = document.getElementById('reportsBody');
+      if (reports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:40px;">🎉 No reports found</td></tr>';
+        return;
+      }
+      tbody.innerHTML = reports.map(r => `
+        <tr>
+          <td><strong>${escapeHtml(r.student_name)}</strong><br><span class="text-sm text-muted">${escapeHtml(r.student_uid)}</span></td>
+          <td><span class="badge badge-blue">${escapeHtml(r.group_code)}</span></td>
+          <td><span class="badge badge-purple">${escapeHtml(r.stage_name)}</span></td>
+          <td><strong>Week ${r.week_no}</strong></td>
+          <td style="max-width:200px;font-size:0.85rem;">${escapeHtml(r.progress_summary || '—').substring(0,80)}${(r.progress_summary||'').length>80?'...':''}</td>
+          <td>${getStatusBadge(r.supervisor_status)}</td>
+          <td style="font-size:0.8rem;">${formatDate(r.submitted_at)}</td>
+          <td>
+            ${r.report_file_path ? `<button class="btn btn-outline btn-sm" onclick='viewPdf("${r.report_file_path}","Week ${r.week_no}")'><i class="fas fa-file-pdf"></i></button>` : ''}
+            ${r.supervisor_status === 'PENDING' ? `
+              <button class="btn btn-primary btn-sm" onclick='openReview(${JSON.stringify(r)})'>
+                <i class="fas fa-gavel"></i> Review
+              </button>` : `<span class="text-sm text-muted">${r.supervisor_feedback ? '💬' : '—'}</span>`}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openReview(report) {
+      document.getElementById('reviewReportId').value = report.report_id;
+      document.getElementById('feedbackText').value = '';
+      document.getElementById('rejectSection').style.display = 'none';
+      document.getElementById('rejectBtn').innerHTML = '<i class="fas fa-times"></i> Reject';
+      document.getElementById('rejectBtn').onclick = showRejectForm;
+      document.getElementById('reportDetail').innerHTML = `
+        <div style="background:#0d0f1e; border:1px solid #2d3354; border-radius:8px; padding:16px; color:#e2e8f0;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div><span style="color:#64748b; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Student:</span><br><strong>${escapeHtml(report.student_name)}</strong></div>
+            <div><span style="color:#64748b; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Group:</span><br><strong>${escapeHtml(report.group_code)}</strong></div>
+            <div><span style="color:#64748b; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Week:</span><br><strong>Week ${report.week_no}</strong></div>
+            <div><span style="color:#64748b; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Submitted:</span><br><strong>${formatDate(report.submitted_at)}</strong></div>
+          </div>
+          <div><span style="color:#64748b; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Summary:</span><p style="margin-top:4px;line-height:1.6; color:#94a3b8;">${escapeHtml(report.progress_summary || 'No summary')}</p></div>
+          ${report.blockers ? `<div style="margin-top:12px;padding:10px;background:#1f1205;border-radius:6px;border:1px solid #451a03;"><strong style="color:#fdba74;">⚠️ Blockers:</strong> <span style="color:#94a3b8;">${escapeHtml(report.blockers)}</span></div>` : ''}
+          ${report.report_file_path ? `<div style="margin-top:12px;"><button class="btn btn-outline btn-sm" onclick="viewPdf('${report.report_file_path}','Report PDF')" style="border-color:#2d3354; color:#e2e8f0;"><i class="fas fa-file-pdf"></i> View Report in Browser</button></div>` : ''}
+        </div>
+      `;
+      document.getElementById('reviewModal').classList.add('active');
+    }
+
+    function showRejectForm() {
+      document.getElementById('rejectSection').style.display = 'block';
+      document.getElementById('rejectBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Send Rejection';
+      document.getElementById('rejectBtn').onclick = () => submitReview('REJECTED');
+      document.getElementById('feedbackText').focus();
+    }
+
+    function closeReview() { document.getElementById('reviewModal').classList.remove('active'); }
+
+    async function submitReview(status) {
+      const reportId = document.getElementById('reviewReportId').value;
+      const feedback = document.getElementById('feedbackText').value;
+
+      if (status === 'REJECTED' && !feedback) {
+        showToast('Please explain why you are rejecting this report', 'warning');
+        return;
+      }
+
+      try {
+        showLoading();
+        await apiFetch(`/api/supervisor/reports/${reportId}/review`, {
+          method: 'POST', body: { status, feedback }
+        });
+        showToast(`Report ${status.toLowerCase()} successfully!`, 'success');
+        closeReview();
+        loadReports();
+      } catch (err) { showToast(err.message, 'error'); }
+      finally { hideLoading(); }
+    }
+
+    function viewPdf(path, name) {
+      document.getElementById('pdfTitle').textContent = name;
+      document.getElementById('pdfFrame').src = path;
+      document.getElementById('pdfDownload').href = path;
+      document.getElementById('pdfOverlay').classList.add('active');
+    }
+    function closePdf() {
+      document.getElementById('pdfOverlay').classList.remove('active');
+      document.getElementById('pdfFrame').src = '';
+      
+      // Reset fullscreen
+      const viewer = document.getElementById('pdfViewer');
+      const icon = document.getElementById('pdfFullscreenIcon');
+      viewer.classList.remove('fullscreen');
+      icon.classList.remove('fa-compress');
+      icon.classList.add('fa-expand');
+    }
+    function togglePdfFullscreen() {
+      const viewer = document.getElementById('pdfViewer');
+      const icon = document.getElementById('pdfFullscreenIcon');
+      viewer.classList.toggle('fullscreen');
+      if (viewer.classList.contains('fullscreen')) {
+        icon.classList.remove('fa-expand');
+        icon.classList.add('fa-compress');
+      } else {
+        icon.classList.remove('fa-compress');
+        icon.classList.add('fa-expand');
+      }
+    }
+  </script>
+</body>
+</html>

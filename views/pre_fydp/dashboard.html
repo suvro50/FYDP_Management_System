@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pre-FYDP Team Building Dashboard</title>
+  <meta name="description" content="Find teammates and build your FYDP team before registration">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/pre-fydp.css">
+</head>
+<body>
+<div class="pf-layout">
+
+  <!-- ── SIDEBAR ──────────────────────────────────────────────────────── -->
+  <aside class="pf-sidebar" id="sidebar">
+    <div class="pf-sidebar-logo">
+      <div class="pf-logo-icon"><i class="fas fa-atom"></i></div>
+      <div class="pf-logo-text">
+        <h2>UniHub</h2>
+        <span>Pre-FYDP Portal</span>
+      </div>
+    </div>
+
+    <nav class="pf-nav">
+      <a href="/pre-fydp/dashboard" class="pf-nav-item active">
+        <i class="fas fa-th-large"></i> Dashboard
+      </a>
+      <a href="/pre-fydp/find-teammates" class="pf-nav-item">
+        <i class="fas fa-user-friends"></i> Find Teammates
+      </a>
+      <a href="/pre-fydp/my-requests" class="pf-nav-item">
+        <i class="fas fa-envelope"></i> My Requests
+        <span class="pf-nav-badge" id="navBadge" style="display:none">0</span>
+      </a>
+      <a href="/pre-fydp/profile-settings" class="pf-nav-item">
+        <i class="fas fa-cog"></i> Profile Settings
+      </a>
+      <a href="/notifications" class="pf-nav-item">
+        <i class="fas fa-bell"></i> Notifications
+      </a>
+    </nav>
+
+    <div class="pf-sidebar-user">
+      <div class="pf-user-avatar" id="userAvatar">YK</div>
+      <div class="pf-user-info">
+        <h4 id="userName">Yusuf Khan</h4>
+        <span id="userDept">CS — Senior</span>
+      </div>
+    </div>
+
+    <div class="pf-signout">
+      <button class="pf-signout-btn" onclick="signOut()">
+        <i class="fas fa-sign-out-alt"></i> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ─────────────────────────────────────────────────── -->
+  <main class="pf-main">
+
+    <!-- Header -->
+    <div class="pf-header">
+      <div class="pf-header-left">
+        <div class="pf-trimester"><i class="fas fa-snowflake"></i> Pre-FYDP · Spring 2026</div>
+        <h1>Team Building<br>Dashboard</h1>
+      </div>
+      <div class="pf-header-actions">
+        <div class="pf-search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search groups or leads..." id="searchInput">
+        </div>
+        <div class="pf-notif-wrap">
+          <button class="pf-icon-btn" title="Notifications" onclick="toggleNotifDropdown()" id="notifBell">
+            <i class="fas fa-bell"></i>
+            <span class="pf-notif-dot" id="notifDot" style="display:none"></span>
+          </button>
+        </div>
+        <button class="pf-icon-btn" title="Dark Mode" onclick="toggleDarkMode()" id="darkModeToggle"><i class="fas fa-moon"></i></button>
+        <button class="pf-create-btn" onclick="openCreateModal()">
+          <i class="fas fa-plus"></i> Create Group
+        </button>
+      </div>
+    </div>
+
+    <!-- Notification Dropdown Portal (outside header flex) -->
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-dropdown-header">
+        <h4>Notifications</h4>
+        <button onclick="markAllNotifRead()">Mark All Read</button>
+      </div>
+      <div class="notif-dropdown-body" id="notifDropdownBody">
+        <div style="padding:20px;text-align:center;color:var(--pf-text-secondary);">
+          <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+          Loading...
+        </div>
+      </div>
+      <div class="notif-dropdown-footer">
+        <a href="/notifications">View All Notifications</a>
+      </div>
+    </div>
+
+    <!-- Smart Filters -->
+    <div class="pf-filters">
+      <label>Smart Filters:</label>
+      <select class="pf-filter-select" id="filterDomain"><option>All Domains</option></select>
+      <select class="pf-filter-select" id="filterSkill">
+        <option>All Skills</option>
+        <option>Python</option><option>React</option><option>Node.js</option>
+        <option>MySQL</option><option>TensorFlow</option><option>Backend</option>
+        <option>Frontend</option><option>Docker</option><option>NLP</option>
+      </select>
+      <span class="pf-filter-count" id="filterCount">0 groups match</span>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="pf-stats">
+      <div class="pf-stat-card">
+        <div>
+          <div class="pf-stat-label">Open Groups</div>
+          <div class="pf-stat-value" id="statOpen">—</div>
+          <div class="pf-stat-sub" id="statDomains">Loading...</div>
+        </div>
+        <div class="pf-stat-icon blue"><i class="fas fa-users"></i></div>
+      </div>
+      <div class="pf-stat-card">
+        <div>
+          <div class="pf-stat-label">Pending Requests</div>
+          <div class="pf-stat-value" id="statPending">—</div>
+          <div class="pf-stat-sub">Awaiting response</div>
+        </div>
+        <div class="pf-stat-icon orange"><i class="fas fa-clock"></i></div>
+      </div>
+      <div class="pf-stat-card">
+        <div>
+          <div class="pf-stat-label">Incoming</div>
+          <div class="pf-stat-value" id="statIncoming">—</div>
+          <div class="pf-stat-sub">Need your decision</div>
+        </div>
+        <div class="pf-stat-icon green"><i class="fas fa-envelope-open"></i></div>
+      </div>
+      <div class="pf-stat-card" onclick="window.location='/pre-fydp/profile-settings'">
+        <div>
+          <div class="pf-stat-label">Profile Strength</div>
+          <div class="pf-stat-value" id="statProfile">—</div>
+          <div class="pf-stat-sub">Click to improve</div>
+        </div>
+        <div class="pf-stat-icon purple"><i class="fas fa-user-shield"></i></div>
+      </div>
+    </div>
+
+    <!-- Recommended Groups -->
+    <div class="pf-section-title"><i class="fas fa-fire" style="color:#ef4444"></i> Recommended for You</div>
+    <div class="pf-section-sub">Top matches based on your domain (AI) and skills.</div>
+    <div class="pf-team-grid" id="teamGrid">
+      <div class="pf-empty"><i class="fas fa-spinner fa-spin"></i><h3>Loading groups...</h3></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── CREATE GROUP MODAL ─────────────────────────────────────────────── -->
+<div class="pf-modal-overlay" id="createModal">
+  <div class="pf-modal" style="max-width:540px">
+    <div class="pf-modal-header">
+      <div>
+        <h2>Create a New Group</h2>
+        <p>Add your group info, list current members, and tell others how many more you need.</p>
+      </div>
+      <button class="pf-modal-close" onclick="closeCreateModal()">&times;</button>
+    </div>
+    <form id="createGroupForm">
+      <div class="pf-form-row">
+        <div class="pf-form-group">
+          <label>Group Name</label>
+          <input type="text" id="cgName" placeholder="e.g. Neural Nexus" required>
+        </div>
+        <div class="pf-form-group">
+          <label>Domain</label>
+          <select id="cgDomain" required>
+            <option value="Software Engineering">Software Engineering</option>
+            <option value="AI">AI</option>
+            <option value="ML">ML</option>
+            <option value="Cybersecurity">Cybersecurity</option>
+            <option value="IoT">IoT</option>
+            <option value="Data Analytics">Data Analytics</option>
+            <option value="NLP">NLP</option>
+            <option value="Mobile Application">Mobile Application</option>
+          </select>
+        </div>
+      </div>
+      <div class="pf-form-group">
+        <label>Required Skills (comma separated)</label>
+        <input type="text" id="cgSkills" placeholder="Backend, MySQL, Node.js">
+      </div>
+      <div class="pf-form-group">
+        <label>Project Description</label>
+        <textarea id="cgDesc" rows="3" placeholder="What is your project about? What kind of teammates are you looking for?"></textarea>
+      </div>
+      <div class="pf-form-row">
+        <div class="pf-form-group">
+          <label>Members Needed</label>
+          <select id="cgMembers" onchange="updateTeamInfo()">
+            <option value="1">1 more member</option>
+            <option value="2" selected>2 more members</option>
+            <option value="3">3 more members</option>
+            <option value="4">4 more members</option>
+          </select>
+        </div>
+        <div class="pf-form-group">
+          <label>GitHub (optional)</label>
+          <input type="text" id="cgGithub" placeholder="github handle or repo">
+        </div>
+      </div>
+
+      <!-- Current Members Section -->
+      <div class="cg-members-section">
+        <div class="cg-members-header">
+          <span class="cg-members-title">Current Members (<span id="cgMemberCount">1</span>/5)</span>
+          <button type="button" class="cg-add-member-btn" onclick="addMemberRow()"><i class="fas fa-plus"></i> Add Member</button>
+        </div>
+        <div id="cgMemberList">
+          <div class="cg-member-row">
+            <input type="text" value="You (Lead)" readonly class="cg-member-name">
+            <input type="text" value="Team Lead" placeholder="Role" class="cg-member-role" readonly>
+          </div>
+        </div>
+        <div class="cg-team-info" id="cgTeamInfo">
+          Final team size will be <strong>3/5</strong> members (1 current + 2 needed). Maximum allowed is 5.
+        </div>
+      </div>
+
+      <div class="cg-form-actions">
+        <button type="button" class="cg-cancel-btn" onclick="closeCreateModal()">Cancel</button>
+        <button type="submit" class="cg-publish-btn"><i class="fas fa-paper-plane"></i> Publish Group</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── WELCOME MODAL ──────────────────────────────────────────────────── -->
+<div class="pf-modal-overlay" id="welcomeModal">
+  <div class="pf-modal" style="max-width:480px">
+    <div class="pf-modal-header">
+      <div>
+        <h2>✨ Welcome to UniHub Pre-FYDP</h2>
+        <p>Form your final-year project team in 3 quick steps.</p>
+      </div>
+      <button class="pf-modal-close" onclick="closeWelcome()">&times;</button>
+    </div>
+    <div class="pf-welcome-step">
+      <div class="pf-welcome-icon blue"><i class="fas fa-search"></i></div>
+      <div><h4>Browse open groups</h4><p>Filter by domain and skills to find a team that fits.</p></div>
+    </div>
+    <div class="pf-welcome-step">
+      <div class="pf-welcome-icon green"><i class="fas fa-user-plus"></i></div>
+      <div><h4>Or recruit solo students</h4><p>Invite individuals whose skills complement yours.</p></div>
+    </div>
+    <div class="pf-welcome-step">
+      <div class="pf-welcome-icon purple"><i class="fas fa-plus-circle"></i></div>
+      <div><h4>Create your own group</h4><p>List members, describe your project, and others will join.</p></div>
+    </div>
+    <button class="pf-submit-btn" onclick="closeWelcome()" style="margin-top:16px">Get started</button>
+  </div>
+</div>
+
+<!-- ── GROUP DETAIL MODAL ──────────────────────────────────────────────── -->
+<div class="pf-modal-overlay" id="groupDetailModal">
+  <div class="pf-modal" style="max-width:560px">
+    <div class="pf-modal-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="pf-team-avatar" id="gdAvatar" style="width:44px;height:44px;border-radius:12px;font-size:1rem;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0">GN</div>
+        <div>
+          <h2 id="gdName" style="font-size:1.1rem;font-weight:700;margin:0"></h2>
+          <p id="gdLead" style="font-size:0.75rem;color:var(--pf-text-muted);margin:0"></p>
+        </div>
+      </div>
+      <button class="pf-modal-close" onclick="closeGroupDetail()">&times;</button>
+    </div>
+
+    <!-- Tags Row -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <span id="gdDomainTag" class="pf-domain-tag"></span>
+      <span id="gdStatusTag" style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:600"></span>
+    </div>
+
+    <!-- Description -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:0.72rem;font-weight:600;color:var(--pf-text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Project Description</div>
+      <p id="gdDesc" style="font-size:0.82rem;color:var(--pf-text);line-height:1.55;background:var(--pf-bg-light);padding:10px 12px;border-radius:8px;border:1px solid var(--pf-card-border)"></p>
+    </div>
+
+    <!-- Skills -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:0.72rem;font-weight:600;color:var(--pf-text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Required Skills</div>
+      <div id="gdSkills" class="pf-skill-tags"></div>
+    </div>
+
+    <!-- Stats Row -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div style="background:var(--pf-bg-light);border:1px solid var(--pf-card-border);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:1.1rem;font-weight:800;color:var(--pf-primary)" id="gdMemberCount">0</div>
+        <div style="font-size:0.65rem;color:var(--pf-text-muted)">Members</div>
+      </div>
+      <div style="background:var(--pf-bg-light);border:1px solid var(--pf-card-border);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:1.1rem;font-weight:800;color:var(--pf-success)" id="gdOpenSlots">0</div>
+        <div style="font-size:0.65rem;color:var(--pf-text-muted)">Open Slots</div>
+      </div>
+      <div style="background:var(--pf-bg-light);border:1px solid var(--pf-card-border);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:1.1rem;font-weight:800;color:var(--pf-text)" id="gdMaxMembers">5</div>
+        <div style="font-size:0.65rem;color:var(--pf-text-muted)">Max Size</div>
+      </div>
+    </div>
+
+    <!-- Capacity Bar -->
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:4px">
+        <span style="color:var(--pf-text-muted)">Team Capacity</span>
+        <span id="gdCapText" style="font-weight:600;color:var(--pf-text)"></span>
+      </div>
+      <div class="pf-capacity-bar"><div class="pf-capacity-fill" id="gdCapBar" style="width:0%"></div></div>
+    </div>
+
+    <!-- Members List -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:0.72rem;font-weight:600;color:var(--pf-text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Team Members</div>
+      <div id="gdMembersList"></div>
+    </div>
+
+    <!-- GitHub -->
+    <div id="gdGithubRow" style="display:none;margin-bottom:16px">
+      <a id="gdGithubLink" href="#" target="_blank" style="font-size:0.78rem;color:var(--pf-primary);display:flex;align-items:center;gap:6px;text-decoration:none">
+        <i class="fab fa-github"></i> <span id="gdGithubText"></span>
+      </a>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:10px">
+      <button id="gdJoinBtn" class="cg-publish-btn" style="flex:1" onclick="sendJoinFromDetail()">
+        <i class="fas fa-paper-plane"></i> Send Join Request
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── HELPERS ─────────────────────────────────────────────────────────────
+async function apiFetch(url, opts = {}) {
+  const cfg = { headers: {'Content-Type':'application/json'}, credentials:'same-origin', ...opts };
+  if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData))
+    cfg.body = JSON.stringify(opts.body);
+  const r = await fetch(url, cfg);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || `Error ${r.status}`);
+  return d;
+}
+
+function toast(msg, type='info') {
+  const t = document.createElement('div');
+  t.className = 'pf-toast';
+  const icons = {success:'✅', error:'❌', info:'ℹ️'};
+  t.innerHTML = `<span>${icons[type]||''}</span><span>${msg}</span>`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function getInitials(name) {
+  return name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+}
+
+const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
+function hashColor(str) {
+  let h = 0; for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+  return COLORS[Math.abs(h) % COLORS.length];
+}
+
+// ── INIT ────────────────────────────────────────────────────────────────
+let currentUser = null;
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const { user } = await apiFetch('/auth/me');
+    currentUser = user;
+    document.getElementById('userName').textContent = user.full_name;
+    document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+    document.getElementById('userDept').textContent = `${user.department} — ${user.batch || 'Senior'}`;
+  } catch(e) { window.location = '/login'; return; }
+
+  // Show welcome on first visit
+  if (!localStorage.getItem('pf_welcomed')) {
+    document.getElementById('welcomeModal').classList.add('show');
+  }
+
+  loadStats();
+  loadDomains();
+  loadGroups();
+});
+
+// ── STATS ───────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const s = await apiFetch('/api/pre-fydp/dashboard-stats');
+    document.getElementById('statOpen').textContent = s.open_groups;
+    document.getElementById('statDomains').textContent = `Across ${s.domain_count} domains`;
+    document.getElementById('statPending').textContent = s.pending_requests;
+    document.getElementById('statIncoming').textContent = s.incoming_requests;
+    document.getElementById('statProfile').textContent = s.profile_strength + '%';
+    // Badge
+    if (s.incoming_requests > 0) {
+      const b = document.getElementById('navBadge');
+      b.textContent = s.incoming_requests; b.style.display = '';
+      document.getElementById('notifDot').style.display = '';
+    }
+  } catch(e) { console.error(e); }
+}
+
+// ── DOMAINS ─────────────────────────────────────────────────────────────
+async function loadDomains() {
+  try {
+    const doms = await apiFetch('/api/pre-fydp/domains');
+    const sel = document.getElementById('filterDomain');
+    doms.forEach(d => { const o = document.createElement('option'); o.textContent = d; sel.appendChild(o); });
+  } catch(e) {}
+}
+
+// ── GROUPS ───────────────────────────────────────────────────────────────
+async function loadGroups() {
+  const domain = document.getElementById('filterDomain').value;
+  const skill = document.getElementById('filterSkill').value;
+  const search = document.getElementById('searchInput').value;
+  try {
+    const groups = await apiFetch(`/api/pre-fydp/groups?domain=${encodeURIComponent(domain)}&skill=${encodeURIComponent(skill)}&search=${encodeURIComponent(search)}`);
+    document.getElementById('filterCount').textContent = `${groups.length} groups match`;
+    renderGroups(groups);
+  } catch(e) {
+    document.getElementById('teamGrid').innerHTML = '<div class="pf-empty"><i class="fas fa-exclamation-triangle"></i><h3>Failed to load</h3></div>';
+  }
+}
+
+// Store loaded groups for detail view
+let _loadedGroups = [];
+
+
+function renderGroups(groups) {
+  _loadedGroups = groups; // keep reference
+  const grid = document.getElementById('teamGrid');
+  if (!groups.length) {
+    grid.innerHTML = '<div class="pf-empty"><i class="fas fa-users-slash"></i><h3>No groups found</h3><p>Try different filters or create your own group!</p></div>';
+    return;
+  }
+  grid.innerHTML = groups.map(g => {
+    const isFull = g.member_count >= g.max_members;
+    const pct = Math.round((g.member_count / g.max_members) * 100);
+    const skills = g.required_skills ? (typeof g.required_skills === 'string' ? JSON.parse(g.required_skills) : g.required_skills) : [];
+    const color = hashColor(g.group_name);
+    return `
+      <div class="pf-team-card">
+        <div class="pf-team-header">
+          <div class="pf-team-avatar" style="background:${color}">${getInitials(g.group_name)}</div>
+          <div>
+            <div class="pf-team-name">${g.group_name}</div>
+            <div class="pf-team-lead">Lead · ${g.lead_name}</div>
+          </div>
+        </div>
+        <span class="pf-team-pin"><i class="fas fa-thumbtack"></i></span>
+        <span class="pf-domain-tag">${g.domain}</span>
+        <div class="pf-team-desc">${g.description || 'No description provided.'}</div>
+        <div class="pf-skill-tags">${skills.map(s => `<span class="pf-skill-tag">${s}</span>`).join('')}</div>
+        <div class="pf-capacity">
+          <span class="pf-capacity-label">Team Capacity</span>
+          <span class="pf-capacity-count ${isFull?'full':''}}">${g.member_count}/${g.max_members} Members</span>
+        </div>
+        <div class="pf-capacity-bar"><div class="pf-capacity-fill ${isFull?'full':''}" style="width:${pct}%"></div></div>
+        <div class="pf-card-actions" style="margin-top:12px">
+          <button class="pf-view-btn" title="View Details" onclick="openGroupDetail(${g.group_id})"><i class="fas fa-eye"></i></button>
+          ${isFull
+            ? `<button class="pf-join-btn disabled" disabled>Team Full</button>`
+            : `<button class="pf-join-btn" onclick="sendJoinRequest(${g.group_id})">Send Join Request</button>`
+          }
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── JOIN REQUEST ────────────────────────────────────────────────────────
+let _currentDetailGroupId = null;
+
+async function sendJoinRequest(groupId) {
+  try {
+    await apiFetch('/api/pre-fydp/join-request', { method:'POST', body:{ group_id: groupId }});
+    toast('Join request sent!', 'success');
+    loadGroups(); loadStats();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── GROUP DETAIL MODAL ──────────────────────────────────────────────────
+function openGroupDetail(groupId) {
+  const g = _loadedGroups.find(x => x.group_id === groupId);
+  if (!g) { toast('Group data not found', 'error'); return; }
+  _currentDetailGroupId = groupId;
+
+  const color = hashColor(g.group_name);
+  const isFull = g.member_count >= g.max_members;
+  const openSlots = Math.max(0, g.max_members - g.member_count);
+  const pct = Math.round((g.member_count / g.max_members) * 100);
+  const skills = g.required_skills ? (typeof g.required_skills === 'string' ? JSON.parse(g.required_skills) : g.required_skills) : [];
+  const members = g.members || [];
+
+  // Header
+  document.getElementById('gdAvatar').style.background = color;
+  document.getElementById('gdAvatar').textContent = getInitials(g.group_name);
+  document.getElementById('gdName').textContent = g.group_name;
+  document.getElementById('gdLead').textContent = `Lead: ${g.lead_name} · Created ${new Date(g.created_at).toLocaleDateString()}`;
+
+  // Domain + Status tags
+  document.getElementById('gdDomainTag').textContent = g.domain;
+  const statusEl = document.getElementById('gdStatusTag');
+  if (isFull) {
+    statusEl.textContent = '🔴 Full';
+    statusEl.style.cssText = 'display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2)';
+  } else {
+    statusEl.textContent = '🟢 Open';
+    statusEl.style.cssText = 'display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.2)';
+  }
+
+  // Description
+  document.getElementById('gdDesc').textContent = g.description || 'No description provided.';
+
+  // Skills
+  document.getElementById('gdSkills').innerHTML = skills.length
+    ? skills.map(s => `<span class="pf-skill-tag">${s}</span>`).join('')
+    : '<span style="font-size:0.75rem;color:var(--pf-text-muted)">No specific skills listed</span>';
+
+  // Stats
+  document.getElementById('gdMemberCount').textContent = g.member_count;
+  document.getElementById('gdOpenSlots').textContent = openSlots;
+  document.getElementById('gdMaxMembers').textContent = g.max_members;
+  document.getElementById('gdCapText').textContent = `${g.member_count}/${g.max_members}`;
+  const capBar = document.getElementById('gdCapBar');
+  capBar.style.width = pct + '%';
+  capBar.className = `pf-capacity-fill ${isFull ? 'full' : ''}`;
+
+  // Members list
+  const mList = document.getElementById('gdMembersList');
+  if (members.length === 0) {
+    mList.innerHTML = '<div style="font-size:0.78rem;color:var(--pf-text-muted);text-align:center;padding:12px">No member info available</div>';
+  } else {
+    mList.innerHTML = members.map(m => {
+      const mColor = hashColor(m.full_name || 'M');
+      const isLead = m.member_role === 'Lead';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--pf-bg-light);border:1px solid var(--pf-card-border);margin-bottom:6px">
+          <div style="width:32px;height:32px;border-radius:8px;background:${mColor};display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0">${getInitials(m.full_name || 'M')}</div>
+          <div style="flex:1">
+            <div style="font-size:0.8rem;font-weight:600;color:var(--pf-text)">${m.full_name}</div>
+            <div style="font-size:0.68rem;color:var(--pf-text-muted)">${m.department || ''}</div>
+          </div>
+          <span style="font-size:0.65rem;font-weight:600;padding:2px 8px;border-radius:12px;${isLead ? 'background:rgba(79,70,229,0.12);color:var(--pf-primary)' : 'background:var(--pf-bg-lighter);color:var(--pf-text-secondary)'}">${m.member_role || 'Member'}</span>
+        </div>`;
+    }).join('');
+  }
+
+  // GitHub
+  const ghRow = document.getElementById('gdGithubRow');
+  if (g.github_url) {
+    ghRow.style.display = '';
+    document.getElementById('gdGithubLink').href = g.github_url.startsWith('http') ? g.github_url : `https://github.com/${g.github_url}`;
+    document.getElementById('gdGithubText').textContent = g.github_url;
+  } else {
+    ghRow.style.display = 'none';
+  }
+
+  // Join button
+  const joinBtn = document.getElementById('gdJoinBtn');
+  if (isFull) {
+    joinBtn.disabled = true;
+    joinBtn.innerHTML = '<i class="fas fa-lock"></i> Team Full';
+    joinBtn.style.background = 'var(--pf-btn-disabled-bg)';
+  } else {
+    joinBtn.disabled = false;
+    joinBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Join Request';
+    joinBtn.style.background = '';
+  }
+
+  document.getElementById('groupDetailModal').classList.add('show');
+}
+
+function closeGroupDetail() {
+  document.getElementById('groupDetailModal').classList.remove('show');
+  _currentDetailGroupId = null;
+}
+
+async function sendJoinFromDetail() {
+  if (!_currentDetailGroupId) return;
+  try {
+    await apiFetch('/api/pre-fydp/join-request', { method:'POST', body:{ group_id: _currentDetailGroupId }});
+    toast('Join request sent!', 'success');
+    closeGroupDetail();
+    loadGroups(); loadStats();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── CREATE GROUP ────────────────────────────────────────────────────────
+function openCreateModal() { document.getElementById('createModal').classList.add('show'); updateTeamInfo(); }
+function closeCreateModal() { document.getElementById('createModal').classList.remove('show'); }
+
+let addedMembers = 0;
+
+function addMemberRow() {
+  const list = document.getElementById('cgMemberList');
+  const currentRows = list.querySelectorAll('.cg-member-row').length;
+  const needed = parseInt(document.getElementById('cgMembers').value);
+  // Block if current + needed already = 5 (no room for more current members)
+  if (currentRows + needed >= 5) {
+    toast('Cannot add more members: total would exceed 5. Reduce Members Needed first.', 'error');
+    return;
+  }
+  if (currentRows >= 5) {
+    toast('Maximum 5 members allowed in total.', 'error');
+    return;
+  }
+  addedMembers++;
+  const row = document.createElement('div');
+  row.className = 'cg-member-row';
+  row.innerHTML = `
+    <input type="text" placeholder="Member name or ID" class="cg-member-name">
+    <input type="text" placeholder="Role (e.g. Frontend)" class="cg-member-role">
+    <button type="button" class="cg-remove-member" onclick="removeMemberRow(this)"><i class="fas fa-times"></i></button>
+  `;
+  list.appendChild(row);
+  updateTeamInfo();
+}
+
+function removeMemberRow(btn) {
+  btn.closest('.cg-member-row').remove();
+  addedMembers--;
+  updateTeamInfo();
+}
+
+function updateTeamInfo() {
+  const list = document.getElementById('cgMemberList');
+  const currentRows = list.querySelectorAll('.cg-member-row').length;
+  const neededSelect = document.getElementById('cgMembers');
+  let needed = parseInt(neededSelect.value);
+
+  // Max slots available for "needed" = 5 - currentRows
+  const maxNeeded = Math.max(0, 5 - currentRows);
+
+  // Rebuild dropdown options dynamically based on current member count
+  const prevVal = needed;
+  neededSelect.innerHTML = '';
+  for (let i = 1; i <= maxNeeded; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = i === 1 ? '1 more member' : `${i} more members`;
+    neededSelect.appendChild(opt);
+  }
+  // Restore selected value or set to max if previous exceeded
+  if (maxNeeded === 0) {
+    const opt = document.createElement('option');
+    opt.value = 0;
+    opt.textContent = 'No more slots (team full)';
+    neededSelect.appendChild(opt);
+    needed = 0;
+  } else {
+    needed = Math.min(prevVal, maxNeeded);
+    neededSelect.value = needed;
+  }
+
+  const total = currentRows + needed;
+  const available = 5 - total;
+
+  document.getElementById('cgMemberCount').textContent = currentRows;
+
+  const info = document.getElementById('cgTeamInfo');
+  const btn = document.querySelector('.cg-publish-btn');
+
+  if (total > 5) {
+    info.innerHTML = `<span style="color:var(--pf-danger)">Total exceeds 5! Please reduce members.</span>`;
+    if (btn) btn.disabled = true;
+  } else if (total === 5) {
+    info.innerHTML = `Team is <strong>full (5/5)</strong> — ${currentRows} current members, no open slots. Others cannot send join requests.`;
+    if (btn) btn.disabled = false;
+  } else {
+    info.innerHTML = `Final team size: <strong>${total}/5</strong> — ${currentRows} current + ${needed} open slot${needed !== 1 ? 's' : ''}. <span style="color:var(--pf-success)">Up to ${available} student${available !== 1 ? 's' : ''} can send join requests.</span>`;
+    if (btn) btn.disabled = false;
+  }
+}
+
+
+document.getElementById('createGroupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const skills = document.getElementById('cgSkills').value.split(',').map(s=>s.trim()).filter(Boolean);
+  try {
+    await apiFetch('/api/pre-fydp/groups', { method:'POST', body:{
+      group_name: document.getElementById('cgName').value,
+      domain: document.getElementById('cgDomain').value,
+      description: document.getElementById('cgDesc').value,
+      required_skills: skills,
+      max_members: document.getElementById('cgMemberList').querySelectorAll('.cg-member-row').length + parseInt(document.getElementById('cgMembers').value),
+      github_url: document.getElementById('cgGithub').value || null
+    }});
+    toast('Group published successfully!', 'success');
+    closeCreateModal();
+    e.target.reset();
+    // Reset member rows
+    const list = document.getElementById('cgMemberList');
+    list.querySelectorAll('.cg-member-row:not(:first-child)').forEach(r => r.remove());
+    addedMembers = 0;
+    loadGroups(); loadStats();
+  } catch(e2) { toast(e2.message, 'error'); }
+});
+
+// ── FILTERS ─────────────────────────────────────────────────────────────
+document.getElementById('filterDomain').addEventListener('change', loadGroups);
+document.getElementById('filterSkill').addEventListener('change', loadGroups);
+let searchTimer;
+document.getElementById('searchInput').addEventListener('input', () => {
+  clearTimeout(searchTimer); searchTimer = setTimeout(loadGroups, 400);
+});
+
+// ── WELCOME & SIGNOUT ───────────────────────────────────────────────────
+function closeWelcome() {
+  document.getElementById('welcomeModal').classList.remove('show');
+  localStorage.setItem('pf_welcomed', '1');
+}
+
+async function signOut() {
+  try { await apiFetch('/auth/logout', {method:'POST'}); } catch(e) {}
+  window.location = '/login';
+}
+
+</script>
+<script src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student List — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* Table & Search Dark Theme */
+    .card { background: #161929; border: 1px solid #1e2240; }
+    .card-header { border-bottom: 1px solid #1e2240; background: rgba(255,255,255,0.02); }
+    .form-control { background: #1c2033; border: 1px solid #1e2240; color: #e2e8f0; transition: all 0.3s; }
+    .form-control:focus { border-color: #6c5ce7; box-shadow: 0 0 0 4px rgba(108,92,231,0.1); }
+    
+    .table thead th { background: #0d0f1e; color: #94a3b8; border-bottom: 2px solid #1e2240; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+    .table tbody td { border-bottom: 1px solid #1e2240; color: #e2e8f0; vertical-align: middle; }
+    .table tr:hover td { background: rgba(255,255,255,0.02); }
+    
+    .student-avatar-mini { background: #111d35 !important; color: #93c5fd !important; border: 1px solid #1e2240; }
+    code { background: #1c2033; color: #6c5ce7; padding: 2px 6px; border-radius: 4px; border: 1px solid #1e2240; }
+    
+    .badge-gray { background: #1c2033; color: #94a3b8; border: 1px solid #1e2240; }
+    
+    /* Breadcrumb and Titles */
+    h1 { color: #fff !important; }
+    .page-title p { color: #94a3b8 !important; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Course Teacher</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/teacher/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+        <a href="/teacher/announcements"><span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Announcements</a>
+        <a href="/teacher/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+        <a href="/teacher/students" class="active"><span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Student List</a>
+        <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span> Student Messages</a>
+        <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> Chat with Supervisors</a>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">CT</div>
+          <div class="user-info"><h4 id="userName">Course Teacher</h4><p>Course Teacher</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Teacher / <span>Student List</span></div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline" onclick="exportStudentList()"><i class="fas fa-file-export"></i> Export CSV</button>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-title">
+          <h1><i class="fas fa-user-graduate" style="color:var(--primary);margin-right:8px;"></i> Student Status Overview</h1>
+          <p>Complete list of students in your assigned sections and their project status</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="flex:1;max-width:400px;">
+              <input type="text" id="studentSearch" class="form-control" placeholder="Search by name, ID, or group..." oninput="filterStudents()">
+            </div>
+            <div style="margin-left:15px;">
+              <span id="studentCount" class="badge badge-blue">0 Students</span>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0;overflow-x:auto;">
+            <table class="table" style="margin-bottom:0;">
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Student ID</th>
+                  <th>Section</th>
+                  <th>Group Code</th>
+                  <th>Role</th>
+                  <th>Supervisor</th>
+                  <th>Current Stage</th>
+                </tr>
+              </thead>
+              <tbody id="studentTableBody">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:#999;">Loading students...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let allStudents = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      }
+      loadStudents();
+    });
+
+    async function loadStudents() {
+      try {
+        const data = await apiFetch('/api/teacher/students-status');
+        allStudents = data.students || [];
+        renderStudents(allStudents);
+      } catch(err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function renderStudents(students) {
+      const tbody = document.getElementById('studentTableBody');
+      document.getElementById('studentCount').textContent = `${students.length} Students`;
+
+      if (!students.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#999;">No students found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = students.map(s => `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="student-avatar-mini" style="width:30px;height:30px;border-radius:50%;font-size:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;">${getInitials(s.full_name)}</div>
+              <strong>${escapeHtml(s.full_name)}</strong>
+            </div>
+          </td>
+          <td><code>${escapeHtml(s.university_id)}</code></td>
+          <td><span class="badge badge-gray">${escapeHtml(s.section_code)}</span></td>
+          <td><strong style="color:var(--secondary);">${escapeHtml(s.group_code)}</strong></td>
+          <td><span style="font-size:0.8rem;color:#94a3b8;">${escapeHtml(s.member_role)}</span></td>
+          <td><span style="font-size:0.85rem;color:#e2e8f0;">${escapeHtml(s.supervisor_name)}</span></td>
+          <td><span class="badge badge-blue">${escapeHtml(s.stage_name)}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function filterStudents() {
+      const q = document.getElementById('studentSearch').value.toLowerCase();
+      const filtered = allStudents.filter(s => 
+        s.full_name.toLowerCase().includes(q) ||
+        s.university_id.toLowerCase().includes(q) ||
+        s.group_code.toLowerCase().includes(q) ||
+        s.section_code.toLowerCase().includes(q) ||
+        s.supervisor_name.toLowerCase().includes(q)
+      );
+      renderStudents(filtered);
+    }
+
+    function exportStudentList() {
+      if (!allStudents.length) return showToast('No data to export','error');
+      const headers = ['Name', 'ID', 'Section', 'Group', 'Role', 'Supervisor', 'Stage'];
+      const rows = allStudents.map(s => [
+        s.full_name, s.university_id, s.section_code, s.group_code, s.member_role, s.supervisor_name, s.stage_name
+      ]);
+      
+      let csvContent = "data:text/csv;charset=utf-8," 
+        + headers.join(",") + "\n"
+        + rows.map(e => e.join(",")).join("\n");
+      
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "student_list.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>

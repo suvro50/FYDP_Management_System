@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Settings — Pre-FYDP</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/pre-fydp.css">
+  <style>
+    .pf-profile-layout { display: grid; grid-template-columns: 300px 1fr; gap: 24px; }
+    .pf-profile-sidebar {
+      background: var(--pf-card-bg); border: 1px solid var(--pf-card-border);
+      border-radius: var(--pf-radius); padding: 28px 20px; text-align: center;
+      height: fit-content; position: sticky; top: 24px;
+    }
+    .pf-big-avatar {
+      width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 14px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 800; font-size: 1.6rem;
+      background: var(--pf-primary);
+    }
+    .pf-profile-name { font-size: 1.1rem; font-weight: 700; }
+    .pf-profile-email { font-size: 0.78rem; color: var(--pf-text-muted); margin: 4px 0 16px; }
+    .pf-strength-ring { position: relative; width: 100px; height: 100px; margin: 0 auto 10px; }
+    .pf-strength-ring svg { transform: rotate(-90deg); }
+    .pf-strength-ring circle { fill: none; stroke-width: 8; }
+    .pf-strength-ring .bg { stroke: #e5e7eb; }
+    .pf-strength-ring .fg { stroke: var(--pf-primary); stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+    .pf-strength-val {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; font-weight: 800; color: var(--pf-text);
+    }
+    .pf-strength-label { font-size: 0.78rem; color: var(--pf-text-muted); margin-bottom: 16px; }
+    .pf-status-badge {
+      display: inline-block; padding: 5px 14px; border-radius: 20px;
+      font-size: 0.75rem; font-weight: 600;
+    }
+    .pf-status-badge.looking { background: rgba(16,185,129,0.1); color: #059669; }
+    .pf-status-badge.in_team { background: rgba(79,70,229,0.1); color: var(--pf-primary); }
+    .pf-profile-form {
+      background: var(--pf-card-bg); border: 1px solid var(--pf-card-border);
+      border-radius: var(--pf-radius); padding: 28px;
+    }
+    .pf-profile-form h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
+    .pf-profile-form .pf-section-sub { margin-bottom: 20px; }
+    .pf-form-divider {
+      border: none; border-top: 1px solid var(--pf-card-border); margin: 20px 0;
+    }
+    .pf-chip-input { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px;
+      border: 1px solid var(--pf-card-border); border-radius: var(--pf-radius-sm);
+      background: var(--pf-bg-light); min-height: 42px; cursor: text; align-items: center; }
+    .pf-chip {
+      display: flex; align-items: center; gap: 4px; padding: 4px 10px;
+      background: var(--pf-primary-bg); color: var(--pf-primary);
+      border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+    }
+    .pf-chip-x { cursor: pointer; font-size: 0.85rem; opacity: 0.7; }
+    .pf-chip-x:hover { opacity: 1; }
+    .pf-chip-input input {
+      border: none; outline: none; background: transparent;
+      font-family: inherit; font-size: 0.82rem; flex: 1; min-width: 80px;
+    }
+    @media (max-width: 768px) { .pf-profile-layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="pf-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="pf-sidebar">
+    <div class="pf-sidebar-logo">
+      <div class="pf-logo-icon"><i class="fas fa-atom"></i></div>
+      <div class="pf-logo-text"><h2>UniHub</h2><span>Pre-FYDP Portal</span></div>
+    </div>
+    <nav class="pf-nav">
+      <a href="/pre-fydp/dashboard" class="pf-nav-item"><i class="fas fa-th-large"></i> Dashboard</a>
+      <a href="/pre-fydp/find-teammates" class="pf-nav-item"><i class="fas fa-user-friends"></i> Find Teammates</a>
+      <a href="/pre-fydp/my-requests" class="pf-nav-item"><i class="fas fa-envelope"></i> My Requests</a>
+      <a href="/pre-fydp/profile-settings" class="pf-nav-item active"><i class="fas fa-cog"></i> Profile Settings</a>
+      <a href="/notifications" class="pf-nav-item"><i class="fas fa-bell"></i> Notifications</a>
+    </nav>
+    <div class="pf-sidebar-user">
+      <div class="pf-user-avatar" id="userAvatar">YK</div>
+      <div class="pf-user-info"><h4 id="userName">Loading...</h4><span id="userDept">—</span></div>
+    </div>
+    <div class="pf-signout"><button class="pf-signout-btn" onclick="signOut()"><i class="fas fa-sign-out-alt"></i> Sign Out</button></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="pf-main">
+    <div class="pf-header">
+      <div class="pf-header-left">
+        <div class="pf-trimester"><i class="fas fa-snowflake"></i> Pre-FYDP · Spring 2026</div>
+        <h1>Profile Settings</h1>
+      </div>
+      <div class="pf-header-actions">
+        <div class="pf-notif-wrap">
+          <button class="pf-icon-btn" title="Notifications" onclick="toggleNotifDropdown()" id="notifBell">
+            <i class="fas fa-bell"></i>
+            <span class="pf-notif-dot" id="notifDot" style="display:none"></span>
+          </button>
+        </div>
+        <button class="pf-icon-btn" title="Dark Mode" onclick="toggleDarkMode()" id="darkModeToggle"><i class="fas fa-moon"></i></button>
+      </div>
+    </div>
+
+    <!-- Notification Dropdown Portal -->
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-dropdown-header">
+        <h4>Notifications</h4>
+        <button onclick="markAllNotifRead()">Mark All Read</button>
+      </div>
+      <div class="notif-dropdown-body" id="notifDropdownBody">
+        <div style="padding:20px;text-align:center;color:var(--pf-text-secondary);">
+          <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+          Loading...
+        </div>
+      </div>
+      <div class="notif-dropdown-footer">
+        <a href="/notifications">View All Notifications</a>
+      </div>
+    </div>
+
+    <div class="pf-profile-layout">
+      <!-- Left sidebar card -->
+      <div class="pf-profile-sidebar">
+        <div class="pf-big-avatar" id="bigAvatar">YK</div>
+        <div class="pf-profile-name" id="profileName">—</div>
+        <div class="pf-profile-email" id="profileEmail">—</div>
+
+        <div class="pf-strength-ring">
+          <svg width="100" height="100" viewBox="0 0 100 100">
+            <circle class="bg" cx="50" cy="50" r="42"/>
+            <circle class="fg" id="strengthCircle" cx="50" cy="50" r="42"
+              stroke-dasharray="264" stroke-dashoffset="264"/>
+          </svg>
+          <div class="pf-strength-val" id="strengthVal">0%</div>
+        </div>
+        <div class="pf-strength-label">Profile Strength</div>
+        <span class="pf-status-badge looking" id="statusBadge">Looking for Team</span>
+      </div>
+
+      <!-- Right form -->
+      <div class="pf-profile-form">
+        <h2>Edit Your Profile</h2>
+        <div class="pf-section-sub">A complete profile helps teammates find you faster.</div>
+
+        <form id="profileForm">
+          <div class="pf-form-group">
+            <label>Bio / About Me</label>
+            <textarea id="pBio" placeholder="Tell others about yourself, your interests, and what you bring to a team..."></textarea>
+          </div>
+
+          <div class="pf-form-row">
+            <div class="pf-form-group">
+              <label>CGPA</label>
+              <input type="number" id="pCgpa" step="0.01" min="0" max="4" placeholder="e.g. 3.65">
+            </div>
+            <div class="pf-form-group">
+              <label>Preferred Role</label>
+              <select id="pRole">
+                <option value="">Select a role</option>
+                <option>Frontend Developer</option>
+                <option>Backend Developer</option>
+                <option>Full-stack Developer</option>
+                <option>ML Engineer</option>
+                <option>Security Analyst</option>
+                <option>Embedded Developer</option>
+                <option>UI/UX Designer</option>
+                <option>Data Analyst</option>
+                <option>DevOps Engineer</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pf-form-group">
+            <label>Skills (press Enter to add)</label>
+            <div class="pf-chip-input" id="skillsBox" onclick="this.querySelector('input').focus()">
+              <input type="text" id="skillInput" placeholder="Type a skill...">
+            </div>
+          </div>
+
+          <div class="pf-form-group">
+            <label>Domain Interests (press Enter to add)</label>
+            <div class="pf-chip-input" id="domainsBox" onclick="this.querySelector('input').focus()">
+              <input type="text" id="domainInput" placeholder="e.g. AI, Cybersecurity...">
+            </div>
+          </div>
+
+          <hr class="pf-form-divider">
+
+          <div class="pf-form-row">
+            <div class="pf-form-group">
+              <label><i class="fab fa-github"></i> GitHub URL</label>
+              <input type="text" id="pGithub" placeholder="https://github.com/username">
+            </div>
+            <div class="pf-form-group">
+              <label><i class="fab fa-linkedin"></i> LinkedIn URL</label>
+              <input type="text" id="pLinkedin" placeholder="https://linkedin.com/in/username">
+            </div>
+          </div>
+
+          <div class="pf-form-group">
+            <label><i class="fas fa-globe"></i> Portfolio URL</label>
+            <input type="text" id="pPortfolio" placeholder="https://yourportfolio.com">
+          </div>
+
+          <button type="submit" class="pf-submit-btn"><i class="fas fa-save"></i> Save Profile</button>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+async function apiFetch(u,o={}){const c={headers:{'Content-Type':'application/json'},credentials:'same-origin',...o};if(o.body&&typeof o.body==='object')c.body=JSON.stringify(o.body);const r=await fetch(u,c);const d=await r.json();if(!r.ok)throw new Error(d.error);return d;}
+function toast(m,t='info'){const e=document.createElement('div');e.className='pf-toast';e.innerHTML=`<span>${{success:'✅',error:'❌',info:'ℹ️'}[t]||''}</span><span>${m}</span>`;document.body.appendChild(e);setTimeout(()=>e.remove(),3000);}
+function getInitials(n){return n.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();}
+
+let skills = [], domains = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const {user} = await apiFetch('/auth/me');
+    document.getElementById('userName').textContent = user.full_name;
+    document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+    document.getElementById('userDept').textContent = `${user.department} — ${user.batch||'Senior'}`;
+  } catch(e) { window.location='/login'; return; }
+  loadProfile();
+});
+
+async function loadProfile() {
+  try {
+    const p = await apiFetch('/api/pre-fydp/profile');
+    document.getElementById('profileName').textContent = p.full_name;
+    document.getElementById('profileEmail').textContent = p.email;
+    document.getElementById('bigAvatar').textContent = getInitials(p.full_name);
+
+    // Fill form
+    if (p.bio) document.getElementById('pBio').value = p.bio;
+    if (p.cgpa) document.getElementById('pCgpa').value = p.cgpa;
+    if (p.preferred_role) document.getElementById('pRole').value = p.preferred_role;
+    if (p.github_url) document.getElementById('pGithub').value = p.github_url;
+    if (p.linkedin_url) document.getElementById('pLinkedin').value = p.linkedin_url;
+    if (p.portfolio_url) document.getElementById('pPortfolio').value = p.portfolio_url;
+
+    // Skills chips
+    skills = p.skills ? (typeof p.skills === 'string' ? JSON.parse(p.skills) : p.skills) : [];
+    domains = p.domain_interests ? (typeof p.domain_interests === 'string' ? JSON.parse(p.domain_interests) : p.domain_interests) : [];
+    renderChips();
+
+    // Strength ring
+    updateStrength(p.profile_strength || 0);
+
+    // Status
+    if (p.availability_status) {
+      const badge = document.getElementById('statusBadge');
+      const labels = { LOOKING: 'Looking for Team', IN_TEAM: 'In a Team', NOT_AVAILABLE: 'Not Available' };
+      badge.textContent = labels[p.availability_status] || p.availability_status;
+      badge.className = 'pf-status-badge ' + p.availability_status.toLowerCase();
+    }
+  } catch(e) { console.error(e); }
+}
+
+function updateStrength(val) {
+  const circumference = 264;
+  const offset = circumference - (val / 100) * circumference;
+  document.getElementById('strengthCircle').style.strokeDashoffset = offset;
+  document.getElementById('strengthVal').textContent = val + '%';
+}
+
+function renderChips() {
+  renderChipList('skillsBox', skills, 'skill');
+  renderChipList('domainsBox', domains, 'domain');
+}
+
+function renderChipList(boxId, arr, type) {
+  const box = document.getElementById(boxId);
+  box.querySelectorAll('.pf-chip').forEach(c => c.remove());
+  const input = box.querySelector('input');
+  arr.forEach((item, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'pf-chip';
+    chip.innerHTML = `${item} <span class="pf-chip-x" onclick="removeChip('${type}',${i})">&times;</span>`;
+    box.insertBefore(chip, input);
+  });
+}
+
+function removeChip(type, idx) {
+  if (type === 'skill') skills.splice(idx, 1);
+  else domains.splice(idx, 1);
+  renderChips();
+}
+
+// Chip input handlers
+document.getElementById('skillInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); const v = e.target.value.trim(); if (v && !skills.includes(v)) { skills.push(v); e.target.value = ''; renderChips(); } }
+});
+document.getElementById('domainInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); const v = e.target.value.trim(); if (v && !domains.includes(v)) { domains.push(v); e.target.value = ''; renderChips(); } }
+});
+
+// Save
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    const result = await apiFetch('/api/pre-fydp/profile', { method: 'PUT', body: {
+      bio: document.getElementById('pBio').value,
+      cgpa: parseFloat(document.getElementById('pCgpa').value) || null,
+      preferred_role: document.getElementById('pRole').value,
+      skills, domain_interests: domains,
+      github_url: document.getElementById('pGithub').value || null,
+      linkedin_url: document.getElementById('pLinkedin').value || null,
+      portfolio_url: document.getElementById('pPortfolio').value || null
+    }});
+    toast('Profile saved!', 'success');
+    updateStrength(result.profile_strength);
+  } catch(err) { toast(err.message, 'error'); }
+});
+
+async function signOut(){try{await apiFetch('/auth/logout',{method:'POST'});}catch(e){}window.location='/login';}
+
+</script>
+<script src="/js/main.js"></script>
+</body>
+</html>

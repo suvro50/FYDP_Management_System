@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Requests — Pre-FYDP</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/pre-fydp.css">
+  <style>
+    .pf-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid var(--pf-card-border); }
+    .pf-tab {
+      padding: 10px 24px; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+      color: var(--pf-text-muted); border-bottom: 2px solid transparent;
+      margin-bottom: -2px; transition: all var(--pf-transition);
+      background: none; border-top: none; border-left: none; border-right: none;
+      font-family: inherit; display: flex; align-items: center; gap: 8px;
+    }
+    .pf-tab:hover { color: var(--pf-primary); }
+    .pf-tab.active { color: var(--pf-primary); border-bottom-color: var(--pf-primary); }
+    .pf-tab-badge {
+      background: var(--pf-primary); color: #fff; font-size: 0.65rem;
+      padding: 2px 7px; border-radius: 10px; font-weight: 700;
+    }
+    .pf-req-list { display: flex; flex-direction: column; gap: 12px; }
+    .pf-req-card {
+      background: var(--pf-card-bg); border: 1px solid var(--pf-card-border);
+      border-radius: var(--pf-radius); padding: 18px 20px;
+      display: flex; align-items: center; gap: 16px;
+      transition: all var(--pf-transition);
+    }
+    .pf-req-card:hover { box-shadow: var(--pf-shadow-md); }
+    .pf-req-avatar {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .pf-req-info { flex: 1; }
+    .pf-req-title { font-size: 0.92rem; font-weight: 600; color: var(--pf-text); }
+    .pf-req-meta { font-size: 0.75rem; color: var(--pf-text-muted); margin-top: 2px; }
+    .pf-req-msg {
+      font-size: 0.8rem; color: var(--pf-text-secondary); margin-top: 6px;
+      padding: 8px 12px; background: var(--pf-bg-light); border-radius: 8px;
+      border-left: 3px solid var(--pf-primary-light);
+    }
+    .pf-req-status {
+      padding: 5px 14px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .pf-req-status.pending { background: rgba(245,158,11,0.1); color: #d97706; }
+    .pf-req-status.accepted { background: rgba(16,185,129,0.1); color: #059669; }
+    .pf-req-status.rejected { background: rgba(239,68,68,0.1); color: #dc2626; }
+    .pf-req-status.cancelled { background: rgba(107,114,128,0.1); color: #6b7280; }
+    .pf-req-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .pf-accept-btn, .pf-reject-btn, .pf-cancel-btn {
+      padding: 7px 16px; border-radius: var(--pf-radius-sm); font-size: 0.78rem;
+      font-weight: 600; cursor: pointer; border: none; font-family: inherit;
+      transition: all var(--pf-transition);
+    }
+    .pf-accept-btn { background: var(--pf-success); color: #fff; }
+    .pf-accept-btn:hover { background: #059669; }
+    .pf-reject-btn { background: rgba(239,68,68,0.1); color: #dc2626; }
+    .pf-reject-btn:hover { background: rgba(239,68,68,0.2); }
+    .pf-cancel-btn { background: rgba(107,114,128,0.1); color: #6b7280; }
+    .pf-cancel-btn:hover { background: rgba(107,114,128,0.2); }
+    .pf-sender-skills { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  </style>
+</head>
+<body>
+<div class="pf-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="pf-sidebar">
+    <div class="pf-sidebar-logo">
+      <div class="pf-logo-icon"><i class="fas fa-atom"></i></div>
+      <div class="pf-logo-text"><h2>UniHub</h2><span>Pre-FYDP Portal</span></div>
+    </div>
+    <nav class="pf-nav">
+      <a href="/pre-fydp/dashboard" class="pf-nav-item"><i class="fas fa-th-large"></i> Dashboard</a>
+      <a href="/pre-fydp/find-teammates" class="pf-nav-item"><i class="fas fa-user-friends"></i> Find Teammates</a>
+      <a href="/pre-fydp/my-requests" class="pf-nav-item active"><i class="fas fa-envelope"></i> My Requests <span class="pf-nav-badge" id="navBadge" style="display:none">0</span></a>
+      <a href="/pre-fydp/profile-settings" class="pf-nav-item"><i class="fas fa-cog"></i> Profile Settings</a>
+      <a href="/notifications" class="pf-nav-item"><i class="fas fa-bell"></i> Notifications</a>
+    </nav>
+    <div class="pf-sidebar-user">
+      <div class="pf-user-avatar" id="userAvatar">YK</div>
+      <div class="pf-user-info"><h4 id="userName">Loading...</h4><span id="userDept">—</span></div>
+    </div>
+    <div class="pf-signout"><button class="pf-signout-btn" onclick="signOut()"><i class="fas fa-sign-out-alt"></i> Sign Out</button></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="pf-main">
+    <div class="pf-header">
+      <div class="pf-header-left">
+        <div class="pf-trimester"><i class="fas fa-snowflake"></i> Pre-FYDP · Spring 2026</div>
+        <h1>My Requests</h1>
+      </div>
+      <div class="pf-header-actions">
+        <div class="pf-notif-wrap">
+          <button class="pf-icon-btn" title="Notifications" onclick="toggleNotifDropdown()" id="notifBell">
+            <i class="fas fa-bell"></i>
+            <span class="pf-notif-dot" id="notifDot" style="display:none"></span>
+          </button>
+        </div>
+        <button class="pf-icon-btn" title="Dark Mode" onclick="toggleDarkMode()" id="darkModeToggle"><i class="fas fa-moon"></i></button>
+      </div>
+    </div>
+
+    <!-- Notification Dropdown Portal -->
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-dropdown-header">
+        <h4>Notifications</h4>
+        <button onclick="markAllNotifRead()">Mark All Read</button>
+      </div>
+      <div class="notif-dropdown-body" id="notifDropdownBody">
+        <div style="padding:20px;text-align:center;color:var(--pf-text-secondary);">
+          <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+          Loading...
+        </div>
+      </div>
+      <div class="notif-dropdown-footer">
+        <a href="/notifications">View All Notifications</a>
+      </div>
+    </div>
+
+    <div class="pf-tabs">
+      <button class="pf-tab active" onclick="switchTab('sent')">
+        <i class="fas fa-paper-plane"></i> Sent Requests <span class="pf-tab-badge" id="sentCount">0</span>
+      </button>
+      <button class="pf-tab" onclick="switchTab('received')">
+        <i class="fas fa-inbox"></i> Received Requests <span class="pf-tab-badge" id="recvCount">0</span>
+      </button>
+    </div>
+
+    <div id="sentPanel" class="pf-req-list"></div>
+    <div id="receivedPanel" class="pf-req-list" style="display:none"></div>
+  </main>
+</div>
+
+<script>
+const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
+function hashColor(s){let h=0;for(let i=0;i<s.length;i++)h=s.charCodeAt(i)+((h<<5)-h);return COLORS[Math.abs(h)%COLORS.length];}
+function getInitials(n){return n.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();}
+async function apiFetch(u,o={}){const c={headers:{'Content-Type':'application/json'},credentials:'same-origin',...o};if(o.body&&typeof o.body==='object')c.body=JSON.stringify(o.body);const r=await fetch(u,c);const d=await r.json();if(!r.ok)throw new Error(d.error);return d;}
+function toast(m,t='info'){const e=document.createElement('div');e.className='pf-toast';e.innerHTML=`<span>${{success:'✅',error:'❌',info:'ℹ️'}[t]||''}</span><span>${m}</span>`;document.body.appendChild(e);setTimeout(()=>e.remove(),3000);}
+function timeAgo(d){const s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';}
+
+let activeTab = 'sent';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const {user} = await apiFetch('/auth/me');
+    document.getElementById('userName').textContent = user.full_name;
+    document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+    document.getElementById('userDept').textContent = `${user.department} — ${user.batch||'Senior'}`;
+  } catch(e) { window.location='/login'; return; }
+  loadRequests();
+});
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.pf-tab').forEach((t,i) => {
+    t.classList.toggle('active', (i===0 && tab==='sent') || (i===1 && tab==='received'));
+  });
+  document.getElementById('sentPanel').style.display = tab==='sent' ? '' : 'none';
+  document.getElementById('receivedPanel').style.display = tab==='received' ? '' : 'none';
+}
+
+async function loadRequests() {
+  try {
+    const data = await apiFetch('/api/pre-fydp/my-requests');
+    document.getElementById('sentCount').textContent = data.sent.length;
+    document.getElementById('recvCount').textContent = data.received.filter(r=>r.request_status==='PENDING').length;
+
+    // Nav badge
+    const pending = data.received.filter(r=>r.request_status==='PENDING').length;
+    if (pending > 0) { const b=document.getElementById('navBadge'); b.textContent=pending; b.style.display=''; }
+
+    renderSent(data.sent);
+    renderReceived(data.received);
+  } catch(e) {
+    document.getElementById('sentPanel').innerHTML = '<div class="pf-empty"><i class="fas fa-exclamation-triangle"></i><h3>Failed to load</h3></div>';
+  }
+}
+
+function renderSent(reqs) {
+  const el = document.getElementById('sentPanel');
+  if (!reqs.length) { el.innerHTML = '<div class="pf-empty"><i class="fas fa-paper-plane"></i><h3>No sent requests</h3><p>Browse groups on the Dashboard and send join requests!</p></div>'; return; }
+  el.innerHTML = reqs.map(r => `
+    <div class="pf-req-card">
+      <div class="pf-req-avatar" style="background:${hashColor(r.group_name)}">${getInitials(r.group_name)}</div>
+      <div class="pf-req-info">
+        <div class="pf-req-title">${r.group_name}</div>
+        <div class="pf-req-meta"><i class="fas fa-tag"></i> ${r.domain} · Lead: ${r.group_lead} · ${timeAgo(r.created_at)}</div>
+        ${r.message ? `<div class="pf-req-msg">"${r.message}"</div>` : ''}
+      </div>
+      <span class="pf-req-status ${r.request_status.toLowerCase()}">${r.request_status}</span>
+      ${r.request_status === 'PENDING' ? `<button class="pf-cancel-btn" onclick="cancelRequest(${r.request_id})"><i class="fas fa-times"></i> Cancel</button>` : ''}
+    </div>`).join('');
+}
+
+function renderReceived(reqs) {
+  const el = document.getElementById('receivedPanel');
+  if (!reqs.length) { el.innerHTML = '<div class="pf-empty"><i class="fas fa-inbox"></i><h3>No received requests</h3><p>When someone wants to join your group, it will appear here.</p></div>'; return; }
+  el.innerHTML = reqs.map(r => {
+    const skills = r.sender_skills ? (typeof r.sender_skills==='string'? JSON.parse(r.sender_skills):r.sender_skills) : [];
+    return `
+    <div class="pf-req-card" style="flex-wrap:wrap">
+      <div class="pf-req-avatar" style="background:${hashColor(r.sender_name)}">${getInitials(r.sender_name)}</div>
+      <div class="pf-req-info">
+        <div class="pf-req-title">${r.sender_name} <span style="font-weight:400;color:var(--pf-text-muted);font-size:0.8rem">wants to join</span> ${r.group_name}</div>
+        <div class="pf-req-meta">${r.sender_dept || ''} · ${r.preferred_role || 'Developer'} · ${timeAgo(r.created_at)}</div>
+        ${r.message ? `<div class="pf-req-msg">"${r.message}"</div>` : ''}
+        <div class="pf-sender-skills">${skills.slice(0,4).map(s=>`<span class="pf-skill-tag">${s}</span>`).join('')}</div>
+      </div>
+      ${r.request_status === 'PENDING' ? `
+        <div class="pf-req-actions">
+          <button class="pf-accept-btn" onclick="handleRequest(${r.request_id},'accept')"><i class="fas fa-check"></i> Accept</button>
+          <button class="pf-reject-btn" onclick="handleRequest(${r.request_id},'reject')"><i class="fas fa-times"></i> Reject</button>
+        </div>` : `<span class="pf-req-status ${r.request_status.toLowerCase()}">${r.request_status}</span>`}
+    </div>`;
+  }).join('');
+}
+
+async function cancelRequest(id) {
+  try {
+    await apiFetch(`/api/pre-fydp/join-request/${id}`, {method:'DELETE'});
+    toast('Request cancelled','success'); loadRequests();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function handleRequest(id, action) {
+  try {
+    await apiFetch(`/api/pre-fydp/join-request/${id}`, {method:'PATCH', body:{action}});
+    toast(`Request ${action}ed!`,'success'); loadRequests();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function signOut(){try{await apiFetch('/auth/logout',{method:'POST'});}catch(e){}window.location='/login';}
+
+</script>
+<script src="/js/main.js"></script>
+</body>
+</html>

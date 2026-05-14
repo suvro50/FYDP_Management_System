@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escalated Inbox — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .inbox-grid { display:grid;gap:16px; }
+    .package-card {
+      background:#161929;border-radius:12px;border:1px solid #1e2240;
+      overflow:hidden;transition:all 0.3s;
+    }
+    .package-card:hover { border-color:#6c5ce7; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .package-card-header {
+      padding:16px 20px;display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid #1e2240;
+    }
+    .package-card-header strong { color: #fff; }
+    .package-card-body { padding:16px 20px; }
+    .package-card-body p { color: #fff !important; }
+    .package-card-footer {
+      padding:12px 20px;background:rgba(255,255,255,0.02);border-top:1px solid #1e2240;
+      display:flex;gap:10px;justify-content:flex-end;align-items:center;
+    }
+    .status-bar { height:4px;border-radius:2px;margin-bottom:16px; }
+    .status-bar.pending { background:linear-gradient(90deg,#ff9800,#ffb74d); }
+    .status-bar.reviewed { background:linear-gradient(90deg,#4caf50,#81c784); }
+    .status-bar.flagged { background:linear-gradient(90deg,#f44336,#e57373); }
+    
+    .report-row {
+      display:flex;align-items:center;gap:12px;padding:10px 14px;
+      border-radius:8px;margin-bottom:8px;background:#13172a; border:1px solid #1e2240;
+    }
+    .report-row-avatar {
+      width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#42a5f5);
+      color:#fff;font-weight:700;font-size:0.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    }
+    
+    /* Modal Dark Theme */
+    .modal { background:#161929 !important; border:1px solid #1e2240 !important; color:#e2e8f0 !important; }
+    .modal-header { border-bottom-color:#1e2240 !important; }
+    .modal-header h3 { color: #fff !important; }
+    .modal-footer { border-top-color:#1e2240 !important; }
+    .modal-close { color:#94a3b8 !important; }
+    
+    .report-detail-card { background:#13172a !important; border:1px solid #1e2240 !important; border-radius:10px; padding:16px; margin-bottom:12px; border-left:3px solid #6c5ce7 !important; }
+    .report-detail-card strong { color: var(--secondary) !important; }
+    .report-detail-card div[style*="color:#555"] { color: #cbd5e1 !important; }
+    
+    .tabs { display:flex;gap:0;border-bottom:2px solid #1e2240;margin-bottom:20px; }
+    .tab { padding:12px 24px;cursor:pointer;font-weight:600;font-size:0.88rem;color:#94a3b8;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.3s; }
+    .tab.active { color:#6c5ce7;border-bottom-color:#6c5ce7; }
+    .tab:hover:not(.active) { color: #fff; background: rgba(255,255,255,0.02); }
+    
+    /* Meta Box in Modal */
+    div[id="packageMeta"] div[style*="background:#f8f9fa"] {
+      background: #1c2033 !important;
+      border: 1px solid #1e2240 !important;
+    }
+    
+    /* Review Action Alert */
+    div[style*="background:#fff3e0"] {
+      background: #1a1612 !important;
+      border: 1px solid #3d2a0e !important;
+      color: #fdba74 !important;
+    }
+    
+    h1 { color: #fff !important; }
+    .page-title p { color: #94a3b8 !important; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Course Teacher</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/teacher/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+        <a href="/teacher/announcements"><span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Announcements</a>
+        <a href="/teacher/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+        <a href="/teacher/students"><span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Student List</a>
+        <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span> Student Messages</a>
+        <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> Chat with Supervisors</a>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+        <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">CT</div>
+          <div class="user-info"><h4 id="userName">Course Teacher</h4><p>Course Teacher</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Teacher / <span>Escalated Inbox</span></div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-title">
+          <h1><i class="fas fa-inbox" style="color:var(--primary);margin-right:8px;"></i> Escalated Inbox</h1>
+          <p>Auto-escalated weekly packages — appears when all group members are approved by their Supervisor</p>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-body" style="padding:12px 20px;">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <button class="btn btn-primary btn-sm filter-btn active" data-status="" onclick="setFilter(this,'')">All Packages</button>
+              <button class="btn btn-outline btn-sm filter-btn" data-status="PENDING_REVIEW" onclick="setFilter(this,'PENDING_REVIEW')">
+                <i class="fas fa-clock"></i> Pending Review
+              </button>
+              <button class="btn btn-outline btn-sm filter-btn" data-status="REVIEWED" onclick="setFilter(this,'REVIEWED')">
+                <i class="fas fa-check-circle"></i> Reviewed
+              </button>
+              <button class="btn btn-outline btn-sm filter-btn" data-status="FLAGGED" onclick="setFilter(this,'FLAGGED')">
+                <i class="fas fa-flag"></i> Flagged
+              </button>
+              <span id="countLabel" style="margin-left:auto;font-size:0.82rem;color:#999;"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="inbox-grid" id="inboxGrid">
+          <div style="text-align:center;padding:60px;color:#999;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div class="modal-overlay" id="reviewModal">
+    <div class="modal" style="max-width:720px;">
+      <div class="modal-header">
+        <h3 id="modalTitle">📦 Weekly Package Review</h3>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <!-- Tabs -->
+        <div class="tabs">
+          <div class="tab active" onclick="showTab('reportsTab',this)">📄 Student Reports</div>
+          <div class="tab" onclick="showTab('reviewTab',this)">✅ Review Action</div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reportsTab">
+          <div id="packageMeta" style="margin-bottom:16px;"></div>
+          <div id="reportsList"></div>
+        </div>
+
+        <!-- Review Tab -->
+        <div id="reviewTab" style="display:none;">
+          <div style="margin-bottom:16px;padding:14px;background:#fff3e0;border-radius:8px;border-left:4px solid #ff9800;">
+            <strong style="color:#e65100;">⚠️ Review Guidelines</strong>
+            <p style="font-size:0.85rem;margin-top:6px;color:#666;">Mark as <strong>Reviewed</strong> if all reports look satisfactory. Mark as <strong>Flagged</strong> if you have concerns that need attention.</p>
+          </div>
+          <div class="form-group">
+            <label>Review Status <span style="color:red;">*</span></label>
+            <select class="form-control" id="reviewStatus">
+              <option value="REVIEWED">✅ Mark as Reviewed</option>
+              <option value="FLAGGED">⚠️ Flag for Attention</option>
+            </select>
+          </div>
+          <div class="form-group" id="notesGroup">
+            <label>Notes (optional for Reviewed, recommended for Flagged)</label>
+            <textarea class="form-control" id="reviewNotes" rows="4" placeholder="Add your observations or concerns about this group's progress..."></textarea>
+          </div>
+          <input type="hidden" id="reviewInboxId">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="submitReviewBtn" onclick="submitReview()" style="display:none;">
+          <i class="fas fa-paper-plane"></i> Submit Review
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let currentFilter = '';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      }
+      loadInbox();
+    });
+
+    function setFilter(btn, status) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('active','btn-primary');
+        b.classList.add('btn-outline');
+      });
+      btn.classList.add('active','btn-primary');
+      btn.classList.remove('btn-outline');
+      loadInbox();
+    }
+
+    async function loadInbox() {
+      try {
+        const url = `/api/teacher/inbox${currentFilter ? '?status=' + currentFilter : ''}`;
+        const data = await apiFetch(url);
+        renderInbox(data.items || []);
+      } catch(err) { showToast(err.message,'error'); }
+    }
+
+    function renderInbox(items) {
+      const grid = document.getElementById('inboxGrid');
+      document.getElementById('countLabel').textContent = `${items.length} package(s)`;
+      if (!items.length) {
+        grid.innerHTML = `<div style="text-align:center;padding:80px;color:#999;">
+          <i class="fas fa-check-circle" style="font-size:3rem;color:#4caf50;margin-bottom:16px;display:block;"></i>
+          <h3 style="margin-bottom:8px;">All Clear!</h3>
+          <p>No packages found for the selected filter.</p>
+        </div>`;
+        return;
+      }
+      grid.innerHTML = items.map(item => {
+        const statusClass = item.escalation_status === 'PENDING_REVIEW' ? 'pending' : item.escalation_status === 'REVIEWED' ? 'reviewed' : 'flagged';
+        const statusBadge = item.escalation_status === 'PENDING_REVIEW'
+          ? '<span class="badge badge-yellow"><i class="fas fa-clock"></i> Pending Review</span>'
+          : item.escalation_status === 'REVIEWED'
+          ? '<span class="badge badge-green"><i class="fas fa-check-circle"></i> Reviewed</span>'
+          : '<span class="badge badge-red"><i class="fas fa-flag"></i> Flagged</span>';
+        return `
+          <div class="package-card">
+            <div class="status-bar ${statusClass}"></div>
+            <div class="package-card-header">
+              <div>
+                <strong style="font-size:1.05rem;">${escapeHtml(item.group_code)}</strong>
+                <span class="badge badge-blue" style="margin-left:8px;">${escapeHtml(item.section_code)}</span>
+                <span class="badge badge-purple" style="margin-left:4px;">${escapeHtml(item.stage_name)}</span>
+              </div>
+              ${statusBadge}
+            </div>
+            <div class="package-card-body">
+              <p style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">${escapeHtml(item.project_title)}</p>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:0.82rem;color:#666;">
+                <div><i class="fas fa-calendar-week" style="color:#1565c0;margin-right:4px;"></i> Week ${item.week_no}</div>
+                <div><i class="fas fa-user-tie" style="color:#7b1fa2;margin-right:4px;"></i> ${escapeHtml(item.supervisor_name)}</div>
+                <div><i class="fas fa-users" style="color:#2e7d32;margin-right:4px;"></i> ${item.member_count} members</div>
+              </div>
+              ${item.notes ? `<div style="margin-top:10px;padding:8px 12px;background:#fff3e0;border-radius:6px;font-size:0.8rem;color:#e65100;"><i class="fas fa-sticky-note"></i> ${escapeHtml(item.notes)}</div>` : ''}
+              <div style="margin-top:8px;font-size:0.75rem;color:#aaa;">
+                Escalated: ${formatDate(item.escalated_at)}
+                ${item.reviewed_at ? ' · Reviewed: ' + formatDate(item.reviewed_at) : ''}
+              </div>
+            </div>
+            <div class="package-card-footer">
+              <button class="btn btn-outline btn-sm" onclick="openPackage(${item.inbox_id})">
+                <i class="fas fa-eye"></i> View Reports
+              </button>
+              ${item.escalation_status === 'PENDING_REVIEW' ? `
+              <button class="btn btn-primary btn-sm" onclick="openReview(${item.inbox_id})">
+                <i class="fas fa-gavel"></i> Review Package
+              </button>` : `
+              <button class="btn btn-outline btn-sm" onclick="openReview(${item.inbox_id})">
+                <i class="fas fa-edit"></i> Update Review
+              </button>`}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    async function openPackage(inboxId) {
+      try {
+        showLoading();
+        const data = await apiFetch(`/api/teacher/inbox/${inboxId}/reports`);
+        document.getElementById('modalTitle').textContent = `📦 ${data.inbox.group_code} — Week ${data.inbox.week_no}`;
+        document.getElementById('reviewInboxId').value = inboxId;
+        document.getElementById('packageMeta').innerHTML = `
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;padding:14px;background:#f8f9fa;border-radius:8px;">
+            <div><span class="text-muted text-sm">Group:</span><br><strong>${escapeHtml(data.inbox.group_code)}</strong></div>
+            <div><span class="text-muted text-sm">Week:</span><br><strong>Week ${data.inbox.week_no}</strong></div>
+            <div><span class="text-muted text-sm">Reports:</span><br><strong>${data.reports.length} student(s)</strong></div>
+          </div>`;
+        document.getElementById('reportsList').innerHTML = data.reports.map(r => `
+          <div class="report-detail-card">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <div class="report-row-avatar">${getInitials(r.student_name)}</div>
+              <div>
+                <strong>${escapeHtml(r.student_name)}</strong>
+                <span class="text-sm text-muted" style="display:block;">${escapeHtml(r.student_uid)} • ${escapeHtml(r.member_role)}</span>
+              </div>
+              <span class="badge badge-green" style="margin-left:auto;"><i class="fas fa-check"></i> Approved</span>
+            </div>
+            <div style="font-size:0.88rem;margin-bottom:8px;"><strong>${escapeHtml(r.report_title)}</strong></div>
+            <div style="font-size:0.82rem;color:#555;line-height:1.6;">${escapeHtml((r.report_content||'').substring(0,250))}${(r.report_content||'').length>250?'...':''}</div>
+            ${r.supervisor_feedback ? `<div style="margin-top:8px;padding:6px 10px;background:#e8f5e9;border-radius:6px;font-size:0.78rem;color:#2e7d32;"><i class="fas fa-comment-check"></i> Supervisor: ${escapeHtml(r.supervisor_feedback)}</div>` : ''}
+          </div>`).join('');
+        document.getElementById('submitReviewBtn').style.display = 'none';
+        showTab('reportsTab', document.querySelector('.tab'));
+        document.getElementById('reviewModal').classList.add('active');
+      } catch(err) { showToast(err.message,'error'); }
+      finally { hideLoading(); }
+    }
+
+    async function openReview(inboxId) {
+      await openPackage(inboxId);
+      document.getElementById('submitReviewBtn').style.display = 'inline-flex';
+      document.getElementById('reviewInboxId').value = inboxId;
+    }
+
+    function showTab(tabId, el) {
+      document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      ['reportsTab','reviewTab'].forEach(id => document.getElementById(id).style.display = 'none');
+      document.getElementById(tabId).style.display = 'block';
+      if (tabId === 'reviewTab') document.getElementById('submitReviewBtn').style.display = 'inline-flex';
+      else document.getElementById('submitReviewBtn').style.display = 'none';
+    }
+
+    function closeModal() { document.getElementById('reviewModal').classList.remove('active'); }
+
+    async function submitReview() {
+      const inboxId = document.getElementById('reviewInboxId').value;
+      const status = document.getElementById('reviewStatus').value;
+      const notes = document.getElementById('reviewNotes').value;
+
+      if (status === 'FLAGGED' && !notes.trim()) {
+        showToast('Please add notes when flagging a package', 'warning');
+        return;
+      }
+
+      try {
+        showLoading();
+        await apiFetch(`/api/teacher/inbox/${inboxId}/review`, {
+          method: 'POST', body: { status, notes }
+        });
+        showToast(`Package ${status === 'REVIEWED' ? 'reviewed' : 'flagged'} successfully!`, 'success');
+        closeModal();
+        loadInbox();
+      } catch(err) { showToast(err.message,'error'); }
+      finally { hideLoading(); }
+    }
+  </script>
+</body>
+</html>

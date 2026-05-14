@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text">
+            <h3>FYDP System</h3>
+            <p>Admin Panel</p>
+          </div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/admin/dashboard" class="active"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/admin/users"><span class="nav-icon">👥</span> Manage Users</a>
+        <a href="/admin/groups"><span class="nav-icon">📁</span> Manage Groups</a>
+        <div class="nav-label">Operations</div>
+        <a href="/admin/import"><span class="nav-icon">📥</span> Bulk Import</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">AD</div>
+          <div class="user-info">
+            <h4 id="userName">Admin</h4>
+            <p>Administrator</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="breadcrumb">
+          <i class="fas fa-home"></i> Admin / <span>Dashboard</span>
+        </div>
+        <div class="header-actions">
+          <button class="notification-bell" onclick="window.location.href='/admin/dashboard'">
+            <i class="fas fa-bell"></i>
+            <span class="badge" style="display:none">0</span>
+          </button>
+          <button class="btn-logout" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="page-content">
+        <div class="page-title">
+          <h1>📊 Admin Dashboard</h1>
+          <p>System overview and analytics for FYDP Management</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card blue">
+            <div class="stat-icon">👨‍🎓</div>
+            <div class="stat-value" id="statStudents">—</div>
+            <div class="stat-label">Total Students</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">👨‍🏫</div>
+            <div class="stat-value" id="statSupervisors">—</div>
+            <div class="stat-label">Supervisors</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-icon">📁</div>
+            <div class="stat-value" id="statGroups">—</div>
+            <div class="stat-label">Active Groups</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-value" id="statPending">—</div>
+            <div class="stat-label">Pending Reports</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">🏫</div>
+            <div class="stat-value" id="statTeachers">—</div>
+            <div class="stat-label">Course Teachers</div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:28px;">
+          <!-- Bar Chart: Groups per Stage -->
+          <div class="card">
+            <div class="card-header"><h3>📊 Groups per FYDP Stage</h3></div>
+            <div class="card-body">
+              <canvas id="stageChart" height="220"></canvas>
+            </div>
+          </div>
+          <!-- Pie Chart: Domain Distribution -->
+          <div class="card">
+            <div class="card-header"><h3>🎯 Project Domain Distribution</h3></div>
+            <div class="card-body">
+              <canvas id="domainChart" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- FYDP Stage Cards -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:28px;">
+          <div class="stat-card blue" id="stageFydp1">
+            <div class="stat-icon">1️⃣</div>
+            <div class="stat-value">—</div>
+            <div class="stat-label">FYDP-1 Groups</div>
+          </div>
+          <div class="stat-card green" id="stageFydp2">
+            <div class="stat-icon">2️⃣</div>
+            <div class="stat-value">—</div>
+            <div class="stat-label">FYDP-2 Groups</div>
+          </div>
+          <div class="stat-card purple" id="stageFydp3">
+            <div class="stat-icon">3️⃣</div>
+            <div class="stat-value">—</div>
+            <div class="stat-label">FYDP-3 Groups</div>
+          </div>
+        </div>
+
+        <!-- Recent Audit Log -->
+        <div class="card">
+          <div class="card-header">
+            <h3>📜 Recent Audit Log</h3>
+          </div>
+          <div class="card-body">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Table</th>
+                    <th>Operation</th>
+                    <th>Record ID</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTableBody">
+                  <tr><td colspan="5" style="text-align:center;color:#999;">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let stageChart = null;
+    let domainChart = null;
+
+    // Load dashboard on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      }
+      await loadDashboard();
+      updateNotificationCount();
+    });
+
+    async function loadDashboard() {
+      try {
+        showLoading();
+        const data = await apiFetch('/api/admin/stats');
+
+        // Stats cards
+        document.getElementById('statStudents').textContent = data.students;
+        document.getElementById('statSupervisors').textContent = data.supervisors;
+        document.getElementById('statGroups').textContent = data.activeGroups;
+        document.getElementById('statPending').textContent = data.pendingReports;
+        document.getElementById('statTeachers').textContent = data.courseTeachers;
+
+        // Stage cards
+        const stageMap = { 'FYDP-1': 'stageFydp1', 'FYDP-2': 'stageFydp2', 'FYDP-3': 'stageFydp3' };
+        data.stageGroups.forEach(s => {
+          const el = document.getElementById(stageMap[s.stage_name]);
+          if (el) el.querySelector('.stat-value').textContent = s.count;
+        });
+
+        // Bar chart — Groups per stage
+        const stageLabels = data.stageGroups.map(s => s.stage_name);
+        const stageCounts = data.stageGroups.map(s => s.count);
+
+        if (stageChart) stageChart.destroy();
+        stageChart = new Chart(document.getElementById('stageChart'), {
+          type: 'bar',
+          data: {
+            labels: stageLabels,
+            datasets: [{
+              label: 'Groups',
+              data: stageCounts,
+              backgroundColor: ['#1565c0', '#2e7d32', '#7b1fa2'],
+              borderRadius: 8,
+              barPercentage: 0.6
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+          }
+        });
+
+        // Pie chart — Domain distribution
+        const domainLabels = data.domainGroups.map(d => d.domain_name);
+        const domainCounts = data.domainGroups.map(d => d.count);
+        const domainColors = ['#1565c0','#2e7d32','#7b1fa2','#e65100','#00695c','#c62828','#4527a0','#00838f'];
+
+        if (domainChart) domainChart.destroy();
+        domainChart = new Chart(document.getElementById('domainChart'), {
+          type: 'doughnut',
+          data: {
+            labels: domainLabels,
+            datasets: [{
+              data: domainCounts,
+              backgroundColor: domainColors.slice(0, domainLabels.length),
+              borderWidth: 2,
+              borderColor: '#fff'
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } }
+            }
+          }
+        });
+
+        // Audit log table
+        const tbody = document.getElementById('auditTableBody');
+        if (data.recentAudit.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No audit entries yet</td></tr>';
+        } else {
+          tbody.innerHTML = data.recentAudit.map(a => `
+            <tr>
+              <td>${a.audit_id}</td>
+              <td><span class="badge badge-blue">${escapeHtml(a.table_name)}</span></td>
+              <td>${getStatusBadge(a.operation)}</td>
+              <td>${a.record_id}</td>
+              <td>${formatDateTime(a.changed_at)}</td>
+            </tr>
+          `).join('');
+        }
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+  </script>
+</body>
+</html>

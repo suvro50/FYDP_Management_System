@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Teacher Dashboard — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .section-badge { padding:4px 14px;border-radius:20px;font-size:0.75rem;font-weight:700;letter-spacing:0.04em;display:inline-block; }
+    .section-fydp1 { background:#0f1d2e;color:#93c5fd; }
+    .section-fydp2 { background:#0a1912;color:#86efac; }
+    .section-fydp3 { background:#12052a;color:#d8b4fe; }
+    
+    .inbox-item { 
+      border-left:4px solid #1e2240;
+      padding:14px 18px;
+      margin-bottom:12px;
+      border-radius:0 8px 8px 0;
+      background:#161929;
+      cursor:pointer;
+      transition:all 0.2s; 
+      border: 1px solid #1e2240;
+      border-left-width: 4px;
+    }
+    .inbox-item:hover { background:#1e2240; transform:translateX(2px); }
+    .inbox-item.pending { border-left-color:#ff9800; }
+    .inbox-item.reviewed { border-left-color:#4caf50; }
+    .inbox-item.flagged { border-left-color:#f44336; }
+    
+    /* Fix section card background */
+    #sectionsCard div[style*="background:#f8f9fa"] {
+      background: #1c2033 !important;
+      border: 1px solid #1e2240 !important;
+    }
+    #sectionsCard strong { color: #fff !important; }
+  </style>e>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Course Teacher</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/teacher/dashboard" class="active"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+        <a href="/teacher/announcements"><span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Announcements</a>
+        <a href="/teacher/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+        <a href="/teacher/students"><span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Student List</a>
+        <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span> Student Messages</a>
+        <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> Chat with Supervisors</a>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+        <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">CT</div>
+          <div class="user-info"><h4 id="userName">Course Teacher</h4><p>Course Teacher</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Teacher / <span>Dashboard</span></div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-title">
+          <h1><i class="fas fa-chalkboard-teacher" style="color:var(--primary);margin-right:8px;"></i> Course Teacher Dashboard</h1>
+          <p>Overview of your sections, groups, and escalated report packages</p>
+        </div>
+
+        <!-- Top Stats -->
+        <div class="stats-grid grid-3">
+          <div class="stat-card blue">
+            <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+            <div class="stat-value" id="statSections">—</div>
+            <div class="stat-label">My Sections</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-value" id="statGroups">—</div>
+            <div class="stat-label">Total Groups</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+            <div class="stat-value" id="statStudents">—</div>
+            <div class="stat-label">Total Students</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="stats-grid grid-2" style="margin-bottom:28px;">
+          <a href="/teacher/groups" class="action-btn">
+            <i class="fas fa-users" style="color:#1565c0;"></i>
+            <span>View Groups</span>
+          </a>
+          <a href="/teacher/supervisor-chat" class="action-btn">
+            <i class="fas fa-comments" style="color:#2e7d32;"></i>
+            <span>Supervisor Chat</span>
+          </a>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+          <!-- My Sections -->
+          <div class="card">
+            <div class="card-header"><h3>📋 My Sections</h3></div>
+            <div class="card-body" id="sectionsCard">
+              <div style="text-align:center;color:#999;padding:30px;">Loading...</div>
+            </div>
+          </div>
+
+          <!-- Recent Escalated Packages (Removed) -->
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      }
+      loadDashboard();
+      // Global main.js handles notification badge and dropdown auto-init
+    });
+
+    async function loadDashboard() {
+      try {
+        showLoading();
+        const [stats, sections] = await Promise.all([
+          apiFetch('/api/teacher/stats'),
+          apiFetch('/api/teacher/sections')
+        ]);
+
+        document.getElementById('statSections').textContent = stats.totalSections;
+        document.getElementById('statGroups').textContent = stats.totalGroups;
+        document.getElementById('statStudents').textContent = stats.totalStudents;
+
+        // Sections
+        const stageClass = s => ({'FYDP-1':'section-fydp1','FYDP-2':'section-fydp2','FYDP-3':'section-fydp3'}[s]||'');
+        const sc = document.getElementById('sectionsCard');
+        if (!sections.sections.length) {
+          sc.innerHTML = '<p style="color:#999;text-align:center;padding:20px;">No sections assigned yet.</p>';
+        } else {
+          sc.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">${sections.sections.map(s => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#f8f9fa;border-radius:8px;">
+              <div>
+                <strong style="font-size:1rem;">${escapeHtml(s.section_code)}</strong>
+                <span class="section-badge ${stageClass(s.stage_name)}" style="margin-left:10px;">${s.stage_name}</span>
+              </div>
+              <span class="badge badge-blue">${s.group_count} groups</span>
+            </div>`).join('')}</div>`;
+        }
+
+        // Removed Inbox logic
+
+      } catch(err) {
+        showToast(err.message, 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+  </script>
+</body>
+</html>

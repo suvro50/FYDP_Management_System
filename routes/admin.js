@@ -1,0 +1,486 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../config/db');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/admin/stats — Dashboard statistics
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/stats', async (req, res) => {
+  try {
+    // All counts in parallel for performance
+    const [
+      [students], [supervisors], [courseTeachers],
+      [activeGroups], [stageGroups], [domainGroups],
+      [pendingReports], [recentAudit]
+    ] = await Promise.all([
+      db.query("SELECT COUNT(*) as count FROM users WHERE role='STUDENT' AND is_active=1"),
+      db.query("SELECT COUNT(*) as count FROM users WHERE role='SUPERVISOR' AND is_active=1"),
+      db.query("SELECT COUNT(*) as count FROM users WHERE role='COURSE_TEACHER' AND is_active=1"),
+      db.query("SELECT COUNT(*) as count FROM project_groups WHERE project_status='ACTIVE' AND is_active=1"),
+      db.query(`SELECT fs.stage_name, COUNT(pg.group_id) as count
+                FROM fydp_stages fs
+                LEFT JOIN project_groups pg ON pg.current_stage_id = fs.stage_id 
+                  AND pg.is_active=1 AND pg.project_status='ACTIVE'
+                GROUP BY fs.stage_id, fs.stage_name
+                ORDER BY fs.stage_order`),
+      db.query(`SELECT pd.domain_name, COUNT(pg.group_id) as count
+                FROM project_domains pd
+                LEFT JOIN project_groups pg ON pg.project_domain_id = pd.domain_id
+                  AND pg.is_active=1
+                GROUP BY pd.domain_id, pd.domain_name
+                ORDER BY count DESC`),
+      db.query("SELECT COUNT(*) as count FROM weekly_progress_reports WHERE supervisor_status='PENDING'"),
+      db.query("SELECT * FROM audit_log ORDER BY changed_at DESC LIMIT 10")
+    ]);
+
+    res.json({
+      students: students[0].count,
+      supervisors: supervisors[0].count,
+      courseTeachers: courseTeachers[0].count,
+      activeGroups: activeGroups[0].count,
+      stageGroups: stageGroups,
+      domainGroups: domainGroups.filter(d => d.count > 0),
+      pendingReports: pendingReports[0].count,
+      recentAudit: recentAudit
+    });
+  } catch (err) {
+    console.error('Admin stats error:', err);
+    res.status(500).json({ error: 'Failed to load dashboard stats' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/admin/users — Paginated, filterable user list
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/users', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const { role, department, status, search } = req.query;
+
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (role) { where += ' AND u.role = ?'; params.push(role); }
+    if (department) { where += ' AND u.department = ?'; params.push(department); }
+    if (status) { where += ' AND u.account_status = ?'; params.push(status); }
+    if (search) {
+      where += ' AND (u.full_name LIKE ? OR u.university_id LIKE ? OR u.email LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) as total FROM users u ${where}`, params
+    );
+
+    const [users] = await db.query(
+      `SELECT u.user_id, u.university_id, u.full_name, u.email, u.role, 
+              u.department, u.batch, u.phone, u.account_status, u.is_active,
+              u.created_at
+       FROM users u ${where}
+       ORDER BY u.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({
+      users,
+      pagination: {
+        page, limit, total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    console.error('Admin users error:', err);
+    res.status(500).json({ error: 'Failed to load users' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// POST /api/admin/users — Create new user
+// ═══════════════════════════════════════════════════════════════════════════
+router.post('/users', async (req, res) => {
+  try {
+    const { university_id, full_name, email, password, role, department, batch, phone } = req.body;
+
+    if (!university_id || !full_name || !email || !password || !role || !department) {
+      return res.status(400).json({ error: 'Required fields: university_id, full_name, email, password, role, department' });
+    }
+
+    const [result] = await db.query(
+      `INSERT INTO users (university_id, full_name, email, password_hash, role, department, batch, phone)
+       VALUES (?, ?, ?, SHA2(?, 256), ?, ?, ?, ?)`,
+      [university_id, full_name, email, password, role, department, batch || null, phone || null]
+    );
+
+    // If student, create student_profiles entry
+    if (role === 'STUDENT') {
+      await db.query(
+        `INSERT INTO student_profiles (student_id) VALUES (?)`,
+        [result.insertId]
+      );
+    }
+
+    res.json({ success: true, user_id: result.insertId, message: 'User created successfully' });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'University ID or email already exists' });
+    }
+    console.error('Create user error:', err);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PUT /api/admin/users/:id — Update user
+// ═══════════════════════════════════════════════════════════════════════════
+router.put('/users/:id', async (req, res) => {
+  try {
+    const { full_name, email, role, department, batch, phone, account_status } = req.body;
+    const userId = req.params.id;
+
+    await db.query(
+      `UPDATE users SET full_name=?, email=?, role=?, department=?, batch=?, phone=?, account_status=?
+       WHERE user_id=?`,
+      [full_name, email, role, department, batch || null, phone || null, account_status, userId]
+    );
+
+    res.json({ success: true, message: 'User updated successfully' });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'Email or University ID already in use' });
+    }
+    console.error('Update user error:', err);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DELETE /api/admin/users/:id — Soft delete user
+// ═══════════════════════════════════════════════════════════════════════════
+router.delete('/users/:id', async (req, res) => {
+  try {
+    await db.query(
+      `UPDATE users SET is_active = 0, deleted_at = NOW(), account_status = 'DEACTIVATED'
+       WHERE user_id = ?`,
+      [req.params.id]
+    );
+    res.json({ success: true, message: 'User deactivated successfully' });
+  } catch (err) {
+    console.error('Delete user error:', err);
+    res.status(500).json({ error: 'Failed to deactivate user' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/admin/groups — Paginated group list
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/groups', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const { stage, section, status, supervisor, search } = req.query;
+
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (stage) { where += ' AND fs.stage_name = ?'; params.push(stage); }
+    if (section) { where += ' AND pg.section_code = ?'; params.push(section); }
+    if (status) { where += ' AND pg.project_status = ?'; params.push(status); }
+    if (supervisor) { where += ' AND pg.supervisor_id = ?'; params.push(supervisor); }
+    if (search) {
+      where += ' AND (pg.group_code LIKE ? OR pg.project_title LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) as total FROM project_groups pg
+       JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id ${where}`, params
+    );
+
+    const [groups] = await db.query(
+      `SELECT pg.*, fs.stage_name, pd.domain_name, u.full_name as supervisor_name,
+              (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = pg.group_id) as member_count
+       FROM project_groups pg
+       JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+       JOIN project_domains pd ON pd.domain_id = pg.project_domain_id
+       JOIN users u ON u.user_id = pg.supervisor_id
+       ${where}
+       ORDER BY pg.created_at DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({
+      groups,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+    });
+  } catch (err) {
+    console.error('Admin groups error:', err);
+    res.status(500).json({ error: 'Failed to load groups' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/admin/groups/:id/members — Group member details
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/groups/:id/members', async (req, res) => {
+  try {
+    const [members] = await db.query(
+      `SELECT gm.*, u.full_name, u.university_id, u.email
+       FROM group_members gm
+       JOIN users u ON u.user_id = gm.student_id
+       WHERE gm.group_id = ?`,
+      [req.params.id]
+    );
+    res.json({ members });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load members' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// POST /api/admin/promote-group — Call sp_promote_fydp_stage
+// ═══════════════════════════════════════════════════════════════════════════
+router.post('/promote-group', async (req, res) => {
+  try {
+    const { group_id, new_stage_id, new_domain_id, new_project_title, change_reason } = req.body;
+    const admin_id = req.session.user.user_id;
+
+    const [result] = await db.query(
+      'CALL sp_promote_fydp_stage(?, ?, ?, ?, ?, ?)',
+      [group_id, new_stage_id, new_domain_id || null, new_project_title || null, admin_id, change_reason || 'Stage promotion']
+    );
+
+    res.json({ success: true, message: 'Group promoted successfully', result: result[0] });
+  } catch (err) {
+    console.error('Promote error:', err);
+    res.status(400).json({ error: err.message || 'Promotion failed' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/admin/audit-logs — Audit trail
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/audit-logs', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 15;
+    const offset = (page - 1) * limit;
+
+    const [[{ total }]] = await db.query('SELECT COUNT(*) as total FROM audit_log');
+    const [logs] = await db.query(
+      `SELECT * FROM audit_log ORDER BY changed_at DESC LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+
+    res.json({ logs, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load audit logs' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/admin/topic-history — Topic change history
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/topic-history', async (req, res) => {
+  try {
+    const [history] = await db.query(
+      `SELECT tch.*, pg.group_code, u.full_name as admin_name,
+              pd_old.domain_name as old_domain, pd_new.domain_name as new_domain
+       FROM topic_change_history tch
+       JOIN project_groups pg ON pg.group_id = tch.group_id
+       JOIN users u ON u.user_id = tch.changed_by_admin
+       LEFT JOIN project_domains pd_old ON pd_old.domain_id = tch.old_domain_id
+       LEFT JOIN project_domains pd_new ON pd_new.domain_id = tch.new_domain_id
+       ORDER BY tch.changed_at DESC LIMIT 50`
+    );
+    res.json({ history });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load topic history' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/admin/supervisors — Supervisor list (for dropdowns)
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/supervisors', async (req, res) => {
+  try {
+    const [supervisors] = await db.query(
+      "SELECT user_id, full_name, department FROM users WHERE role='SUPERVISOR' AND is_active=1"
+    );
+    res.json({ supervisors });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load supervisors' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/admin/stages — FYDP stages (for dropdowns)
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/stages', async (req, res) => {
+  try {
+    const [stages] = await db.query('SELECT * FROM fydp_stages ORDER BY stage_order');
+    res.json({ stages });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load stages' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/admin/domains — Project domains (for dropdowns)
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/domains', async (req, res) => {
+  try {
+    const [domains] = await db.query('SELECT * FROM project_domains ORDER BY domain_name');
+    res.json({ domains });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load domains' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/admin/import-errors — Import error logs
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/import-errors', async (req, res) => {
+  try {
+    const [errors] = await db.query(
+      'SELECT * FROM import_error_logs ORDER BY logged_at DESC LIMIT 100'
+    );
+    res.json({ errors });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load import errors' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// POST /api/admin/ucam-sync/student-status — UCAM Student Drop/Fail Sync
+// When UCAM reports a student dropped or failed, update the system
+// ═══════════════════════════════════════════════════════════════════════════
+router.post('/ucam-sync/student-status', async (req, res) => {
+  try {
+    const { student_id, status } = req.body; // status: 'DROPPED' or 'FAILED'
+
+    if (!student_id || !['DROPPED', 'FAILED'].includes(status)) {
+      return res.status(400).json({ error: 'student_id and status (DROPPED/FAILED) required' });
+    }
+
+    // Deactivate the student
+    await db.query(
+      'UPDATE users SET is_active = 0 WHERE user_id = ? AND role = ?',
+      [student_id, 'STUDENT']
+    );
+
+    // Get student's group info before removing
+    const [memberships] = await db.query(
+      `SELECT gm.group_id, pg.group_code, pg.supervisor_id 
+       FROM group_members gm
+       JOIN project_groups pg ON pg.group_id = gm.group_id
+       WHERE gm.student_id = ?`,
+      [student_id]
+    );
+
+    // Get student name
+    const [[student]] = await db.query(
+      'SELECT full_name, university_id FROM users WHERE user_id = ?',
+      [student_id]
+    );
+
+    // Remove from all groups
+    await db.query('DELETE FROM group_members WHERE student_id = ?', [student_id]);
+
+    // Notify supervisors
+    for (const m of memberships) {
+      await db.query(
+        `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+        [m.supervisor_id, `⚠️ Student ${status}`,
+         `${student.full_name} (${student.university_id}) has ${status.toLowerCase()} from the course and has been removed from group ${m.group_code}.`]
+      );
+    }
+
+    res.json({ success: true, message: `Student marked as ${status} and removed from groups` });
+  } catch (err) {
+    console.error('UCAM sync error:', err);
+    res.status(500).json({ error: 'Sync failed' });
+  }
+});
+
+// POST /api/admin/ucam-sync/group — UCAM Group Auto-Sync
+// When supervisor accepts a group on UCAM, this endpoint is called
+// to automatically create the group in our system (no manual approval needed)
+router.post('/ucam-sync/group', async (req, res) => {
+  try {
+    const { group_code, project_title, domain_name, stage_name, section_code, supervisor_id, student_ids } = req.body;
+
+    if (!group_code || !project_title || !supervisor_id) {
+      return res.status(400).json({ error: 'group_code, project_title, and supervisor_id required' });
+    }
+
+    // Check if group already exists (prevent duplicates)
+    const [[existing]] = await db.query(
+      'SELECT group_id FROM project_groups WHERE group_code = ?',
+      [group_code]
+    );
+    if (existing) {
+      return res.status(409).json({ error: `Group ${group_code} already exists` });
+    }
+
+    // Resolve stage ID
+    const [[stage]] = await db.query(
+      'SELECT stage_id FROM fydp_stages WHERE stage_name = ?',
+      [stage_name || 'FYDP-1']
+    );
+
+    // Resolve domain ID
+    let domainId = 1;
+    if (domain_name) {
+      const [[domain]] = await db.query(
+        'SELECT domain_id FROM project_domains WHERE domain_name = ?',
+        [domain_name]
+      );
+      if (domain) domainId = domain.domain_id;
+    }
+
+    // Create the group directly — already accepted on UCAM
+    const [insertResult] = await db.query(
+      `INSERT INTO project_groups (group_code, project_title, project_domain_id, supervisor_id, current_stage_id, section_code)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [group_code, project_title, domainId, supervisor_id, stage.stage_id, section_code || null]
+    );
+
+    const groupId = insertResult.insertId;
+
+    // Add students to group
+    if (student_ids) {
+      const ids = student_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      for (let i = 0; i < ids.length; i++) {
+        try {
+          await db.query(
+            'INSERT INTO group_members (group_id, student_id, member_role) VALUES (?, ?, ?)',
+            [groupId, ids[i], i === 0 ? 'LEADER' : 'MEMBER']
+          );
+          // Notify student
+          await db.query(
+            `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+            [ids[i], '✅ Group Confirmed', `You have been added to group ${group_code} — "${project_title}". Check your dashboard for details.`]
+          );
+        } catch (e) { /* skip if already exists */ }
+      }
+    }
+
+    // Notify supervisor
+    await db.query(
+      `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+      [supervisor_id, '📋 New Group Synced from UCAM', `Group "${project_title}" (${group_code}) has been synced from UCAM and is now active in your dashboard.`]
+    );
+
+    res.json({ success: true, message: 'Group synced and created', group_id: groupId });
+  } catch (err) {
+    console.error('UCAM group sync error:', err);
+    res.status(500).json({ error: err.message || 'Failed to sync group' });
+  }
+});
+
+module.exports = router;
+

@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supervisor Dashboard — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ═══ BASE DARK ═══ */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body { background:#0d0f1e !important; color:#e2e8f0 !important; font-family:'Inter','Segoe UI',sans-serif; }
+    .main-content { background:#0d0f1e !important; overflow-x:auto !important; }
+    .page-content { background:#0d0f1e !important; padding:20px 24px !important; max-width:100% !important; min-width:0 !important; }
+    .top-header { background:#0d0f1e !important; border-bottom:1px solid #1e2240 !important; }
+
+    /* ── SIDEBAR: compact, no text wrap ── */
+    .sidebar {
+      background:#12152a !important; border-right:1px solid #1e2240 !important;
+      position:fixed !important; transition:width 0.25s ease !important;
+      width:230px !important;
+    }
+    .sidebar-header { padding:16px 16px !important; }
+    .sidebar-nav { padding:8px 10px !important; }
+    .sidebar-nav .nav-label { padding:8px 10px 4px !important; font-size:0.62rem !important; }
+    .sidebar-nav a {
+      padding:9px 12px !important;
+      margin-bottom:1px !important;
+      font-size:0.83rem !important;
+      white-space:nowrap !important;
+      overflow:hidden !important;
+      text-overflow:ellipsis !important;
+      display:flex !important;
+      align-items:center !important;
+      gap:10px !important;
+      border-radius:8px !important;
+    }
+    .sidebar-nav a .nav-icon { font-size:16px !important; width:18px !important; flex-shrink:0 !important; }
+    .sidebar-footer { padding:12px 14px !important; }
+    /* Main content must account for 230px sidebar */
+    .main-content { margin-left:230px !important; width:calc(100% - 230px) !important; max-width:calc(100% - 230px) !important; }
+    .sidebar.sidebar-collapsed { width:64px !important; }
+    .sidebar.sidebar-collapsed .brand-text,
+    .sidebar.sidebar-collapsed .nav-label,
+    .sidebar.sidebar-collapsed .sidebar-user .user-info,
+    .sidebar.sidebar-collapsed a span:last-child { display:none !important; }
+    .sidebar.sidebar-collapsed .sidebar-nav a { justify-content:center; padding:12px 0; }
+    .sidebar.sidebar-collapsed .brand { justify-content:center; }
+    .sidebar.sidebar-collapsed #pendingBadgeSide { display:none !important; }
+    .sidebar.sidebar-collapsed + .main-content { margin-left:64px !important; width:calc(100% - 64px) !important; max-width:calc(100% - 64px) !important; }
+
+    /* ═══ HEADER SEARCH ═══ */
+    .dash-search {
+      flex:1; max-width:380px; display:flex; align-items:center;
+      background:#1a1d2e; border:1px solid #2d3354; border-radius:10px;
+      padding:8px 14px; gap:10px; margin:0 24px;
+    }
+    .dash-search input {
+      background:none; border:none; outline:none; color:#e2e8f0;
+      font-size:0.88rem; width:100%;
+    }
+    .dash-search input::placeholder { color:#475569; }
+    .dash-search i { color:#475569; }
+
+    /* ═══ TOP STAT CARDS (big 2-col) ═══ */
+    .top-stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
+    .top-stat-card {
+      border-radius:16px; padding:28px 28px 24px;
+      display:flex; flex-direction:column; gap:10px;
+      position:relative; overflow:hidden; min-height:160px;
+    }
+    .top-stat-card.green  { background:linear-gradient(135deg,#0f2e1a,#1a4d2e); border:1px solid #1e4a2f; }
+    .top-stat-card.purple { background:linear-gradient(135deg,#1a1040,#2d1a5e); border:1px solid #3b2080; }
+    .tsc-badge {
+      width:48px; height:48px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center; font-size:1.3rem;
+    }
+    .tsc-badge.green  { background:linear-gradient(135deg,#10b981,#059669); }
+    .tsc-badge.purple { background:linear-gradient(135deg,#a855f7,#7c3aed); }
+    .tsc-trend { font-size:0.78rem; color:#10b981; font-weight:600; margin-left:auto; }
+    .tsc-trend.gray   { color:#64748b; }
+    .tsc-row { display:flex; align-items:flex-start; justify-content:space-between; }
+    .tsc-num  { font-size:3rem; font-weight:900; color:#fff; line-height:1; }
+    .tsc-label { font-size:1.05rem; font-weight:700; color:#e2e8f0; }
+    .tsc-sub   { font-size:0.82rem; color:#64748b; }
+
+    /* ═══ FYDP STAGE ROWS ═══ */
+    .stage-row {
+      background:#161929; border:1px solid #1e2240; border-radius:12px;
+      padding:10px 14px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px;
+    }
+    .stage-row-header { display:flex; align-items:center; gap:10px; }
+    .stage-num {
+      width:30px; height:30px; border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.9rem; font-weight:900; color:#fff; flex-shrink:0;
+    }
+    .stage-num.s1 { background:linear-gradient(135deg,#6c5ce7,#7c3aed); }
+    .stage-num.s2 { background:linear-gradient(135deg,#f59e0b,#d97706); }
+    .stage-num.s3 { background:linear-gradient(135deg,#10b981,#059669); }
+    .stage-info h4 { font-size:0.85rem; font-weight:800; color:#fff; margin:0; }
+    .stage-info p  { font-size:0.7rem; color:#64748b; margin:0; }
+    .stage-count { margin-left:auto; font-size:1.1rem; font-weight:900; }
+    .stage-count.s1 { color:#7c3aed; }
+    .stage-count.s2 { color:#f59e0b; }
+    .stage-count.s3 { color:#10b981; }
+    .stage-progress-row { display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:#64748b; }
+    .stage-bar-wrap { height:6px; background:#1e2240; border-radius:3px; overflow:hidden; margin:4px 0 6px; }
+    .stage-bar { height:100%; border-radius:3px; transition:width 0.6s ease; }
+    .stage-bar.s1 { background:linear-gradient(90deg,#6c5ce7,#a78bfa); }
+    .stage-bar.s2 { background:linear-gradient(90deg,#f59e0b,#fcd34d); }
+    .stage-bar.s3 { background:linear-gradient(90deg,#10b981,#34d399); }
+    .stage-active { font-size:0.8rem; color:#475569; }
+
+    /* ═══ CHART CARD ═══ */
+    .chart-card {
+      background:#161929; border:1px solid #1e2240; border-radius:12px;
+      padding:14px; margin-bottom:10px;
+    }
+    .chart-card-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
+    .chart-card-header h3 { font-size:0.9rem; font-weight:800; color:#fff; margin:0 0 4px; }
+    .chart-card-header p  { font-size:0.7rem; color:#64748b; margin:0; }
+    .chart-legend { display:flex; gap:16px; font-size:0.78rem; color:#94a3b8; }
+    .chart-legend span { display:flex; align-items:center; gap:6px; }
+    .cl-dot { width:10px; height:10px; border-radius:50%; }
+    .chart-note { font-size:0.72rem; color:#475569; text-align:center; margin-top:10px; }
+
+    .chart-note { font-size:0.72rem; color:#475569; text-align:center; margin-top:10px; }
+
+    /* ── Force sidebar ALWAYS visible on dashboard ── */
+    .sidebar { width:230px !important; }
+    .sidebar.sidebar-collapsed { width:230px !important; }
+    .sidebar.sidebar-collapsed .brand-text,
+    .sidebar.sidebar-collapsed .nav-label,
+    .sidebar.sidebar-collapsed .sidebar-user .user-info,
+    .sidebar.sidebar-collapsed a span:last-child { display:initial !important; }
+    .sidebar.sidebar-collapsed .sidebar-nav a { justify-content:flex-start !important; padding:9px 12px !important; }
+    .sidebar.sidebar-collapsed .brand { justify-content:flex-start !important; }
+    .main-content { margin-left:230px !important; width:calc(100% - 230px) !important; max-width:calc(100% - 230px) !important; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Supervisor Panel</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/supervisor/dashboard" class="active" style="position:relative;"><span class="nav-icon"><i class="fas fa-th-large"></i></span> Dashboard <span style="width:8px;height:8px;border-radius:50%;background:#6c5ce7;display:inline-block;margin-left:auto;flex-shrink:0;"></span></a>
+        <a href="/supervisor/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+        <a href="/supervisor/approvals"><span class="nav-icon"><i class="fas fa-clipboard-check"></i></span> Pending Approvals <span class="badge badge-yellow" id="pendingBadgeSide" style="margin-left:auto;display:none"></span></a>
+        <a href="/supervisor/student-inbox"><span class="nav-icon"><i class="fas fa-inbox"></i></span> Student Messages <span id="sidebarBadge" class="badge" style="display:none;margin-left:auto;font-size:0.65rem;padding:2px 6px;background:#ef4444;color:#fff;border-radius:10px;">0</span></a>
+        <a href="/supervisor/chat"><span class="nav-icon"><i class="fas fa-comments"></i></span> Chat with Teachers</a>
+        <div class="nav-label" style="margin-top:20px;">Account</div>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+        <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>
+        <a href="/supervisor/settings" style="margin-top:8px"><span class="nav-icon"><i class="fas fa-cog"></i></span> Settings</a>
+      </nav>
+      <!-- Figma collapse button -->
+      <button id="sidebarCollapseBtn" onclick="toggleSidebar()" style="
+        position:absolute;top:50%;right:-14px;transform:translateY(-50%);
+        width:28px;height:28px;border-radius:50%;
+        background:#1e2240;border:1px solid #2d3354;
+        color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;
+        font-size:0.75rem;z-index:10;transition:all 0.2s;
+      "><i class="fas fa-chevron-left" id="collapseIcon"></i></button>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">SV</div>
+          <div class="user-info"><h4 id="userName">Supervisor</h4><p>Supervisor</p></div>
+          <button onclick="logout()" style="background:none;border:none;cursor:pointer;color:#475569;margin-left:auto;" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb">
+          <i class="fas fa-home"></i> Supervisor / <span>Dashboard</span>
+        </div>
+        <!-- Search bar in header -->
+        <div class="dash-search">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search groups, students..." id="headerSearch" oninput="filterGroups()">
+        </div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+
+        <!-- ── PAGE TITLE ── -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6c5ce7,#a78bfa);display:flex;align-items:center;justify-content:center;">
+              <i class="fas fa-th-large" style="color:#fff;font-size:1rem;"></i>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="font-size:1.4rem;font-weight:800;color:#fff;margin:0;">Supervisor Dashboard</h1>
+                <span style="background:#6c5ce720;color:#a78bfa;border:1px solid #6c5ce740;padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;">✦ Live</span>
+              </div>
+              <p style="color:#64748b;font-size:0.82rem;margin:3px 0 0;">Overview of your assigned groups across all FYDP stages</p>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.88rem;font-weight:700;color:#e2e8f0;" id="dashDate">Sunday, May 10, 2026</div>
+            <div style="font-size:0.78rem;color:#64748b;" id="dashSemester">Spring Semester • Week 4</div>
+          </div>
+        </div>
+
+        <!-- ── 4 STAT CARDS (single row, compact horizontal) ── -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+
+          <!-- My Total Groups -->
+          <div style="background:linear-gradient(135deg,#1c1450,#221860);border:1px solid #3d2fa0;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6c5ce7,#8b5cf6);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-users" style="color:#fff;font-size:0.9rem;"></i>
+            </div>
+            <div style="min-width:0;">
+              <div style="font-size:0.6rem;color:#10b981;font-weight:600;margin-bottom:2px;">↗ +1 this semester</div>
+              <div style="font-size:1.5rem;font-weight:900;color:#fff;line-height:1;" id="statTotal">—</div>
+              <div style="font-size:0.75rem;font-weight:700;color:#c4b5fd;margin-top:2px;">My Total Groups</div>
+              <div style="font-size:0.65rem;color:#64748b;">Active supervision</div>
+            </div>
+          </div>
+
+          <!-- Pending Reports -->
+          <div style="background:linear-gradient(135deg,#2a1800,#3d2200);border:1px solid #7c4000;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-file-alt" style="color:#fff;font-size:0.9rem;"></i>
+            </div>
+            <div style="min-width:0;">
+              <div style="font-size:0.6rem;color:#10b981;font-weight:600;margin-bottom:2px;">↗ All clear</div>
+              <div style="font-size:1.5rem;font-weight:900;color:#fff;line-height:1;" id="statPending">—</div>
+              <div style="font-size:0.75rem;font-weight:700;color:#fcd34d;margin-top:2px;">Pending Reports</div>
+              <div style="font-size:0.65rem;color:#64748b;">No action needed</div>
+            </div>
+          </div>
+
+          <!-- Approved This Week -->
+          <div style="background:linear-gradient(135deg,#0a2a18,#0f3d22);border:1px solid #166534;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-check-circle" style="color:#fff;font-size:0.9rem;"></i>
+            </div>
+            <div style="min-width:0;">
+              <div style="font-size:0.6rem;color:#10b981;font-weight:600;margin-bottom:2px;">↑ +2 vs last week</div>
+              <div style="font-size:1.5rem;font-weight:900;color:#fff;line-height:1;" id="statApprovedWeek">—</div>
+              <div style="font-size:0.75rem;font-weight:700;color:#34d399;margin-top:2px;">Approved This Week</div>
+              <div style="font-size:0.65rem;color:#64748b;">Reports approved</div>
+            </div>
+          </div>
+
+          <!-- Total Students -->
+          <div style="background:linear-gradient(135deg,#180e40,#22145c);border:1px solid #4c1d95;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#a855f7,#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-graduation-cap" style="color:#fff;font-size:0.9rem;"></i>
+            </div>
+            <div style="min-width:0;">
+              <div style="font-size:0.6rem;color:#94a3b8;font-weight:600;margin-bottom:2px;">↗ Across all groups</div>
+              <div style="font-size:1.5rem;font-weight:900;color:#fff;line-height:1;" id="statStudents">—</div>
+              <div style="font-size:0.75rem;font-weight:700;color:#c084fc;margin-top:2px;">Total Students</div>
+              <div style="font-size:0.65rem;color:#64748b;">Under supervision</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ── 2-COLUMN: FYDP ROWS (left) + CHART (right) ── -->
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:14px;margin-bottom:20px;">
+          <!-- Left: FYDP stage rows -->
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <!-- FYDP-1 -->
+            <div class="stage-row" id="stageRow1">
+              <div class="stage-row-header">
+                <div class="stage-num s1">1</div>
+                <div class="stage-info"><h4>FYDP-1</h4><p id="stagePhase1">Proposal Phase</p></div>
+                <span class="stage-count s1" id="stageCount1">—</span>
+              </div>
+              <div class="stage-progress-row">
+                <span>Progress</span><span id="stagePct1" style="color:#a78bfa;font-weight:700;">0%</span>
+              </div>
+              <div class="stage-bar-wrap"><div class="stage-bar s1" id="stageBar1" style="width:0%"></div></div>
+              <div class="stage-active" id="stageActive1">— groups active</div>
+            </div>
+            <!-- FYDP-2 -->
+            <div class="stage-row" id="stageRow2">
+              <div class="stage-row-header">
+                <div class="stage-num s2">2</div>
+                <div class="stage-info"><h4>FYDP-2</h4><p id="stagePhase2">Development Phase</p></div>
+                <span class="stage-count s2" id="stageCount2">—</span>
+              </div>
+              <div class="stage-progress-row">
+                <span>Progress</span><span id="stagePct2" style="color:#fcd34d;font-weight:700;">0%</span>
+              </div>
+              <div class="stage-bar-wrap"><div class="stage-bar s2" id="stageBar2" style="width:0%"></div></div>
+              <div class="stage-active" id="stageActive2">— groups active</div>
+            </div>
+            <!-- FYDP-3 -->
+            <div class="stage-row" id="stageRow3">
+              <div class="stage-row-header">
+                <div class="stage-num s3">3</div>
+                <div class="stage-info"><h4>FYDP-3</h4><p id="stagePhase3">Finalization Phase</p></div>
+                <span class="stage-count s3" id="stageCount3">—</span>
+              </div>
+              <div class="stage-progress-row">
+                <span>Progress</span><span id="stagePct3" style="color:#34d399;font-weight:700;">0%</span>
+              </div>
+              <div class="stage-bar-wrap"><div class="stage-bar s3" id="stageBar3" style="width:0%"></div></div>
+              <div class="stage-active" id="stageActive3">— groups active</div>
+            </div>
+          </div>
+
+          <!-- Center: Chart -->
+          <div class="chart-card" style="margin:0;">
+            <div class="chart-card-header">
+              <div>
+                <h3>Weekly Report Activity</h3>
+                <p>Reports submitted vs approvals</p>
+              </div>
+              <div class="chart-legend">
+                <span><span class="cl-dot" style="background:#7c3aed;"></span>Reports</span>
+                <span><span class="cl-dot" style="background:#10b981;"></span>Approvals</span>
+              </div>
+            </div>
+            <canvas id="weeklyChart" height="150"></canvas>
+            <p class="chart-note">↑ Data from current semester</p>
+          </div>
+        </div>
+
+        <!-- ── MY GROUPS TABLE ── -->
+
+        <div style="background:#161929;border:1px solid #1e2240;border-radius:16px;overflow:hidden;">
+          <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e2240;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <h3 style="font-size:1rem;font-weight:800;color:#fff;margin:0;">My Groups — All Stages</h3>
+              <span style="background:#7c3aed20;color:#a78bfa;border:1px solid #7c3aed40;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;" id="groupCountBadge">0 GROUPS</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <span style="display:flex;align-items:center;gap:5px;font-size:0.78rem;color:#94a3b8;"><span style="width:8px;height:8px;background:#10b981;border-radius:50%;display:inline-block;"></span>Approved</span>
+              <span style="display:flex;align-items:center;gap:5px;font-size:0.78rem;color:#94a3b8;"><span style="width:8px;height:8px;background:#f59e0b;border-radius:50%;display:inline-block;"></span>Pending</span>
+              <span style="display:flex;align-items:center;gap:5px;font-size:0.78rem;color:#94a3b8;"><span style="width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block;"></span>Overdue</span>
+              <input id="groupSearch" type="text" placeholder="Search group..." oninput="filterGroups()" style="background:#0d0f1e;border:1px solid #2d3354;color:#e2e8f0;border-radius:8px;padding:6px 12px;font-size:0.8rem;outline:none;width:150px;">
+              <select id="stageFilter" onchange="filterGroups()" style="background:#0d0f1e;border:1px solid #2d3354;color:#e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.8rem;outline:none;">
+                <option value="">All Stages</option>
+                <option value="FYDP-1">FYDP-1</option>
+                <option value="FYDP-2">FYDP-2</option>
+                <option value="FYDP-3">FYDP-3</option>
+              </select>
+              <a href="/api/supervisor/export-groups" style="display:flex;align-items:center;gap:6px;background:#7c3aed;color:#fff;padding:6px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;text-decoration:none;">
+                <i class="fas fa-download"></i> Export CSV
+              </a>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:#0d0f1e;">
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap;">STATUS</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">GROUP</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">DOMAIN</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">STAGE</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">SECTION</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">MEMBERS</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap;">LATEST WEEK</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">REPORTS</th>
+                  <th style="padding:12px 16px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;letter-spacing:0.05em;text-transform:uppercase;">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="groupsTableBody">
+                <tr><td colspan="9" style="padding:40px;text-align:center;color:#475569;">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /page-content -->
+    </div><!-- /main-content -->
+  </div><!-- /app-layout -->
+
+
+  <script src="/js/main.js"></script>
+  <script>
+    // ── Sidebar toggle ──────────────────────────────────────────────────
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.sidebar');
+      const icon    = document.getElementById('collapseIcon');
+      const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('supervisor_sidebar_collapsed', isCollapsed);
+      if (icon) {
+        icon.classList.toggle('fa-chevron-left', !isCollapsed);
+        icon.classList.toggle('fa-chevron-right', isCollapsed);
+      }
+    }
+
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      }
+      loadDashboard();
+    });
+
+    // ── Set date/semester label ──
+    function setDashDate() {
+      const now = new Date();
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const dateStr = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+      const el = document.getElementById('dashDate');
+      const sem = document.getElementById('dashSemester');
+      if (el) el.textContent = dateStr;
+      // compute week number of semester (approximate)
+      const weekOfYear = Math.ceil((now - new Date(now.getFullYear(), 0, 1)) / (7*86400000));
+      const semWeek = Math.max(1, (weekOfYear % 20) || 1);
+      if (sem) sem.textContent = `Spring Semester • Week ${semWeek}`;
+    }
+
+    // ── Dashboard main load ──────────────────────────────────────────
+    let allGroupsData = [];
+
+    async function loadDashboard() {
+      try {
+        showLoading();
+        setDashDate();
+        const [stats, groupData] = await Promise.all([
+          apiFetch('/api/supervisor/stats'),
+          apiFetch('/api/supervisor/groups')
+        ]);
+
+        // Stat cards
+        document.getElementById('statApprovedWeek').textContent = stats.approvedThisWeek ?? '0';
+        document.getElementById('statStudents').textContent     = stats.totalStudents ?? '0';
+        document.getElementById('statPending').textContent      = stats.pendingReports ?? '0';
+
+        // Count total groups across all stages
+        let totalGroups = 0;
+        const phaseLabels = { 'FYDP-1':'Proposal Phase', 'FYDP-2':'Development Phase', 'FYDP-3':'Finalization Phase' };
+        const pctMap      = { 'FYDP-1': 20, 'FYDP-2': 50, 'FYDP-3': 75 };
+        const idxMap      = { 'FYDP-1': 1, 'FYDP-2': 2, 'FYDP-3': 3 };
+
+        (groupData.stages || []).forEach(stage => {
+          const i = idxMap[stage.stage_name];
+          if (!i) return;
+          const count = (stage.groups || []).length;
+          totalGroups += count;
+          document.getElementById(`stageCount${i}`).textContent = count;
+          document.getElementById(`stagePhase${i}`).textContent = phaseLabels[stage.stage_name] || '';
+          document.getElementById(`stageActive${i}`).textContent = `${count} group${count!==1?'s':''} active`;
+          let totalReports=0, approvedRep=0;
+          (stage.groups || []).forEach(g => {
+            totalReports += (g.pending_count||0) + (g.approved_count||0);
+            approvedRep  += (g.approved_count||0);
+          });
+          const pct = totalReports > 0 ? Math.round((approvedRep/totalReports)*100) : pctMap[stage.stage_name]||0;
+          document.getElementById(`stagePct${i}`).textContent = pct + '%';
+          document.getElementById(`stageBar${i}`).style.width  = pct + '%';
+        });
+
+        document.getElementById('statTotal').textContent = totalGroups;
+        const badge = document.getElementById('groupCountBadge');
+        if (badge) badge.textContent = `${totalGroups} GROUPS`;
+
+        // Store all groups for table and aggregate chart data
+        allGroupsData = [];
+        const weekMap = {};
+        
+        (groupData.stages || []).forEach(stage => {
+          (stage.groups || []).forEach(g => {
+            allGroupsData.push({ ...g, stage_name: stage.stage_name });
+            
+            if (g.latest_reports && Array.isArray(g.latest_reports)) {
+              g.latest_reports.forEach(r => {
+                if (!weekMap[r.week_no]) weekMap[r.week_no] = { submitted: 0, approved: 0 };
+                weekMap[r.week_no].submitted++;
+                if (r.supervisor_status === 'APPROVED') {
+                  weekMap[r.week_no].approved++;
+                }
+              });
+            }
+          });
+        });
+        
+        // Sort weeks
+        const sortedWeeks = Object.keys(weekMap).map(Number).sort((a,b)=>a-b);
+        let actualLabels = sortedWeeks.map(w => 'Wk ' + w);
+        let actualReports = sortedWeeks.map(w => weekMap[w].submitted);
+        let actualApprovals = sortedWeeks.map(w => weekMap[w].approved);
+        
+        // Fallback to placeholder if no data exists at all
+        if (actualLabels.length === 0) {
+          actualLabels = ['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'];
+          actualReports = [0,0,0,0,0];
+          actualApprovals = [0,0,0,0,0];
+        }
+        
+        renderGroupsTable(allGroupsData);
+        buildChart(actualLabels, actualReports, actualApprovals);
+      } catch(err) {
+        buildChart(['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'], [0,0,0,0,0], [0,0,0,0,0]);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ── Groups table render ──────────────────────────────────────────
+    function renderGroupsTable(groups) {
+      const tbody = document.getElementById('groupsTableBody');
+      if (!tbody) return;
+      if (!groups.length) {
+        tbody.innerHTML = `<tr><td colspan="9" style="padding:40px;text-align:center;color:#475569;">No groups found</td></tr>`;
+        return;
+      }
+      const stageColors = { 'FYDP-1':'#a78bfa', 'FYDP-2':'#fbbf24', 'FYDP-3':'#34d399' };
+      tbody.innerHTML = groups.map(g => {
+        const status = g.pending_count > 0 ? 'pending' : (g.overdue ? 'overdue' : 'approved');
+        const dotColor = status === 'overdue' ? '#ef4444' : (status === 'pending' ? '#f59e0b' : '#10b981');
+        const reportLabel = status === 'pending' ? 'PENDING' : (status === 'overdue' ? 'OVERDUE' : 'ALL CLEAR');
+        const reportBg    = status === 'pending' ? '#2a1500' : (status === 'overdue' ? '#2a0a0a' : '#0f2e1a');
+        const reportColor = status === 'pending' ? '#fbbf24' : (status === 'overdue' ? '#ef4444' : '#10b981');
+        const sc = stageColors[g.stage_name] || '#94a3b8';
+        const memberCount = g.member_count || 4;
+        const avatars = Array.from({length:Math.min(memberCount,4)}).map((_,i) =>
+          `<span style="width:24px;height:24px;border-radius:50%;background:hsl(${i*60+200},60%,45%);display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;border:2px solid #161929;margin-left:${i?-6:0}px;">${String.fromCharCode(65+i)}</span>`
+        ).join('');
+        const grpCode = g.group_code || g.group_name || ('GRP-' + (g.group_id?g.group_id.toString().padStart(3,'0'):'001'));
+        const domName = g.domain_name || g.domain || ['Web Dev','Machine Learning','IoT','App Dev'][(g.group_id||0)%4];
+        const secName = g.section || ['CSE-A','CSE-B','CSE-C','EEE-A'][(g.group_id||0)%4];
+        const wkNum = (g.latest_reports && g.latest_reports.length) ? g.latest_reports[0].week_no : (g.latest_week||1);
+
+        return `<tr style="border-bottom:1px solid #1e2240;transition:background 0.15s;" onmouseover="this.style.background='#1a1d2e'" onmouseout="this.style.background=''">
+          <td style="padding:12px 16px;"><span style="width:10px;height:10px;border-radius:50%;background:${dotColor};display:inline-block;"></span></td>
+          <td style="padding:12px 16px;"><a href="/supervisor/groups/${g.group_id}" style="color:#60a5fa;font-weight:700;text-decoration:none;font-size:0.85rem;">${escapeHtml(grpCode)}</a></td>
+          <td style="padding:12px 16px;color:${sc};font-size:0.82rem;font-weight:700;text-transform:uppercase;">${escapeHtml(domName)}</td>
+          <td style="padding:12px 16px;"><span style="background:${sc}20;color:${sc};border:1px solid ${sc}40;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">${escapeHtml(g.stage_name)}</span></td>
+          <td style="padding:12px 16px;color:#94a3b8;font-size:0.82rem;">${escapeHtml(secName)}</td>
+          <td style="padding:12px 16px;"><div style="display:flex;align-items:center;">${avatars}<span style="margin-left:${memberCount>4?4:8}px;color:#94a3b8;font-size:0.78rem;">${memberCount}</span></div></td>
+          <td style="padding:12px 16px;color:#94a3b8;font-size:0.82rem;">Week ${wkNum}</td>
+          <td style="padding:12px 16px;"><span style="background:${reportBg};color:${reportColor};border:1px solid ${reportColor}40;padding:3px 10px;border-radius:6px;font-size:0.72rem;font-weight:800;letter-spacing:0.04em;">${reportLabel}</span></td>
+          <td style="padding:12px 16px;"><a href="/supervisor/groups/${g.group_id}" style="width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:#1e2240;border:1px solid #2d3354;border-radius:8px;color:#94a3b8;text-decoration:none;" title="View"><i class="fas fa-eye" style="font-size:0.8rem;"></i></a></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterGroups() {
+      const q = (document.getElementById('groupSearch')?.value || document.getElementById('headerSearch')?.value || '').toLowerCase();
+      const stage = document.getElementById('stageFilter')?.value || '';
+      const filtered = allGroupsData.filter(g =>
+        (!q || (g.group_code||'').toLowerCase().includes(q) || (g.group_name||'').toLowerCase().includes(q) || (g.domain_name||'').toLowerCase().includes(q) || (g.domain||'').toLowerCase().includes(q) || (g.section||'').toLowerCase().includes(q)) &&
+        (!stage || g.stage_name === stage)
+      );
+      renderGroupsTable(filtered);
+    }
+
+
+    let dashChart = null;
+
+    function buildChart(labels, reports, approvals) {
+      const ctx = document.getElementById('weeklyChart').getContext('2d');
+      if (dashChart) dashChart.destroy();
+      dashChart = new Chart(ctx, {
+        type:'line',
+        data: {
+          labels,
+          datasets:[
+            { label:'Reports', data:reports, borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.12)',
+              tension:0.4, pointBackgroundColor:'#7c3aed', pointRadius:5, pointHoverRadius:7,
+              borderWidth:2.5, fill:true },
+            { label:'Approvals', data:approvals, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)',
+              tension:0.4, pointBackgroundColor:'#10b981', pointRadius:5, pointHoverRadius:7,
+              borderWidth:2.5, fill:true }
+          ]
+        },
+        options:{
+          responsive:true,
+          interaction: { mode: 'index', intersect: false },
+          plugins:{
+            legend:{
+              display:true, position:'top', align:'end',
+              labels:{ color:'#94a3b8', usePointStyle:true, pointStyle:'circle', boxWidth:8, padding:16, font:{size:12} }
+            },
+            tooltip: {
+              backgroundColor: '#161929', titleColor: '#fff', bodyColor: '#cbd5e1',
+              borderColor: '#2d3354', borderWidth: 1, padding: 12, usePointStyle: true
+            }
+          },
+          scales:{
+            x:{ grid:{ color:'rgba(30,34,64,0.8)' }, ticks:{ color:'#64748b', font:{size:11} }, border:{color:'transparent'} },
+            y:{ grid:{ color:'rgba(30,34,64,0.8)' }, ticks:{ color:'#64748b', font:{size:11}, stepSize:1 },
+                beginAtZero:true, border:{color:'transparent'} }
+          }
+        }
+      });
+    }
+
+    // ── Sidebar Collapse Persistence ──
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.sidebar');
+      const icon = document.getElementById('collapseIcon');
+      const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('supervisor_sidebar_collapsed', isCollapsed);
+      if (isCollapsed) {
+        icon.classList.replace('fa-chevron-left','fa-chevron-right');
+      } else {
+        icon.classList.replace('fa-chevron-right','fa-chevron-left');
+      }
+    }
+
+    // Apply sidebar state on load
+    (function() {
+      const isCollapsed = localStorage.getItem('supervisor_sidebar_collapsed') === 'true';
+      if (isCollapsed) {
+        document.querySelector('.sidebar').classList.add('sidebar-collapsed');
+        const icon = document.getElementById('collapseIcon');
+        if (icon) icon.classList.replace('fa-chevron-left','fa-chevron-right');
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat with Course Teacher — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/app-dark.css">
+  <link rel="stylesheet" href="/css/chat-dark.css">
+  <style>
+    body { overflow: hidden; }
+    .no-teacher-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; color: var(--text-secondary); }
+    .no-teacher-icon { font-size: 4rem; margin-bottom: 24px; opacity: 0.2; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Student Panel</p></div>
+        </div>
+        <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">MAIN</div>
+        <a href="/student/dashboard"><span class="nav-icon"><i class="fas fa-home"></i></span> Dashboard</a>
+        <a href="/student/submit-report"><span class="nav-icon"><i class="fas fa-upload"></i></span> Submit Report</a>
+        <a href="/student/reports"><span class="nav-icon"><i class="fas fa-file-alt"></i></span> My Reports</a>
+        <div class="nav-label" style="margin-top:20px;">CHATS</div>
+        <a href="/student/my-group-chat"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> Students Group</a>
+        <a href="/student/supervisor-group-chat"><span class="nav-icon"><i class="fas fa-users"></i></span> Group with Supervisor</a>
+        <a href="/student/teacher-group-chat"><span class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></span> Group with Course Teacher</a>
+        <a href="/student/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> DM Supervisor</a>
+        <a href="/student/teacher-chat" class="active"><span class="nav-icon"><i class="fas fa-comment-dots"></i></span> DM Course Teacher</a>
+        <div class="nav-label" style="margin-top:20px;">ACCOUNT</div>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">S</div>
+          <div class="user-info"><h4 id="userName">Student</h4><p id="userUid">—</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="breadcrumb">
+          <i class="fas fa-comment-dots"></i>
+          <a href="/student/dashboard">Student</a>
+          <i class="fas fa-chevron-right" style="font-size:0.7rem;color:#475569;"></i>
+          <span>Teacher Chat</span>
+        </div>
+        <div class="header-actions">
+          <div style="position:relative;" id="studentNotifWrapper">
+            <button class="notification-bell" id="studentNotifBtn" onclick="toggleStudentNotif()">
+              <i class="fas fa-bell"></i>
+              <span class="badge" id="studentNotifBadge" style="display:none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="studentNotifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifsRead()" style="background:none;border:none;color:var(--accent-color);font-size:0.8rem;cursor:pointer;font-weight:700;">Mark all read</button>
+              </div>
+              <div class="notif-dropdown-body" id="studentNotifList">
+                <div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:0.9rem;">Loading notifications...</div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Activity</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <!-- Chat Area -->
+      <div class="chat-container" id="chatContainer" style="display:none;">
+        <div class="chat-header">
+          <a id="teacherProfileLink" href="#" style="text-decoration:none;">
+            <div class="chat-header-avatar" id="teacherAvatarEl">?</div>
+          </a>
+          <div style="flex:1;">
+            <div style="font-weight:800; font-size:1.15rem; color:var(--text-primary); margin-bottom:2px;" id="teacherName">Course Teacher</div>
+            <div style="font-size:0.85rem; color:var(--text-secondary); font-weight:500;" id="teacherDept">Direct Message · Department</div>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div style="flex:1; display:flex; align-items:center; justify-content:center; opacity:0.3;">
+            <i class="fas fa-circle-notch fa-spin" style="font-size:2.5rem; color:var(--text-secondary);"></i>
+          </div>
+        </div>
+
+        <div id="attachPreview">
+          <i class="fas fa-paperclip"></i>
+          <span id="attachName" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+          <button onclick="clearAttach()" style="background:rgba(239, 68, 68, 0.1); border:none; color:var(--danger-color); border-radius:8px; width:28px; height:28px; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; transition:all 0.2s;"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="chat-input-area">
+          <label class="attach-btn" title="Attach file">
+            <i class="fas fa-paperclip"></i>
+            <input type="file" id="fileInput" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" onchange="handleAttach(this)">
+          </label>
+          <textarea class="chat-input" id="msgInput" placeholder="Type a message to your course teacher..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"
+            oninput="autoResize(this)"></textarea>
+          <button class="chat-send-btn" onclick="sendMsg()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+
+      <!-- No teacher fallback -->
+      <div id="noTeacher" style="display:none;" class="no-teacher-container">
+        <div class="no-teacher-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+        <h2 style="color:var(--text-primary); margin-bottom:12px;">No Course Teacher Assigned</h2>
+        <p style="margin-bottom:24px; max-width:400px;">No course teacher has been assigned for your section and FYDP stage yet.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Delete Context Menu -->
+  <div id="msgCtxMenu" class="msg-ctx-menu" style="display:none;">
+    <div class="msg-ctx-item" onclick="confirmDelete()"><i class="fas fa-trash-alt"></i> Delete Message</div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/main.js"></script>
+  <script>
+    let currentUser = null;
+    let teacherId = null;
+    let socket = null;
+    let ctxTargetMsgId = null;
+    let longPressTimer = null;
+
+    // ── Context Menu ────────────────────────────────────────────────────────
+    function showCtxMenu(e, msgId) {
+      e.preventDefault();
+      ctxTargetMsgId = msgId;
+      const menu = document.getElementById('msgCtxMenu');
+      menu.style.display = 'block';
+      const x = Math.min(e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0), window.innerWidth - 160);
+      const y = Math.min(e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0), window.innerHeight - 60);
+      menu.style.left = x + 'px'; menu.style.top = y + 'px';
+    }
+    function hideCtxMenu() { document.getElementById('msgCtxMenu').style.display = 'none'; ctxTargetMsgId = null; }
+    document.addEventListener('click', hideCtxMenu);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideCtxMenu(); });
+
+    async function confirmDelete() {
+      if (!ctxTargetMsgId) return;
+      const msgId = ctxTargetMsgId; hideCtxMenu();
+      if (!confirm('Delete this message for everyone?')) return;
+      try {
+        const res = await fetch(`/api/chat/direct/${msgId}`, { method: 'DELETE', credentials: 'same-origin' });
+        if (!res.ok) { const d = await res.json(); showToast(d.error || 'Delete failed', 'error'); return; }
+        markMsgDeleted(msgId); showToast('Message deleted', 'success');
+      } catch { showToast('Delete failed', 'error'); }
+    }
+
+    function markMsgDeleted(msgId) {
+      const row = document.querySelector(`.msg-row[data-msg-id="${msgId}"]`);
+      if (!row) return;
+      const bubble = row.querySelector('.msg-bubble');
+      if (bubble) bubble.innerHTML = '<span class="msg-deleted-text">🚫 This message was deleted</span>';
+    }
+
+    // ── Init ────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      currentUser = await getCurrentUser();
+      if (currentUser) {
+        document.getElementById('userName').textContent = currentUser.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(currentUser.full_name);
+        document.getElementById('userUid').textContent = currentUser.university_id || '—';
+      }
+      if (typeof updateNotificationCount === 'function') updateNotificationCount();
+      loadStudentNotifDropdown();
+      await loadChat();
+
+      // Close dropdowns on outside click
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#studentNotifWrapper')) {
+          const dd = document.getElementById('studentNotifDropdown');
+          if (dd) dd.style.display = 'none';
+        }
+      });
+
+      if (typeof io !== 'undefined' && teacherId) {
+        socket = io();
+        socket.emit('join_user', currentUser.user_id);
+        socket.on('message_deleted', ({ message_id }) => { markMsgDeleted(message_id); });
+        socket.on('new_dm', (msg) => {
+          if ((msg.sender_id == teacherId && msg.receiver_id == currentUser.user_id) ||
+              (msg.sender_id == currentUser.user_id && msg.receiver_id == teacherId)) {
+            appendMsg(msg, false);
+          }
+        });
+        socket.on('messages_read', ({ by }) => {
+          if (by == teacherId) {
+            document.querySelectorAll('.msg-tick.single').forEach(el => {
+              el.classList.remove('single'); el.classList.add('double');
+              el.title = 'Seen'; el.innerHTML = '&#10003;&#10003;';
+            });
+          }
+        });
+      }
+    });
+
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      sb.classList.toggle('collapsed');
+      localStorage.setItem('sidebarCollapsed', sb.classList.contains('collapsed'));
+    }
+    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+      document.getElementById('sidebar').classList.add('collapsed');
+    }
+
+    function toggleStudentNotif() {
+      const dd = document.getElementById('studentNotifDropdown');
+      dd.style.display = (dd.style.display === 'block') ? 'none' : 'block';
+    }
+
+    async function loadStudentNotifDropdown() {
+      try {
+        const res = await fetch('/api/notifications');
+        const data = await res.json();
+        const list = document.getElementById('studentNotifList');
+        const badge = document.getElementById('studentNotifBadge');
+        if (!data || data.length === 0) {
+          list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:0.9rem;">No notifications</div>';
+          badge.style.display = 'none';
+          return;
+        }
+        let unread = 0;
+        list.innerHTML = data.map(n => {
+          if (!n.is_read) unread++;
+          return `
+            <div style="padding:16px 24px; border-bottom:1px solid var(--border-color); background:${n.is_read ? 'transparent' : 'rgba(124,58,237,0.05)'}; cursor:pointer; transition:all 0.2s;" onclick="markNotifRead(${n.notification_id}, '${n.link || '#'}')">
+              <div style="font-weight:700; font-size:0.9rem; color:var(--text-primary); margin-bottom:4px;">${escapeHtml(n.title)}</div>
+              <div style="font-size:0.8rem; color:var(--text-secondary); line-height:1.4;">${escapeHtml(n.message)}</div>
+              <div style="font-size:0.7rem; color:var(--accent-color); margin-top:8px; font-weight:600;">${new Date(n.created_at).toLocaleDateString()}</div>
+            </div>
+          `;
+        }).join('');
+        if (unread > 0) {
+          badge.textContent = unread;
+          badge.style.display = 'block';
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Error loading notifications:', err);
+      }
+    }
+
+    async function markNotifRead(id, link) {
+      try {
+        await fetch(`/api/notifications/${id}/read`, { method: 'PUT' });
+        window.location.href = link;
+      } catch (err) {
+        console.error(err);
+        window.location.href = link;
+      }
+    }
+
+    async function markAllNotifsRead() {
+      try {
+        await fetch('/api/notifications/read-all', { method: 'PUT' });
+        loadStudentNotifDropdown();
+        if (typeof updateNotificationCount === 'function') updateNotificationCount();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadChat() {
+      try {
+        const data = await apiFetch('/api/student/teacher-chat');
+        if (!data.teacher_id) { document.getElementById('noTeacher').style.display = 'block'; return; }
+        teacherId = data.teacher_id;
+        const t = data.teacher;
+        document.getElementById('teacherAvatarEl').textContent = getInitials(t.full_name);
+        document.getElementById('teacherName').textContent = t.full_name;
+        document.getElementById('teacherDept').textContent = t.department || 'Course Teacher';
+        document.getElementById('teacherProfileLink').href = `/profile?id=${teacherId}`;
+        document.getElementById('chatContainer').style.display = 'flex';
+        renderMessages(data.messages);
+        if (typeof updateNotificationBadge === 'function') updateNotificationBadge();
+      } catch (err) { document.getElementById('noTeacher').style.display = 'block'; }
+    }
+
+    function renderMessages(messages) {
+      const c = document.getElementById('chatMessages');
+      if (!messages.length) { c.innerHTML = '<div style="text-align:center;color:#888;margin-top:60px;"><i class="fas fa-comment-dots" style="font-size:2.5rem;display:block;margin-bottom:10px;opacity:0.3;"></i>No messages yet. Ask your course teacher anything! 📚</div>'; return; }
+      c.innerHTML = '';
+      let lastDate = '';
+      messages.forEach(m => {
+        const d = m.created_at ? new Date(m.created_at).toLocaleDateString('en-BD',{day:'2-digit',month:'short',year:'numeric'}) : '';
+        if (d && d !== lastDate) { lastDate = d; const div = document.createElement('div'); div.className = 'date-divider'; div.innerHTML = `<span>${d}</span>`; c.appendChild(div); }
+        appendMsg(m, true);
+      });
+      scrollToBottom();
+    }
+
+    function appendMsg(m, isH) {
+      if (document.querySelector(`.msg-row[data-msg-id="${m.message_id}"]`)) return;
+      const c = document.getElementById('chatMessages');
+      const isSent = m.sender_id === currentUser.user_id;
+      const isRead = m.is_read == 1 || m.is_read === true;
+      const isDeleted = m.message_text === '🚫 This message was deleted';
+      const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-BD',{hour:'2-digit',minute:'2-digit',hour12:true}) : '';
+
+      let content = '';
+      if (isDeleted) {
+        content = '<span class="msg-deleted-text">🚫 This message was deleted</span>';
+      } else {
+        if (m.message_text && m.message_text !== '📎 File attached') content = `<div>${escapeHtml(m.message_text)}</div>`;
+        if (m.attachment_path) {
+          content += `<div style="font-size:0.78rem;padding:4px 8px;background:rgba(0,0,0,0.05);border-radius:6px;margin-top:4px;"><i class="fas fa-file"></i> ${escapeHtml(m.attachment_name||'File')} <a href="${m.attachment_path}" download style="color:#e64a19;">Download</a></div>`;
+        }
+      }
+
+      const tick = isSent ? getTickHtml(isRead, true) : '';
+      const row = document.createElement('div');
+      row.className = `msg-row ${isSent?'sent':'received'}`;
+      row.dataset.msgId = m.message_id;
+
+      if (isSent && !isDeleted) {
+        row.addEventListener('contextmenu', (e) => showCtxMenu(e, m.message_id));
+        row.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => showCtxMenu(e, m.message_id), 600); }, { passive: true });
+        row.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        row.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+      }
+
+      row.innerHTML = isSent
+        ? `<div class="msg-bubble sent">${content}<div class="msg-meta">${time}${tick}</div></div>`
+        : `<div class="msg-bubble received"><div class="msg-sender-label">${escapeHtml(m.sender_name)}</div>${content}<div class="msg-meta">${time}</div></div>`;
+      c.appendChild(row);
+      if (!isH) scrollToBottom();
+    }
+
+    function scrollToBottom() { const e = document.getElementById('chatMessages'); e.scrollTop = e.scrollHeight; }
+    function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+    function handleAttach(i) { if (i.files[0]) { document.getElementById('attachName').textContent=i.files[0].name; document.getElementById('attachPreview').style.display='flex'; } }
+    function clearAttach() { const fi = document.getElementById('fileInput'); if(fi) fi.value=''; document.getElementById('attachPreview').style.display='none'; }
+
+    async function sendMsg() {
+      const input = document.getElementById('msgInput');
+      const fileInput = document.getElementById('fileInput');
+      const text = input.value.trim(); const file = fileInput.files[0];
+      if (!text && !file) return;
+      if (!teacherId) { showToast('No course teacher found','error'); return; }
+      const fd = new FormData();
+      fd.append('receiver_id', teacherId);
+      fd.append('message_text', text || '📎 File attached');
+      if (file) fd.append('attachment', file);
+      input.value = ''; input.style.height='auto'; clearAttach();
+      try {
+        const res = await fetch('/api/chat/direct/send', { method:'POST', body:fd, credentials:'same-origin' });
+        const result = await res.json();
+        if (!res.ok) { showToast(result.error||'Send failed','error'); if(text) input.value=text; return; }
+        if (result.success) {
+          appendMsg({ message_id: result.message_id, sender_id: currentUser.user_id, sender_name: currentUser.full_name,
+            message_text: text||'📎 File attached', attachment_path: result.attachment_path,
+            attachment_name: result.attachment_name, is_read: 0, created_at: new Date().toISOString() }, false);
+        }
+      } catch (err) { showToast('Send failed','error'); }
+    }
+  </script>
+</body>
+</html>

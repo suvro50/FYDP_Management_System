@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Groups — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Admin Panel</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/admin/dashboard"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/admin/users"><span class="nav-icon">👥</span> Manage Users</a>
+        <a href="/admin/groups" class="active"><span class="nav-icon">📁</span> Manage Groups</a>
+        <div class="nav-label">Operations</div>
+        <a href="/admin/import"><span class="nav-icon">📥</span> Bulk Import</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">AD</div>
+          <div class="user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Admin / <span>Manage Groups</span></div>
+        <div class="header-actions">
+          <button class="notification-bell"><i class="fas fa-bell"></i><span class="badge" style="display:none">0</span></button>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-title">
+          <h1>📁 Manage Groups</h1>
+          <p>View project groups, promote stages, and manage assignments</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-body" style="padding:16px 24px;">
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <input type="text" class="form-control" id="searchInput" placeholder="🔍 Search group code or title..." style="max-width:250px;" oninput="debounceSearch()">
+              <select class="form-control" id="filterStage" style="max-width:140px;" onchange="loadGroups()">
+                <option value="">All Stages</option>
+                <option value="FYDP-1">FYDP-1</option>
+                <option value="FYDP-2">FYDP-2</option>
+                <option value="FYDP-3">FYDP-3</option>
+              </select>
+              <select class="form-control" id="filterStatus" style="max-width:140px;" onchange="loadGroups()">
+                <option value="">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="DROPPED">Dropped</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Groups Table -->
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Group Code</th>
+                    <th>Project Title</th>
+                    <th>Domain</th>
+                    <th>Stage</th>
+                    <th>Supervisor</th>
+                    <th>Members</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="groupsTableBody">
+                  <tr><td colspan="8" style="text-align:center;color:#999;padding:40px;">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Promote Modal -->
+  <div class="modal-overlay" id="promoteModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>⬆️ Promote Group Stage</h3>
+        <button class="modal-close" onclick="closePromote()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="promoteInfo" style="margin-bottom:16px;color:#666;"></p>
+        <div class="form-group">
+          <label>Target Stage *</label>
+          <select class="form-control" id="promoteStage"></select>
+        </div>
+        <div class="form-group">
+          <label>New Project Title (optional)</label>
+          <input type="text" class="form-control" id="promoteTitle">
+        </div>
+        <div class="form-group">
+          <label>Change Reason *</label>
+          <textarea class="form-control" id="promoteReason" placeholder="Reason for promotion..."></textarea>
+        </div>
+        <input type="hidden" id="promoteGroupId">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closePromote()">Cancel</button>
+        <button class="btn btn-success" onclick="promoteGroup()"><i class="fas fa-arrow-up"></i> Promote</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Members Modal -->
+  <div class="modal-overlay" id="membersModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="membersTitle">Group Members</h3>
+        <button class="modal-close" onclick="closeMembersModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="membersList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let currentPage = 1;
+    let searchTimer = null;
+    let stages = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      }
+      const stageData = await apiFetch('/api/admin/stages');
+      stages = stageData.stages;
+      loadGroups();
+      updateNotificationCount();
+    });
+
+    function debounceSearch() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { currentPage = 1; loadGroups(); }, 300);
+    }
+
+    async function loadGroups() {
+      try {
+        const search = document.getElementById('searchInput').value;
+        const stage = document.getElementById('filterStage').value;
+        const status = document.getElementById('filterStatus').value;
+        let url = `/api/admin/groups?page=${currentPage}&limit=10`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (stage) url += `&stage=${stage}`;
+        if (status) url += `&status=${status}`;
+
+        const data = await apiFetch(url);
+        renderGroups(data.groups);
+        renderPagination(data.pagination);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function renderGroups(groups) {
+      const tbody = document.getElementById('groupsTableBody');
+      if (groups.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:40px;">No groups found</td></tr>';
+        return;
+      }
+      const stageBadge = s => {
+        const colors = {'FYDP-1':'badge-blue','FYDP-2':'badge-green','FYDP-3':'badge-purple'};
+        return `<span class="badge ${colors[s]||'badge-gray'}">${s}</span>`;
+      };
+      tbody.innerHTML = groups.map(g => `
+        <tr>
+          <td><strong>${escapeHtml(g.group_code)}</strong></td>
+          <td style="max-width:200px;">${escapeHtml(g.project_title)}</td>
+          <td><span class="badge badge-blue">${escapeHtml(g.domain_name)}</span></td>
+          <td>${stageBadge(g.stage_name)}</td>
+          <td>${escapeHtml(g.supervisor_name)}</td>
+          <td><span class="badge badge-gray">${g.member_count} 👤</span></td>
+          <td>${getStatusBadge(g.project_status)}</td>
+          <td>
+            <button class="btn btn-outline btn-sm" onclick="viewMembers(${g.group_id},'${escapeHtml(g.group_code)}')" title="View Members">
+              <i class="fas fa-users"></i>
+            </button>
+            ${g.project_status === 'ACTIVE' ? `
+              <button class="btn btn-success btn-sm" onclick="openPromote(${g.group_id},'${escapeHtml(g.group_code)}','${g.stage_name}')" title="Promote" style="margin-left:4px;">
+                <i class="fas fa-arrow-up"></i>
+              </button>
+            ` : ''}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderPagination(p) {
+      const el = document.getElementById('pagination');
+      if (p.totalPages <= 1) { el.innerHTML = ''; return; }
+      let html = `<button ${p.page<=1?'disabled':''} onclick="goToPage(${p.page-1})">«</button>`;
+      for (let i = 1; i <= p.totalPages; i++) {
+        html += `<button class="${i===p.page?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+      }
+      html += `<button ${p.page>=p.totalPages?'disabled':''} onclick="goToPage(${p.page+1})">»</button>`;
+      el.innerHTML = html;
+    }
+
+    function goToPage(page) { currentPage = page; loadGroups(); }
+
+    // Members modal
+    async function viewMembers(groupId, code) {
+      try {
+        const data = await apiFetch(`/api/admin/groups/${groupId}/members`);
+        document.getElementById('membersTitle').textContent = `Members — ${code}`;
+        document.getElementById('membersList').innerHTML = data.members.length === 0 ? '<p>No members</p>' :
+          '<table style="width:100%"><thead><tr><th>ID</th><th>Name</th><th>Role</th></tr></thead><tbody>' +
+          data.members.map(m => `<tr><td>${escapeHtml(m.university_id)}</td><td>${escapeHtml(m.full_name)}</td><td><span class="badge badge-blue">${m.member_role}</span></td></tr>`).join('') +
+          '</tbody></table>';
+        document.getElementById('membersModal').classList.add('active');
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    function closeMembersModal() { document.getElementById('membersModal').classList.remove('active'); }
+
+    // Promote modal
+    function openPromote(groupId, code, currentStage) {
+      document.getElementById('promoteGroupId').value = groupId;
+      document.getElementById('promoteInfo').textContent = `Promoting ${code} from ${currentStage}`;
+      document.getElementById('promoteTitle').value = '';
+      document.getElementById('promoteReason').value = '';
+
+      const currentOrder = stages.find(s => s.stage_name === currentStage)?.stage_order || 0;
+      const select = document.getElementById('promoteStage');
+      select.innerHTML = stages.filter(s => s.stage_order > currentOrder)
+        .map(s => `<option value="${s.stage_id}">${s.stage_name}</option>`).join('');
+
+      if (select.options.length === 0) {
+        showToast('This group is already at the highest stage', 'warning');
+        return;
+      }
+      document.getElementById('promoteModal').classList.add('active');
+    }
+
+    function closePromote() { document.getElementById('promoteModal').classList.remove('active'); }
+
+    async function promoteGroup() {
+      const reason = document.getElementById('promoteReason').value;
+      if (!reason) { showToast('Please provide a reason', 'warning'); return; }
+
+      try {
+        showLoading();
+        await apiFetch('/api/admin/promote-group', {
+          method: 'POST',
+          body: {
+            group_id: document.getElementById('promoteGroupId').value,
+            new_stage_id: document.getElementById('promoteStage').value,
+            new_project_title: document.getElementById('promoteTitle').value || null,
+            change_reason: reason
+          }
+        });
+        showToast('Group promoted successfully!', 'success');
+        closePromote();
+        loadGroups();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally { hideLoading(); }
+    }
+  </script>
+</body>
+</html>

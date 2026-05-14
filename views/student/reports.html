@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Reports — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0d0f1e;
+      --card-bg: #161929;
+      --border-color: #1e2240;
+      --accent-color: #7c3aed;
+      --text-primary: #ffffff;
+      --text-secondary: #94a3b8;
+      --danger-color: #ef4444;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --sidebar-width: 260px;
+      --sidebar-collapsed-width: 80px;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', sans-serif; }
+    body { background-color:var(--bg-dark); color:var(--text-primary); overflow:hidden; }
+
+    .app-layout { display:flex; height:100vh; width:100vw; overflow:hidden; }
+    
+    /* Sidebar Styles */
+    .sidebar { width:var(--sidebar-width); background:var(--card-bg); border-right:1px solid var(--border-color); display:flex; flex-direction:column; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index:100; position:relative; }
+    .sidebar.collapsed { width:var(--sidebar-collapsed-width); }
+    .sidebar-header { padding:24px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; justify-content:space-between; }
+    .brand { display:flex; align-items:center; gap:12px; overflow:hidden; text-decoration:none; }
+    .brand-icon { width:40px; height:40px; background:linear-gradient(135deg, var(--accent-color), #4f46e5); border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-size:1.2rem; flex-shrink:0; }
+    .brand-text h3 { font-family:'Outfit', sans-serif; font-size:1.1rem; font-weight:700; color:white; white-space:nowrap; }
+    .brand-text p { font-size:0.75rem; color:var(--text-secondary); white-space:nowrap; }
+    .sidebar.collapsed .brand-text { display:none; }
+
+    .sidebar-nav { flex:1; padding:20px 14px; overflow-y:auto; }
+    .nav-label { font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em; margin:20px 10px 10px; white-space:nowrap; }
+    .sidebar.collapsed .nav-label { text-align:center; font-size:0.6rem; margin:20px 0 10px; }
+    
+    .nav-item { display:flex; align-items:center; gap:12px; padding:12px 14px; color:var(--text-secondary); text-decoration:none; border-radius:12px; margin-bottom:4px; transition:all 0.2s; font-weight:500; font-size:0.9rem; white-space:nowrap; position:relative; }
+    .nav-item:hover { background:rgba(255,255,255,0.05); color:white; }
+    .nav-item.active { background:rgba(124, 58, 237, 0.1); color:var(--accent-color); font-weight:600; }
+    .nav-icon { width:24px; display:flex; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+    .sidebar.collapsed .nav-item { justify-content:center; padding:12px; }
+    .sidebar.collapsed .nav-item span:not(.nav-icon) { display:none; }
+
+    /* Main Content */
+    .main-content { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; background:var(--bg-dark); }
+    .top-header { height:72px; padding:0 32px; display:flex; align-items:center; justify-content:space-between; background:rgba(13,15,30,0.8); backdrop-filter:blur(12px); border-bottom:1px solid var(--border-color); z-index:90; }
+    .header-left { display:flex; align-items:center; gap:20px; }
+    .sidebar-toggle { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem; padding:8px; border-radius:8px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
+    .sidebar-toggle:hover { background:rgba(255,255,255,0.05); color:white; }
+
+    /* Reports Styles */
+    .report-card { background:var(--card-bg); border-radius:16px; border:1px solid var(--border-color); margin-bottom:16px; overflow:hidden; transition:all 0.3s ease; }
+    .report-card:hover { border-color:var(--accent-color); transform:translateY(-2px); box-shadow:0 12px 30px rgba(0,0,0,0.3); }
+    .report-card-header { display:flex; align-items:center; gap:16px; padding:18px 24px; cursor:pointer; position:relative; }
+    .report-card-body { padding:0 24px 24px; border-top:1px solid var(--border-color); display:none; }
+    .report-card-body.open { display:block; animation: slideDown 0.3s ease-out; }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+
+    .week-badge { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.8rem; flex-shrink:0; flex-direction:column; border:1px solid rgba(255,255,255,0.1); }
+    .week-badge.approved { background:rgba(16,185,129,0.1); color:var(--success-color); border-color:rgba(16,185,129,0.2); }
+    .week-badge.pending { background:rgba(245,158,11,0.1); color:var(--warning-color); border-color:rgba(245,158,11,0.2); }
+    .week-badge.rejected { background:rgba(239,68,68,0.1); color:var(--danger-color); border-color:rgba(239,68,68,0.2); }
+
+    .filter-btn { padding:10px 20px; border-radius:12px; border:1px solid var(--border-color); background:var(--card-bg); cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.2s; color:var(--text-secondary); display:flex; align-items:center; gap:8px; }
+    .filter-btn.active { background:var(--accent-color); color:white; border-color:var(--accent-color); box-shadow:0 4px 12px rgba(124, 58, 237, 0.3); }
+    .filter-btn:hover:not(.active) { border-color:var(--accent-color); color:white; }
+
+    .stat-card-mini { background:var(--card-bg); border-radius:16px; padding:20px; border:1px solid var(--border-color); flex:1; min-width:160px; display:flex; align-items:center; gap:16px; }
+    
+    .pdf-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; }
+    .pdf-overlay.show { display:flex; }
+    .pdf-toolbar { background:var(--bg-dark); padding:16px 24px; display:flex; align-items:center; gap:16px; border-bottom:1px solid var(--border-color); }
+
+    .confirm-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); z-index:9998; align-items:center; justify-content:center; padding:20px; }
+    .confirm-overlay.show { display:flex; }
+    .confirm-box { background:var(--card-bg); border-radius:24px; padding:32px; width:100%; max-width:400px; text-align:center; border:1px solid var(--border-color); box-shadow:0 20px 50px rgba(0,0,0,0.5); }
+    
+    .notif-dropdown { position:absolute; top:calc(100% + 10px); right:0; width:340px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:16px; box-shadow:0 10px 40px rgba(0,0,0,0.4); display:none; z-index:1000; overflow:hidden; }
+    .notif-dropdown-header { padding:16px 20px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="/student/dashboard" class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Student Portal</p></div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main Menu</div>
+        <a href="/student/dashboard" class="nav-item">
+          <span class="nav-icon"><i class="fas fa-th-large"></i></span>
+          <span>Dashboard</span>
+        </a>
+        <a href="/student/submit-report" class="nav-item">
+          <span class="nav-icon"><i class="fas fa-upload"></i></span>
+          <span>Submit Report</span>
+        </a>
+        <a href="/student/reports" class="nav-item active">
+          <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
+          <span>My Reports</span>
+        </a>
+        
+        <div class="nav-label">Communication</div>
+        <a href="/student/my-group-chat" class="nav-item">
+          <span class="nav-icon"><i class="fas fa-users"></i></span>
+          <span>Group Chat</span>
+        </a>
+        <a href="/student/supervisor-chat" class="nav-item">
+          <span class="nav-icon"><i class="fas fa-user-tie"></i></span>
+          <span>Supervisor Chat</span>
+        </a>
+        <a href="/student/teacher-chat" class="nav-item">
+          <span class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></span>
+          <span>Teacher Chat</span>
+        </a>
+
+        <div class="nav-label">Account</div>
+        <a href="/profile" class="nav-item">
+          <span class="nav-icon"><i class="fas fa-user-circle"></i></span>
+          <span>Profile</span>
+        </a>
+        <a href="/notifications" class="nav-item">
+          <span class="nav-icon"><i class="fas fa-bell"></i></span>
+          <span>Notifications</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer" style="padding:20px;border-top:1px solid var(--border-color);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div id="userAvatar" style="width:36px;height:36px;border-radius:10px;background:var(--accent-color);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:0.9rem;">S</div>
+          <div class="brand-text">
+            <h4 id="userName" style="font-size:0.85rem;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;">Student</h4>
+            <p id="userUid" style="font-size:0.7rem;color:var(--text-secondary);">—</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-header">
+        <div class="header-left">
+          <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+          <div style="font-size:0.95rem;font-weight:600;color:var(--text-secondary);">
+            Student / <span style="color:var(--text-primary);">My Reports</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="position:relative;" id="studentNotifWrapper">
+            <button class="sidebar-toggle" onclick="toggleStudentNotif()">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge" style="position:absolute;top:5px;right:5px;width:8px;height:8px;background:var(--danger-color);border-radius:50%;border:2px solid var(--bg-dark);display:none;"></span>
+            </button>
+            <div class="notif-dropdown" id="studentNotifDropdown" style="display:none;">
+              <div class="notif-dropdown-header">
+                <h4 style="font-size:0.9rem;font-weight:700;">Notifications</h4>
+                <button onclick="studentMarkAllRead()" style="background:none;border:none;color:var(--accent-color);font-size:0.75rem;font-weight:600;cursor:pointer;">Mark all read</button>
+              </div>
+              <div id="studentNotifBody" style="max-height:360px;overflow-y:auto;">
+                <div style="padding:40px;text-align:center;color:var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i></div>
+              </div>
+              <a href="/notifications" style="display:block;padding:14px;text-align:center;font-size:0.8rem;color:var(--accent-color);font-weight:600;text-decoration:none;border-top:1px solid var(--border-color);background:rgba(255,255,255,0.02);">View all notifications</a>
+            </div>
+          </div>
+          <a href="/student/submit-report" class="btn btn-primary btn-sm" style="background:var(--accent-color);border:none;border-radius:8px;padding:8px 16px;font-weight:600;"><i class="fas fa-plus"></i> New Report</a>
+          <button class="sidebar-toggle" onclick="logout()" style="color:var(--danger-color);"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+      </header>
+
+      <div class="page-content" style="padding:32px;overflow-y:auto;flex:1;">
+        <div style="margin-bottom:32px;">
+          <h1 style="font-size:1.75rem;font-weight:800;font-family:'Outfit',sans-serif;margin-bottom:8px;">Weekly Progress Reports</h1>
+          <p style="color:var(--text-secondary);font-size:0.95rem;">Track your weekly submissions and supervisor feedback.</p>
+        </div>   </div>        <!-- Stats Row -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:16px;margin-bottom:32px;">
+          <div class="stat-card-mini">
+            <div style="width:48px;height:48px;border-radius:12px;background:rgba(16,185,129,0.1);display:flex;align-items:center;justify-content:center;color:var(--success-color);font-size:1.2rem;"><i class="fas fa-check-circle"></i></div>
+            <div>
+              <div id="approvedCount" style="font-size:1.5rem;font-weight:800;color:white;">0</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary);font-weight:600;text-transform:uppercase;">Approved</div>
+            </div>
+          </div>
+          <div class="stat-card-mini">
+            <div style="width:48px;height:48px;border-radius:12px;background:rgba(245,158,11,0.1);display:flex;align-items:center;justify-content:center;color:var(--warning-color);font-size:1.2rem;"><i class="fas fa-clock"></i></div>
+            <div>
+              <div id="pendingCount" style="font-size:1.5rem;font-weight:800;color:white;">0</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary);font-weight:600;text-transform:uppercase;">Pending</div>
+            </div>
+          </div>
+          <div class="stat-card-mini">
+            <div style="width:48px;height:48px;border-radius:12px;background:rgba(239,68,68,0.1);display:flex;align-items:center;justify-content:center;color:var(--danger-color);font-size:1.2rem;"><i class="fas fa-times-circle"></i></div>
+            <div>
+              <div id="rejectedCount" style="font-size:1.5rem;font-weight:800;color:white;">0</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary);font-weight:600;text-transform:uppercase;">Rejected</div>
+            </div>
+          </div>
+          <div class="stat-card-mini">
+            <div style="width:48px;height:48px;border-radius:12px;background:rgba(124, 58, 237, 0.1);display:flex;align-items:center;justify-content:center;color:var(--accent-color);font-size:1.2rem;"><i class="fas fa-layer-group"></i></div>
+            <div>
+              <div id="totalCount" style="font-size:1.5rem;font-weight:800;color:white;">0</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary);font-weight:600;text-transform:uppercase;">Total Reports</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;padding-bottom:8px;border-bottom:1px solid var(--border-color);">
+          <button class="filter-btn active" onclick="filterReports('ALL',this)">All Reports</button>
+          <button class="filter-btn" onclick="filterReports('APPROVED',this)"><i class="fas fa-check-circle" style="color:var(--success-color);"></i> Approved</button>
+          <button class="filter-btn" onclick="filterReports('PENDING',this)"><i class="fas fa-clock" style="color:var(--warning-color);"></i> Pending</button>
+          <button class="filter-btn" onclick="filterReports('REJECTED',this)"><i class="fas fa-times-circle" style="color:var(--danger-color);"></i> Rejected</button>
+        </div>    </div>
+
+        <div id="reportsList">
+          <div style="text-align:center;padding:60px;color:#999;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- PDF Viewer Overlay -->
+  <div class="pdf-overlay" id="pdfOverlay">
+    <div class="pdf-toolbar">
+      <span id="pdfTitle" style="color:#fff;font-weight:600;flex:1;">Report PDF</span>
+      <a id="pdfDownloadBtn" href="#" download class="btn btn-success btn-sm"><i class="fas fa-download"></i> Download</a>
+      <button onclick="closePdf()" class="btn btn-outline btn-sm" style="background:#fff;"><i class="fas fa-times"></i> Close</button>
+    </div>
+    <iframe id="pdfFrame" src="" style="flex:1;border:none;"></iframe>
+  </div>
+
+  <!-- Confirm Cancel Overlay -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <div style="font-size:3rem;margin-bottom:12px;">⚠️</div>
+      <h3 style="margin-bottom:8px;">Cancel This Report?</h3>
+      <p style="color:#666;margin-bottom:20px;font-size:0.9rem;">This will permanently delete the report. You can then re-submit it with corrections for the same week.</p>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="closeConfirm()" class="btn btn-outline">Keep Report</button>
+        <button id="confirmDeleteBtn" class="btn btn-danger" style="background:#d32f2f;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;">Yes, Cancel It</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let allReports = [];
+    let currentFilter = 'ALL';
+    let pendingDeleteId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+        document.getElementById('userUid').textContent = user.university_id || '—';
+      }
+      updateNotificationCount();
+      loadReports();
+      loadStudentNotifDropdown();
+
+      // Close dropdowns on outside click
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#studentNotifWrapper')) {
+          const dd = document.getElementById('studentNotifDropdown');
+          if (dd) dd.style.display = 'none';
+        }
+      });
+    });
+
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      sb.classList.toggle('collapsed');
+      localStorage.setItem('sidebarCollapsed', sb.classList.contains('collapsed'));
+    }
+
+    function toggleStudentNotif() {
+      const dd = document.getElementById('studentNotifDropdown');
+      const isOpen = dd.style.display !== 'none';
+      dd.style.display = isOpen ? 'none' : 'block';
+      if (!isOpen) loadStudentNotifDropdown();
+    }
+
+    async function loadStudentNotifDropdown() {
+      try {
+        const nd = await apiFetch('/api/notifications?limit=8');
+        const notifs = nd.notifications || [];
+        const el = document.getElementById('studentNotifBody');
+        if (notifs.length === 0) {
+          el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary);font-size:0.85rem;">🔔 No notifications yet</div>';
+          return;
+        }
+        el.innerHTML = notifs.map(n => {
+          const timeAgo = formatTimeAgo(n.created_at);
+          const bg = n.is_read ? 'transparent' : 'rgba(124, 58, 237, 0.08)';
+          return `
+            <div onclick="studentReadAndGo('${n.notification_id}', '${escapeHtml(n.link || '/notifications')}')"
+              style="display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border-color);cursor:pointer;background:${bg};transition:all 0.2s;"
+              onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='${bg}'">
+              <div style="font-size:1.4rem;line-height:1;margin-top:2px;">${n.title.split(' ')[0]}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:0.85rem;font-weight:700;margin-bottom:3px;color:var(--text-primary);">${escapeHtml(n.title.replace(/^[^ ]+ /, ''))}</div>
+                <div style="font-size:0.8rem;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml((n.message || '').substring(0, 75))}</div>
+                <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;opacity:0.7;">${timeAgo}</div>
+              </div>
+              ${!n.is_read ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--accent-color);flex-shrink:0;margin-top:6px;box-shadow:0 0 8px var(--accent-color);"></span>' : ''}
+            </div>`;
+        }).join('');
+      } catch (e) {
+        const el = document.getElementById('studentNotifBody');
+        if (el) el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary);">Failed to load</div>';
+      }
+    }
+
+    async function studentMarkAllRead() {
+      try {
+        await apiFetch('/api/notifications/read-all', { method: 'PUT' });
+        updateNotificationCount();
+        loadStudentNotifDropdown();
+      } catch(e) {}
+    }
+
+    async function studentReadAndGo(id, link) {
+      if (!isNaN(parseInt(id))) {
+        try { await apiFetch(`/api/notifications/${id}/read`, { method: 'PUT' }); } catch(e) {}
+      }
+      window.location.href = link;
+    }
+
+    async function loadReports() {
+      try {
+        const data = await apiFetch('/api/student/reports');
+        allReports = data.reports;
+
+        const approved = allReports.filter(r => r.supervisor_status === 'APPROVED').length;
+        const pending = allReports.filter(r => r.supervisor_status === 'PENDING').length;
+        const rejected = allReports.filter(r => r.supervisor_status === 'REJECTED').length;
+        const withPdf = allReports.filter(r => r.report_file_path).length;
+        document.getElementById('approvedCount').textContent = approved;
+        document.getElementById('pendingCount').textContent = pending;
+        document.getElementById('rejectedCount').textContent = rejected;
+        document.getElementById('totalCount').textContent = allReports.length;
+        document.getElementById('pdfCount').textContent = withPdf;
+
+        renderReports(allReports);
+      } catch (err) {
+        document.getElementById('reportsList').innerHTML = '<div style="text-align:center;padding:40px;color:#d32f2f;">Failed to load reports. <button onclick="loadReports()" class="btn btn-outline btn-sm">Retry</button></div>';
+      }
+    }
+
+    function filterReports(status, btn) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filtered = status === 'ALL' ? allReports : allReports.filter(r => r.supervisor_status === status);
+      renderReports(filtered);    function renderReports(reports) {
+      const container = document.getElementById('reportsList');
+      if (!reports.length) {
+        container.innerHTML = `<div style="text-align:center;padding:80px 20px;color:var(--text-secondary);">
+          <i class="fas fa-folder-open" style="font-size:3.5rem;display:block;margin-bottom:16px;opacity:0.2;"></i>
+          ${currentFilter === 'ALL' ? 'No reports submitted yet.' : 'No ' + currentFilter.toLowerCase() + ' reports found.'}
+          ${currentFilter === 'ALL' ? '<br><a href="/student/submit-report" class="btn btn-primary btn-sm" style="margin-top:20px;background:var(--accent-color);border:none;border-radius:8px;"><i class="fas fa-upload"></i> Submit Your First Report</a>' : ''}
+        </div>`;
+        return;
+      }
+
+      container.innerHTML = reports.map(r => {
+        const sc = r.supervisor_status.toLowerCase();
+        const icon = r.supervisor_status === 'APPROVED' ? '✓' : r.supervisor_status === 'REJECTED' ? '✗' : '⏳';
+        const signedAt = r.supervisor_signed_at ? `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:8px;display:flex;align-items:center;gap:6px;opacity:0.8;"><i class="fas fa-stamp" style="color:var(--success-color);"></i> Reviewed: ${formatDateTime(r.supervisor_signed_at)}</div>` : '';
+        const canCancel = r.supervisor_status === 'PENDING';
+
+        return `
+          <div class="report-card" id="rc-${r.report_id}">
+            <div class="report-card-header" onclick="toggleReport(${r.report_id})">
+              <div class="week-badge ${sc}">
+                <div style="font-size:0.85rem;font-weight:800;">W${r.week_no}</div>
+                <div style="font-size:0.65rem;margin-top:2px;">${icon}</div>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary);">${escapeHtml(r.report_title || 'Week ' + r.week_no + ' Report')}</div>
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;display:flex;align-items:center;gap:6px;"><i class="fas fa-clock" style="font-size:0.7rem;"></i> ${formatDateTime(r.submitted_at)}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+                <span style="font-size:0.72rem;font-weight:700;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,0.05);color:var(--text-secondary);border:1px solid var(--border-color);text-transform:uppercase;letter-spacing:0.02em;">${r.supervisor_status}</span>
+                ${r.report_file_path ? `<button onclick="event.stopPropagation();viewPdf('${r.report_file_path}','Week ${r.week_no} Report')" class="sidebar-toggle" style="width:36px;height:36px;padding:0;" title="View PDF"><i class="fas fa-file-pdf" style="color:var(--danger-color);"></i></button>` : ''}
+                ${canCancel ? `<button onclick="event.stopPropagation();confirmCancel(${r.report_id})" class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:var(--danger-color);border:1px solid rgba(239,68,68,0.2);padding:6px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;" title="Cancel & re-submit"><i class="fas fa-times"></i> CANCEL</button>` : ''}
+                <i class="fas fa-chevron-down" id="chevron-${r.report_id}" style="color:var(--text-secondary);transition:transform 0.3s;"></i>
+              </div>
+            </div>
+            <div class="report-card-body" id="body-${r.report_id}">
+              <div style="padding:20px 0 8px;">
+                ${r.progress_summary ? `<div style="margin-bottom:20px;"><h4 style="font-size:0.7rem;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.08em;margin-bottom:8px;font-weight:700;">Progress Summary</h4><p style="font-size:0.92rem;line-height:1.6;color:var(--text-primary);">${escapeHtml(r.progress_summary)}</p></div>` : ''}
+                ${r.report_content ? `<div style="margin-bottom:20px;"><h4 style="font-size:0.7rem;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.08em;margin-bottom:8px;font-weight:700;">Detailed Content</h4><p style="font-size:0.9rem;line-height:1.6;color:var(--text-secondary);white-space:pre-line;">${escapeHtml(r.report_content)}</p></div>` : ''}
+                ${r.blockers ? `<div style="margin-bottom:20px;padding:16px;background:rgba(245,158,11,0.05);border-radius:12px;border-left:4px solid var(--warning-color);"><h4 style="font-size:0.75rem;color:var(--warning-color);margin-bottom:6px;font-weight:700;display:flex;align-items:center;gap:8px;"><i class="fas fa-exclamation-triangle"></i> BLOCKERS</h4><p style="font-size:0.9rem;color:var(--text-primary);opacity:0.9;">${escapeHtml(r.blockers)}</p></div>` : ''}
+                
+                ${r.report_file_path ? `
+                  <div style="margin-bottom:20px;padding:16px;background:rgba(124, 58, 237, 0.05);border-radius:12px;display:flex;align-items:center;gap:16px;border:1px solid rgba(124, 58, 237, 0.1);">
+                    <div style="width:44px;height:44px;background:rgba(239,68,68,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--danger-color);font-size:1.4rem;"><i class="fas fa-file-pdf"></i></div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">Report Document Attached</div>
+                      <div style="font-size:0.75rem;color:var(--text-secondary);opacity:0.8;">PDF format • Ready to view or download</div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                      <button onclick="viewPdf('${r.report_file_path}','Week ${r.week_no} Report')" class="btn btn-primary btn-sm" style="background:var(--accent-color);border:none;border-radius:8px;"><i class="fas fa-eye"></i> View</button>
+                      <a href="${r.report_file_path}" download class="btn btn-outline btn-sm" style="border-radius:8px;border-color:var(--border-color);color:var(--text-secondary);"><i class="fas fa-download"></i></a>
+                    </div>
+                  </div>
+                ` : '<div style="padding:12px;background:rgba(255,255,255,0.02);border-radius:10px;color:var(--text-secondary);font-size:0.85rem;margin-bottom:20px;display:flex;align-items:center;gap:10px;border:1px dashed var(--border-color);"><i class="fas fa-info-circle"></i> No document attached to this report.</div>'}
+                
+                ${r.supervisor_feedback ? `<div style="padding:16px;background:rgba(16,185,129,0.05);border-radius:12px;border-left:4px solid var(--success-color);"><h4 style="font-size:0.75rem;color:var(--success-color);margin-bottom:8px;font-weight:700;display:flex;align-items:center;gap:8px;"><i class="fas fa-comment-dots"></i> SUPERVISOR FEEDBACK</h4><p style="font-size:0.92rem;color:var(--text-primary);line-height:1.6;">${escapeHtml(r.supervisor_feedback)}</p>${signedAt}</div>` : ''}
+                ${!r.supervisor_feedback && r.supervisor_status === 'PENDING' ? `<div style="padding:14px;background:rgba(245,158,11,0.05);border-radius:10px;color:var(--warning-color);font-size:0.85rem;text-align:center;border:1px solid rgba(245,158,11,0.1);"><i class="fas fa-hourglass-half"></i> Awaiting review. You can cancel and re-submit if needed.</div>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }join('');
+    }
+
+    function toggleReport(id) {
+      const body = document.getElementById(`body-${id}`);
+      const chevron = document.getElementById(`chevron-${id}`);
+      body.classList.toggle('open');
+      chevron.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
+    }
+
+    function viewPdf(path, title) {
+      document.getElementById('pdfFrame').src = path;
+      document.getElementById('pdfDownloadBtn').href = path;
+      document.getElementById('pdfTitle').textContent = title || 'Report PDF';
+      document.getElementById('pdfOverlay').classList.add('show');
+    }
+    function closePdf() {
+      document.getElementById('pdfOverlay').classList.remove('show');
+      document.getElementById('pdfFrame').src = '';
+    }
+
+    function confirmCancel(reportId) {
+      pendingDeleteId = reportId;
+      document.getElementById('confirmOverlay').classList.add('show');
+      document.getElementById('confirmDeleteBtn').onclick = () => deleteReport(reportId);
+    }
+    function closeConfirm() {
+      pendingDeleteId = null;
+      document.getElementById('confirmOverlay').classList.remove('show');
+    }
+
+    async function deleteReport(reportId) {
+      try {
+        document.getElementById('confirmDeleteBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+        const res = await fetch(`/api/student/reports/${reportId}`, { method:'DELETE', credentials:'same-origin' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        closeConfirm();
+        showToast(data.message || 'Report cancelled!', 'success');
+        setTimeout(loadReports, 800);
+      } catch (err) {
+        showToast(err.message || 'Failed to cancel', 'error');
+        document.getElementById('confirmDeleteBtn').innerHTML = 'Yes, Cancel It';
+      }
+    }
+
+    // Close PDF on ESC
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePdf(); closeConfirm(); } });
+  </script>
+</body>
+</html>

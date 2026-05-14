@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grades Management — FYDP System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .grades-table-container { background:#161929;border-radius:12px;border:1px solid #1e2240;overflow:hidden;margin-top:20px; }
+    .grades-table { width:100%;border-collapse:collapse; }
+    .grades-table th { background:#0d0f1e;padding:15px;text-align:left;font-size:0.75rem;text-transform:uppercase;color:#94a3b8;font-weight:700;border-bottom:2px solid #1e2240; letter-spacing: 0.05em; }
+    .grades-table td { padding:15px;border-bottom:1px solid #1e2240;font-size:0.9rem; color:#e2e8f0; }
+    .grades-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .grades-table tr:last-child td { border-bottom:none; }
+    
+    .score-badge { padding:4px 10px;border-radius:20px;font-weight:700;font-size:0.8rem; }
+    .score-high { background:#0a1912;color:#86efac; border: 1px solid rgba(134,239,172,0.2); }
+    .score-mid { background:#1c1917;color:#fdba74; border: 1px solid rgba(253,186,116,0.2); }
+    .score-low { background:#1a1111;color:#fca5a5; border: 1px solid rgba(252,165,165,0.2); }
+    .score-none { background:#1c2033;color:#94a3b8; border: 1px solid #1e2240; }
+    
+    h1 { color: #fff !important; }
+    .page-title p { color: #94a3b8 !important; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Course Teacher</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/teacher/dashboard"><span class="nav-icon"><i class="fas fa-chart-line"></i></span> Dashboard</a>
+        <a href="/teacher/announcements"><span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Announcements</a>
+        <a href="/teacher/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+        <a href="/teacher/students"><span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Student List</a>
+        <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span> Student Messages</a>
+        <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> Chat with Supervisors</a>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">CT</div>
+          <div class="user-info"><h4 id="userName">Course Teacher</h4><p>Course Teacher</p></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Teacher / <span>Gradebook</span></div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline" onclick="exportGrades()"><i class="fas fa-download"></i> Export CSV</button>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-title">
+          <h1><i class="fas fa-graduation-cap" style="color:var(--primary);margin-right:8px;"></i> Gradebook</h1>
+          <p>Consolidated view of all group evaluations and scores</p>
+        </div>
+
+        <div class="grades-table-container">
+          <table class="grades-table">
+            <thead>
+              <tr>
+                <th>Group Code</th>
+                <th>Project Title</th>
+                <th>Supervisor</th>
+                <th>Midterm</th>
+                <th>Final</th>
+                <th>Avg. Score</th>
+              </tr>
+            </thead>
+            <tbody id="gradesTableBody">
+              <tr><td colspan="6" style="text-align:center;padding:40px;color:#999;"><i class="fas fa-spinner fa-spin fa-2x"></i></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+      }
+      loadGrades();
+    });
+
+    async function loadGrades() {
+      try {
+        const data = await apiFetch('/api/teacher/grades');
+        const grades = data.grades || [];
+        const tbody = document.getElementById('gradesTableBody');
+        
+        if (!grades.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#999;">No groups found in your sections.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = grades.map(g => {
+          const midterm = g.evaluations['MIDTERM'] || null;
+          const final = g.evaluations['FINAL'] || null;
+          const scores = [midterm, final].filter(s => s !== null);
+          const avg = scores.length ? (scores.reduce((a,b) => a+parseFloat(b), 0) / scores.length).toFixed(2) : '—';
+          
+          return `
+            <tr>
+              <td><strong style="color:var(--secondary);">${escapeHtml(g.group_code)}</strong></td>
+              <td>${escapeHtml(g.project_title || 'No Title')}</td>
+              <td style="color:#94a3b8;">${escapeHtml(g.supervisor_name || 'Not Assigned')}</td>
+              <td>${renderScore(midterm)}</td>
+              <td>${renderScore(final)}</td>
+              <td><strong style="color:#fff;">${avg}</strong></td>
+            </tr>
+          `;
+        }).join('');
+      } catch(err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function renderScore(score) {
+      if (score === null) return '<span class="score-badge score-none">N/A</span>';
+      let cls = 'score-mid';
+      if (score >= 80) cls = 'score-high';
+      if (score < 40) cls = 'score-low';
+      return `<span class="score-badge ${cls}">${score}</span>`;
+    }
+
+    function exportGrades() {
+      const table = document.querySelector('.grades-table');
+      let csv = [];
+      const rows = table.querySelectorAll('tr');
+      for (const row of rows) {
+        const cols = row.querySelectorAll('td, th');
+        const rowData = Array.from(cols).map(c => '"' + c.innerText.replace(/"/g, '""') + '"');
+        csv.push(rowData.join(','));
+      }
+      const csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "FYDP_Grades_" + new Date().toLocaleDateString() + ".csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
