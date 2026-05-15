@@ -508,8 +508,16 @@ router.post('/group/:groupId/messages', uploadSingle('attachment'), async (req, 
       if (sup.length > 0 && sup[0].supervisor_id && sup[0].supervisor_id !== myId) {
         notifyUsers.push(sup[0].supervisor_id);
       }
-    } else if (type === 'TEACHER') {
-      const [teach] = await db.query('SELECT course_teacher_id FROM project_groups WHERE group_id = ?', [groupId]);
+    } else if (type === 'WITH_TEACHER') {
+      // Teachers are mapped via course_teacher_sections (by section_code), not directly on project_groups
+      const [teach] = await db.query(
+        `SELECT cts.course_teacher_id
+         FROM project_groups pg
+         JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+         WHERE pg.group_id = ?
+         LIMIT 1`,
+        [groupId]
+      );
       if (teach.length > 0 && teach[0].course_teacher_id && teach[0].course_teacher_id !== myId) {
         notifyUsers.push(teach[0].course_teacher_id);
       }

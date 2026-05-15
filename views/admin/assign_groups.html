@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FYDP Group Assignment — Admin</title>
+  <link rel="stylesheet" href="/css/admin-dark.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .stage-tab-bar { display:flex; gap:8px; padding:14px 18px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+    .stage-tab {
+      padding:7px 18px; border-radius:8px; font-size:0.8rem; font-weight:700;
+      border:1px solid var(--border); background:var(--card2); color:var(--text2);
+      cursor:pointer; transition:all 0.15s;
+    }
+    .stage-tab:hover { border-color:var(--border2); color:var(--text); }
+    .stage-tab.active-tab { background:rgba(99,102,241,0.12); color:#818cf8; border-color:rgba(99,102,241,0.3); }
+    .stage-tab.t-s1.active-tab { background:rgba(99,102,241,0.12); color:#818cf8; border-color:rgba(99,102,241,0.3); }
+    .stage-tab.t-s2.active-tab { background:rgba(245,158,11,0.12); color:#f59e0b; border-color:rgba(245,158,11,0.3); }
+    .stage-tab.t-s3.active-tab { background:rgba(16,185,129,0.12); color:#10b981; border-color:rgba(16,185,129,0.3); }
+
+    .grp-card {
+      background:var(--card2); border:1px solid var(--border); border-radius:12px;
+      padding:16px; transition:border-color 0.15s, transform 0.15s;
+    }
+    .grp-card:hover { border-color:var(--border2); transform:translateY(-1px); }
+    .grp-card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; padding:16px; }
+
+    .grp-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .grp-code-big { font-size:1rem; font-weight:900; color:#fff; }
+    .grp-domain  { font-size:0.7rem; color:var(--text3); margin-top:2px; }
+    .grp-info-row { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+    .grp-sup { font-size:0.75rem; color:var(--text2); display:flex; align-items:center; gap:5px; margin:8px 0; }
+    .grp-actions { display:flex; gap:8px; margin-top:12px; }
+    .btn-promote {
+      flex:1; padding:7px; border-radius:8px; font-size:0.75rem; font-weight:700;
+      background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff;
+      border:none; cursor:pointer; transition:opacity 0.15s;
+    }
+    .btn-promote:hover { opacity:0.85; }
+    .btn-promote:disabled { opacity:0.4; cursor:not-allowed; }
+    .btn-view {
+      padding:7px 12px; border-radius:8px; font-size:0.75rem; font-weight:700;
+      background:var(--card); border:1px solid var(--border); color:var(--text2);
+      cursor:pointer; transition:all 0.15s;
+    }
+    .btn-view:hover { border-color:var(--accent); color:var(--accent2); }
+
+    .filter-bar { display:flex; gap:10px; padding:14px 18px; flex-wrap:wrap; align-items:center; }
+    .fi { background:var(--bg2); border:1px solid var(--border); color:var(--text);
+          border-radius:8px; padding:7px 12px; font-size:0.8rem; }
+    .fi:focus { outline:none; border-color:var(--accent); }
+
+    /* Modal */
+    .modal-ov {
+      position:fixed; inset:0; background:rgba(0,0,0,0.7);
+      display:none; align-items:center; justify-content:center; z-index:999;
+    }
+    .modal-ov.open { display:flex; }
+    .modal-box {
+      background:var(--card); border:1px solid var(--border); border-radius:16px;
+      width:520px; max-width:95vw; max-height:90vh; overflow-y:auto;
+    }
+    .modal-head {
+      padding:16px 20px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .modal-head h3 { font-size:1rem; font-weight:800; color:#fff; }
+    .modal-close-btn {
+      width:30px; height:30px; border-radius:8px; background:var(--card2);
+      border:1px solid var(--border); color:var(--text2); cursor:pointer; font-size:1rem;
+    }
+    .modal-body { padding:20px; }
+    .promote-select {
+      width:100%; background:var(--bg2); border:1px solid var(--border);
+      color:var(--text); border-radius:8px; padding:9px 12px; font-size:0.85rem;
+      margin-top:6px;
+    }
+    .promote-select:focus { outline:none; border-color:var(--accent); }
+    .promote-label { font-size:0.75rem; font-weight:700; color:var(--text3); margin-bottom:4px; }
+    .member-row {
+      display:flex; align-items:center; gap:10px; padding:10px 0;
+      border-bottom:1px solid var(--border);
+    }
+    .member-row:last-child { border-bottom:none; }
+    .mem-av {
+      width:32px; height:32px; border-radius:8px; flex-shrink:0;
+      background:linear-gradient(135deg,#6366f1,#4f46e5);
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.7rem; font-weight:800; color:#fff;
+    }
+    .empty-state { text-align:center; padding:40px; color:var(--text3); }
+    .empty-state i { font-size:2rem; margin-bottom:10px; opacity:0.3; display:block; }
+  </style>
+</head>
+<body>
+<div class="adm-layout">
+
+  <aside class="adm-sidebar">
+    <div class="adm-logo">
+      <div class="adm-logo-icon"><i class="fas fa-shield-alt"></i></div>
+      <div><h2>FYDP System</h2><span>Admin Panel</span></div>
+    </div>
+    <nav class="adm-nav">
+      <div class="adm-nav-label">Overview</div>
+      <a href="/admin/dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
+      <div class="adm-nav-label">Assignments</div>
+      <a href="/admin/assign-supervisor"><i class="fas fa-user-tie"></i> Supervisor Assign</a>
+      <a href="/admin/assign-groups" class="active"><i class="fas fa-layer-group"></i> FYDP Group Assign</a>
+      <a href="/admin/assign-teacher"><i class="fas fa-chalkboard-teacher"></i> Course Teacher Assign</a>
+      <div class="adm-nav-label">Management</div>
+      <a href="/admin/users"><i class="fas fa-users"></i> Manage Users</a>
+      <a href="/admin/groups"><i class="fas fa-folder-open"></i> Manage Groups</a>
+      <a href="/admin/import"><i class="fas fa-file-import"></i> Bulk Import</a>
+    </nav>
+    <div class="adm-sidebar-foot">
+      <div class="adm-user-av" id="userAvatar">AD</div>
+      <div class="adm-user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
+      <button class="adm-logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </aside>
+
+  <main class="adm-main">
+    <header class="adm-topbar">
+      <div class="adm-breadcrumb">
+        <i class="fas fa-home"></i> Admin /
+        <a href="/admin/dashboard" style="color:var(--text2);text-decoration:none;">Dashboard</a> /
+        <span>FYDP Group Assignment</span>
+      </div>
+      <div class="adm-topbar-right">
+        <button class="adm-bell-btn" onclick="window.location.href='/notifications'">
+          <i class="fas fa-bell"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="adm-page">
+      <!-- Page Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-layer-group" style="color:#fff;font-size:1.1rem;"></i>
+          </div>
+          <div>
+            <h1 style="font-size:1.3rem;font-weight:900;color:#fff;margin:0;">FYDP Group Assignment</h1>
+            <p style="color:#64748b;font-size:0.78rem;margin:3px 0 0;">Manage group stage promotions across FYDP-1, 2, 3</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <span style="padding:4px 14px;border-radius:20px;font-size:0.7rem;font-weight:700;background:rgba(99,102,241,0.1);color:#818cf8;" id="totalPill">0 Groups</span>
+        </div>
+      </div>
+
+      <!-- Main Card -->
+      <div class="adm-card">
+        <!-- Stage Tabs -->
+        <div class="stage-tab-bar">
+          <button class="stage-tab t-s1 active-tab" onclick="switchStage('')" id="tab-all">All Stages</button>
+          <button class="stage-tab t-s1" onclick="switchStage('FYDP-1')" id="tab-1">FYDP-1 <span id="cnt-1" style="opacity:0.7;"></span></button>
+          <button class="stage-tab t-s2" onclick="switchStage('FYDP-2')" id="tab-2">FYDP-2 <span id="cnt-2" style="opacity:0.7;"></span></button>
+          <button class="stage-tab t-s3" onclick="switchStage('FYDP-3')" id="tab-3">FYDP-3 <span id="cnt-3" style="opacity:0.7;"></span></button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <input type="text" class="fi" id="searchInput" placeholder="🔍 Search group code..." oninput="debounce()" style="flex:1;min-width:150px;">
+          <select class="fi" id="secFilter" onchange="loadGroups()">
+            <option value="">All Sections</option>
+          </select>
+        </div>
+
+        <!-- Group Cards -->
+        <div id="groupGrid" class="grp-card-grid">
+          <div class="empty-state" style="grid-column:1/-1;">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading groups...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Group Detail / Promote Modal -->
+<div class="modal-ov" id="groupModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalGroupCode">Group Details</h3>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalContent">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/main.js"></script>
+<script src="/js/admin_assign_groups.js"></script>
+</body>
+</html>

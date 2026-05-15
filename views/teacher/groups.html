@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -225,6 +225,38 @@
     .modal-close { color:#64748b!important; }
     .form-control { background:#0d0f1e!important; border-color:#2d3354!important; color:#e2e8f0!important; }
     .form-control:focus { border-color:#6c5ce7!important; }
+
+    /* ═══ GROUP CHAT TAB ═══ */
+    .gd-tabs { grid-template-columns: 1fr 1fr 1fr !important; }
+    .gc-wrap { display:flex; flex-direction:column; height:520px; }
+    .gc-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; scroll-behavior:smooth; }
+    .gc-messages::-webkit-scrollbar { width:4px; }
+    .gc-messages::-webkit-scrollbar-thumb { background:#2d3354; border-radius:2px; }
+    .gc-date-divider { display:flex; align-items:center; gap:10px; margin:6px 0; }
+    .gc-date-divider span { font-size:0.7rem; color:#475569; white-space:nowrap; background:#161929; padding:0 8px; }
+    .gc-date-divider::before,.gc-date-divider::after { content:''; flex:1; height:1px; background:#1e2240; }
+    .gc-bubble-wrap { display:flex; align-items:flex-end; gap:8px; max-width:78%; }
+    .gc-bubble-wrap.mine { align-self:flex-end; flex-direction:row-reverse; }
+    .gc-bubble-wrap.theirs { align-self:flex-start; }
+    .gc-avatar { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.62rem; font-weight:700; color:#fff; flex-shrink:0; }
+    .gc-bubble { padding:10px 14px; border-radius:14px; font-size:0.87rem; line-height:1.5; word-break:break-word; position:relative; }
+    .gc-bubble-wrap.mine .gc-bubble { background:linear-gradient(135deg,#6c5ce7,#7c3aed); color:#fff; border-radius:14px 14px 4px 14px; }
+    .gc-bubble-wrap.theirs .gc-bubble { background:#1e2240; color:#e2e8f0; border-radius:14px 14px 14px 4px; }
+    .gc-sender { font-size:0.68rem; font-weight:700; margin-bottom:3px; }
+    .gc-bubble-wrap.mine .gc-sender { text-align:right; color:#a78bfa; }
+    .gc-bubble-wrap.theirs .gc-sender { color:#60a5fa; }
+    .gc-time { font-size:0.62rem; color:#475569; margin-top:2px; text-align:right; }
+    .gc-bubble-wrap.theirs .gc-time { text-align:left; }
+    .gc-input-bar { display:flex; align-items:center; gap:10px; padding:12px 16px; border-top:1px solid #1e2240; background:#0d0f1e; }
+    .gc-input { flex:1; background:#161929; border:1px solid #2d3354; border-radius:10px; padding:10px 14px; color:#e2e8f0; font-size:0.87rem; font-family:inherit; outline:none; resize:none; max-height:100px; min-height:42px; transition:border-color 0.2s; }
+    .gc-input:focus { border-color:#6c5ce7; }
+    .gc-input::placeholder { color:#475569; }
+    .gc-send-btn { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#6c5ce7,#7c3aed); border:none; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0; }
+    .gc-send-btn:hover { opacity:0.85; transform:scale(1.05); }
+    .gc-attach-btn { width:36px; height:36px; border-radius:8px; background:#1e2240; border:1px solid #2d3354; color:#94a3b8; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0; }
+    .gc-attach-btn:hover { border-color:#6c5ce7; color:#a78bfa; }
+    .gc-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:#475569; }
+    .gc-empty i { font-size:2.5rem; color:#2d3354; }
   </style>
 </head>
 <body>
@@ -353,9 +385,42 @@
               <div class="gd-tabs">
                 <div class="gd-tab active" data-tab="weekly" onclick="switchDetailTab('weekly')"><i class="fas fa-calendar-alt"></i> Weekly Reports</div>
                 <div class="gd-tab" data-tab="tasks" onclick="switchDetailTab('tasks')"><i class="fas fa-tasks"></i> Assign Tasks</div>
+                <div class="gd-tab" data-tab="chat" onclick="switchDetailTab('chat')" style="position:relative;">
+                  <i class="fas fa-comments" style="color:#a78bfa;"></i> Group Chat
+                  <span id="gcUnreadBadge" style="display:none;position:absolute;top:8px;right:12px;min-width:18px;height:18px;background:#ef4444;color:#fff;border-radius:9px;font-size:0.62rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;"></span>
+                </div>
               </div>
               <div class="gd-tab-panel active" id="panelWeekly"></div>
               <div class="gd-tab-panel" id="panelTasks"></div>
+              <!-- ══ CHAT PANEL ══ -->
+              <div class="gd-tab-panel" id="panelChat" style="padding:0;">
+                <div class="gc-wrap">
+                  <div class="gc-messages" id="gcMessagesList">
+                    <div class="gc-empty" id="gcEmptyState">
+                      <i class="fas fa-comments"></i>
+                      <span style="font-size:0.85rem;">No messages yet. Start the conversation!</span>
+                    </div>
+                  </div>
+                  <!-- File preview bar (hidden by default) -->
+                  <div id="gcFilePreview" style="display:none; align-items:center; gap:10px; padding:8px 14px; background:#1e2235; border-top:1px solid rgba(255,255,255,0.07); font-size:0.82rem; color:#a0aec0;">
+                    <i id="gcFilePreviewIcon" class="fas fa-file-alt" style="color:#a78bfa; font-size:1.1rem;"></i>
+                    <span id="gcFilePreviewName" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; color:#e2e8f0;"></span>
+                    <button onclick="gcClearFile()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:24px; height:24px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px;"><i class="fas fa-times"></i></button>
+                  </div>
+                  <div class="gc-input-bar">
+                    <button class="gc-attach-btn" onclick="document.getElementById('gcFileInput').click()" title="Attach file">
+                      <i class="fas fa-paperclip"></i>
+                    </button>
+                    <input type="file" id="gcFileInput" style="display:none" onchange="gcHandleFile(this)">
+                    <textarea class="gc-input" id="gcInput" placeholder="Message group..." rows="1"
+                      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();gcSend();}"
+                      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+                    <button class="gc-send-btn" onclick="gcSend()" title="Send">
+                      <i class="fas fa-paper-plane"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -387,6 +452,7 @@
     </div>
   </div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script src="/js/main.js"></script>
   <script>
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -626,6 +692,8 @@
       document.querySelectorAll('.gd-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
       document.getElementById('panelWeekly').classList.toggle('active', tab === 'weekly');
       document.getElementById('panelTasks').classList.toggle('active', tab === 'tasks');
+      document.getElementById('panelChat').classList.toggle('active', tab === 'chat');
+      if (tab === 'chat' && NAV.group) gcLoadMessages(NAV.group.group_id);
     }
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -818,6 +886,215 @@
     function closePdfViewer() {
       document.getElementById('pdfOverlay').classList.remove('active');
       document.getElementById('pdfViewerFrame').src = '';
+    }
+  </script>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════
+    //  GROUP CHAT — Course Teacher Panel
+    // ═══════════════════════════════════════════════════════════
+    let gcCurrentGroupId = null;
+    let gcSocket = null;
+    let gcPendingFile = null;
+    let gcLastDate = null;
+    let gcCurrentUser = null;
+
+    const GC_AVATAR_COLORS = ['#6c5ce7','#0891b2','#059669','#dc2626','#d97706','#7c3aed','#0284c7'];
+    function gcAvatarColor(str) {
+      let h = 0;
+      for (let c of (str || '')) h = c.charCodeAt(0) + ((h << 5) - h);
+      return GC_AVATAR_COLORS[Math.abs(h) % GC_AVATAR_COLORS.length];
+    }
+    function gcInitials(name) {
+      return (name || '').split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+    }
+    function gcFormatTime(dt) {
+      const d = new Date(dt);
+      return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+    function gcFormatDate(dt) {
+      const d = new Date(dt);
+      const today = new Date();
+      const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+      if (d.toDateString() === today.toDateString()) return 'Today';
+      if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    // Fetch & cache current user for sender detection
+    (async () => {
+      try { gcCurrentUser = await getCurrentUser(); } catch(e) {}
+    })();
+
+    // ── Socket.IO setup ─────────────────────────────────────────
+    function gcInitSocket(groupId) {
+      if (!window.io) return;
+      if (!gcSocket) gcSocket = window.io();
+      if (!gcSocket) return;
+      gcSocket.emit('join_group', groupId);
+      gcSocket.off('new_group_message');
+      gcSocket.on('new_group_message', (msg) => {
+        if (parseInt(msg.group_id) !== parseInt(gcCurrentGroupId)) return;
+        // Skip if sent by us — already shown optimistically
+        if (parseInt(msg.sender_id) === parseInt(gcCurrentUser?.user_id)) return;
+        gcAppendBubble(msg, true);
+      });
+    }
+
+    // ── Load messages ───────────────────────────────────────────
+    async function gcLoadMessages(groupId) {
+      gcCurrentGroupId = groupId;
+      gcLastDate = null;
+      const list = document.getElementById('gcMessagesList');
+      list.innerHTML = '<div style="text-align:center;padding:30px;color:#475569;"><i class="fas fa-spinner fa-spin"></i></div>';
+      try {
+        const data = await apiFetch(`/api/chat/group/${groupId}/messages?type=WITH_TEACHER`);
+        gcRenderMessages(data.messages || []);
+        gcInitSocket(groupId);
+        const badge = document.getElementById('gcUnreadBadge');
+        if (badge) badge.style.display = 'none';
+      } catch(e) {
+        list.innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444;">Failed to load messages</div>';
+      }
+    }
+
+    function gcRenderMessages(messages) {
+      const list = document.getElementById('gcMessagesList');
+      const empty = document.getElementById('gcEmptyState');
+      list.innerHTML = '';
+      if (!messages.length) {
+        if (empty) { empty.style.display = 'flex'; list.appendChild(empty); }
+        return;
+      }
+      gcLastDate = null;
+      messages.forEach(msg => gcAppendBubble(msg, false));
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function gcAppendBubble(msg, doScroll) {
+      const list = document.getElementById('gcMessagesList');
+      const myId = gcCurrentUser?.user_id;
+      const isMe = parseInt(msg.sender_id) === parseInt(myId);
+
+      // Date divider
+      const msgDate = gcFormatDate(msg.created_at);
+      if (msgDate !== gcLastDate) {
+        gcLastDate = msgDate;
+        const divEl = document.createElement('div');
+        divEl.className = 'gc-date-divider';
+        divEl.innerHTML = `<span>${msgDate}</span>`;
+        list.appendChild(divEl);
+      }
+
+      // Bubble
+      const wrap = document.createElement('div');
+      wrap.className = `gc-bubble-wrap ${isMe ? 'mine' : 'theirs'}`;
+      wrap.dataset.msgId = msg.message_id;
+
+      const av = `<div class="gc-avatar" style="background:${gcAvatarColor(msg.sender_name)}">${gcInitials(msg.sender_name)}</div>`;
+      const senderLabel = isMe ? 'You' : esc(msg.sender_name || '');
+      const roleTag = msg.sender_role === 'COURSE_TEACHER'
+        ? ' <span style="font-size:0.6rem;background:#6c5ce720;color:#a78bfa;border-radius:4px;padding:1px 5px;">Teacher</span>'
+        : (msg.sender_role === 'STUDENT' ? ' <span style="font-size:0.6rem;background:#0891b220;color:#38bdf8;border-radius:4px;padding:1px 5px;">Student</span>' : '');
+
+      let body = esc(msg.message_text || '');
+      if (msg.attachment_path) {
+        const ext = (msg.attachment_name || '').split('.').pop().toLowerCase();
+        const isImg = ['png','jpg','jpeg','gif','webp'].includes(ext);
+        const isPdf = ext === 'pdf';
+        if (isImg) {
+          body += `<br><img src="${msg.attachment_path}" style="max-width:180px;border-radius:8px;margin-top:6px;cursor:pointer;" onclick="openPdfViewer('${msg.attachment_path}','Image')"/>`;
+        } else {
+          body += `<div style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.78rem;border:1px solid rgba(255,255,255,0.05);">
+            <i class="fas fa-${isPdf ? 'file-pdf' : 'file'}" style="color:${isPdf ? '#ff5252' : '#a29bfe'}; font-size:1.2rem;"></i>
+            <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(msg.attachment_name || 'File')}</span>
+            ${isPdf ? `<a href="#" onclick="event.stopPropagation();openPdfViewer('${msg.attachment_path}','${esc(msg.attachment_name||'')}');return false;" style="color:#a29bfe;font-weight:600;text-decoration:none;">View</a>` : ''}
+            <a href="${msg.attachment_path}" download="${esc(msg.attachment_name||'file')}" style="color:#a29bfe;font-weight:600;text-decoration:none;" onclick="event.stopPropagation()">Download</a>
+          </div>`;
+        }
+      }
+
+      wrap.innerHTML = `
+        ${av}
+        <div>
+          <div class="gc-sender">${senderLabel}${roleTag}</div>
+          <div class="gc-bubble">${body}</div>
+          <div class="gc-time">${gcFormatTime(msg.created_at)}</div>
+        </div>`;
+      list.appendChild(wrap);
+      if (doScroll) list.scrollTop = list.scrollHeight;
+    }
+
+    // ── Send ────────────────────────────────────────────────────
+    async function gcSend() {
+      const input = document.getElementById('gcInput');
+      const text = input.value.trim();
+      if (!text && !gcPendingFile) return;
+      if (!gcCurrentGroupId) return;
+
+      const msgText = text;
+      const pendingFile = gcPendingFile;
+      input.value = '';
+      input.style.height = 'auto';
+      input.placeholder = 'Message group...';
+      gcPendingFile = null;
+      document.getElementById('gcFileInput').value = '';
+      document.getElementById('gcFilePreview').style.display = 'none';
+
+      // Optimistic render
+      const optimistic = {
+        message_id: 'tmp_' + Date.now(),
+        sender_id: gcCurrentUser?.user_id,
+        sender_name: gcCurrentUser?.full_name || 'You',
+        sender_role: 'COURSE_TEACHER',
+        message_text: msgText || '',
+        attachment_path: pendingFile ? URL.createObjectURL(pendingFile) : null,
+        attachment_name: pendingFile ? pendingFile.name : null,
+        created_at: new Date().toISOString()
+      };
+      gcAppendBubble(optimistic, true);
+
+      const formData = new FormData();
+      formData.append('message_text', msgText || '');
+      formData.append('chat_type', 'WITH_TEACHER');
+      if (pendingFile) formData.append('attachment', pendingFile);
+
+      try {
+        const resp = await fetch(`/api/chat/group/${gcCurrentGroupId}/messages`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${resp.status}`);
+        }
+      } catch(e) {
+        if (typeof showToast === 'function') showToast('Failed to send: ' + e.message, 'error');
+        // Remove optimistic bubble on failure
+        const list = document.getElementById('gcMessagesList');
+        const tmp = list.querySelector(`[data-msg-id="${optimistic.message_id}"]`);
+        if (tmp) tmp.remove();
+      }
+    }
+
+    function gcHandleFile(input) {
+      if (input.files && input.files[0]) {
+        gcPendingFile = input.files[0];
+        const isPdf = gcPendingFile.name.toLowerCase().endsWith('.pdf');
+        document.getElementById('gcFilePreviewIcon').className = isPdf ? 'fas fa-file-pdf' : 'fas fa-file-alt';
+        document.getElementById('gcFilePreviewIcon').style.color = isPdf ? '#ff5252' : '#a78bfa';
+        document.getElementById('gcFilePreviewName').textContent = gcPendingFile.name;
+        document.getElementById('gcFilePreview').style.display = 'flex';
+        document.getElementById('gcInput').placeholder = 'Add a message or just press Send...';
+      }
+    }
+
+    function gcClearFile() {
+      gcPendingFile = null;
+      document.getElementById('gcFileInput').value = '';
+      document.getElementById('gcFilePreview').style.display = 'none';
+      document.getElementById('gcInput').placeholder = 'Message group...';
     }
   </script>
 </body>

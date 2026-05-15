@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Teacher Assignment — Admin</title>
+  <link rel="stylesheet" href="/css/admin-dark.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ── Layout ─────────────────────────────────── */
+    .ct-split { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:900px){ .ct-split { grid-template-columns:1fr; } }
+
+    /* ── Form card ──────────────────────────────── */
+    .assign-form { display:flex; flex-direction:column; gap:12px; padding:20px; }
+    .form-group label { font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.04em; display:block; margin-bottom:5px; }
+    .form-select {
+      width:100%; background:#0f172a; border:1px solid #1e293b; color:#e2e8f0;
+      border-radius:8px; padding:10px 13px; font-size:0.83rem; transition:border-color .15s;
+    }
+    .form-select:focus { outline:none; border-color:#6366f1; }
+    .btn-assign {
+      padding:11px; border-radius:10px; font-size:0.85rem; font-weight:800;
+      background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; border:none;
+      cursor:pointer; transition:opacity .15s; display:flex; align-items:center; justify-content:center; gap:7px;
+    }
+    .btn-assign:hover { opacity:.85; }
+    .btn-assign:disabled { opacity:.4; cursor:not-allowed; }
+
+    /* ── Mapping table ──────────────────────────── */
+    .map-table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+    .map-table th { padding:10px 14px; background:#0f172a; color:#475569; font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; text-align:left; }
+    .map-table td { padding:11px 14px; border-bottom:1px solid #1e293b; color:#cbd5e1; vertical-align:middle; }
+    .map-table tr:hover td { background:rgba(99,102,241,.04); }
+    .map-table tr:last-child td { border-bottom:none; }
+    .btn-remove {
+      padding:4px 10px; border-radius:6px; font-size:0.68rem; font-weight:700;
+      background:rgba(239,68,68,.1); color:#ef4444; border:1px solid rgba(239,68,68,.2);
+      cursor:pointer; transition:all .15s;
+    }
+    .btn-remove:hover { background:rgba(239,68,68,.2); }
+    .empty-row td { text-align:center; padding:30px; color:#334155; }
+
+    /* ── Section pills ──────────────────────────── */
+    .sec-pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.7rem; font-weight:700; background:rgba(99,102,241,.1); color:#818cf8; }
+    .stage-pill-1 { background:rgba(99,102,241,.1); color:#818cf8; }
+    .stage-pill-2 { background:rgba(245,158,11,.1); color:#f59e0b; }
+    .stage-pill-3 { background:rgba(16,185,129,.1); color:#10b981; }
+
+    /* ── Summary cards ──────────────────────────── */
+    .summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px; }
+    @media(max-width:700px){ .summary-grid { grid-template-columns:1fr 1fr; } }
+    .sum-card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; text-align:center; }
+    .sum-card .num { font-size:1.6rem; font-weight:900; color:#818cf8; }
+    .sum-card .lbl { font-size:0.68rem; color:#475569; font-weight:700; text-transform:uppercase; margin-top:3px; }
+  </style>
+</head>
+<body>
+<div class="adm-layout">
+
+  <aside class="adm-sidebar">
+    <div class="adm-logo">
+      <div class="adm-logo-icon"><i class="fas fa-shield-alt"></i></div>
+      <div><h2>FYDP System</h2><span>Admin Panel</span></div>
+    </div>
+    <nav class="adm-nav">
+      <div class="adm-nav-label">Overview</div>
+      <a href="/admin/dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
+      <div class="adm-nav-label">Assignments</div>
+      <a href="/admin/assign-supervisor"><i class="fas fa-user-tie"></i> Supervisor Assign</a>
+      <a href="/admin/assign-groups"><i class="fas fa-layer-group"></i> FYDP Group Assign</a>
+      <a href="/admin/assign-teacher" class="active"><i class="fas fa-chalkboard-teacher"></i> Course Teacher Assign</a>
+      <div class="adm-nav-label">Management</div>
+      <a href="/admin/users"><i class="fas fa-users"></i> Manage Users</a>
+      <a href="/admin/groups"><i class="fas fa-folder-open"></i> Manage Groups</a>
+    </nav>
+    <div class="adm-sidebar-foot">
+      <div class="adm-user-av" id="userAvatar">AD</div>
+      <div class="adm-user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
+      <button class="adm-logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </aside>
+
+  <main class="adm-main">
+    <header class="adm-topbar">
+      <div class="adm-breadcrumb">
+        <i class="fas fa-home"></i> Admin /
+        <a href="/admin/dashboard" style="color:#64748b;text-decoration:none;">Dashboard</a> /
+        <span>Course Teacher Assign</span>
+      </div>
+      <div class="adm-topbar-right">
+        <button class="adm-bell-btn" onclick="window.location.href='/notifications'">
+          <i class="fas fa-bell"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="adm-page">
+      <!-- Page Header -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-chalkboard-teacher" style="color:#fff;font-size:1.1rem;"></i>
+        </div>
+        <div>
+          <h1 style="font-size:1.3rem;font-weight:900;color:#fff;margin:0;">Course Teacher Assignment</h1>
+          <p style="color:#64748b;font-size:0.78rem;margin:3px 0 0;">Assign course teachers to sections and FYDP stages</p>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary-grid">
+        <div class="sum-card"><div class="num" id="sumTeachers">—</div><div class="lbl">Course Teachers</div></div>
+        <div class="sum-card"><div class="num" id="sumMappings">—</div><div class="lbl">Active Mappings</div></div>
+        <div class="sum-card"><div class="num" id="sumSections">—</div><div class="lbl">Sections Covered</div></div>
+      </div>
+
+      <!-- Split Layout -->
+      <div class="ct-split">
+
+        <!-- LEFT: Assign Form -->
+        <div class="adm-card" style="padding:0;">
+          <div style="padding:16px 20px;border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:10px;">
+            <i class="fas fa-plus-circle" style="color:#6366f1;"></i>
+            <h3 style="font-size:0.95rem;font-weight:800;color:#fff;margin:0;">New Assignment</h3>
+          </div>
+          <div class="assign-form">
+            <div class="form-group">
+              <label>Course Teacher</label>
+              <select class="form-select" id="selTeacher">
+                <option value="">— Select Teacher —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Section Code</label>
+              <select class="form-select" id="selSection">
+                <option value="">— Select Section —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>FYDP Stage</label>
+              <select class="form-select" id="selStage">
+                <option value="">— Select Stage —</option>
+              </select>
+            </div>
+            <button class="btn-assign" id="btnAssign" onclick="doAssign()">
+              <i class="fas fa-link"></i> Assign Teacher to Section
+            </button>
+            <div id="assignFeedback" style="text-align:center;font-size:0.8rem;min-height:20px;"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Current Mappings -->
+        <div class="adm-card" style="padding:0;">
+          <div style="padding:14px 20px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <i class="fas fa-table" style="color:#f59e0b;"></i>
+              <h3 style="font-size:0.95rem;font-weight:800;color:#fff;margin:0;">Current Assignments</h3>
+            </div>
+            <input type="text" id="mapSearch" placeholder="Filter..." oninput="filterTable()"
+              style="background:#0f172a;border:1px solid #1e293b;color:#e2e8f0;border-radius:7px;padding:5px 10px;font-size:0.75rem;width:130px;">
+          </div>
+          <div style="overflow-x:auto;max-height:420px;overflow-y:auto;">
+            <table class="map-table">
+              <thead>
+                <tr>
+                  <th>Teacher</th>
+                  <th>Section</th>
+                  <th>Stage</th>
+                  <th>Groups</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="mapTableBody">
+                <tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="/js/main.js"></script>
+<script src="/js/admin_assign_teacher.js"></script>
+</body>
+</html>

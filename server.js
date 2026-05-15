@@ -101,6 +101,15 @@ app.get('/admin/groups', isAuth, requireRole('ADMIN'), (req, res) => {
 app.get('/admin/import', isAuth, requireRole('ADMIN'), (req, res) => {
   res.sendFile(path.join(__dirname, 'views/admin/import.html'));
 });
+app.get('/admin/assign-supervisor', isAuth, requireRole('ADMIN'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views/admin/assign_supervisor.html'));
+});
+app.get('/admin/assign-groups', isAuth, requireRole('ADMIN'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views/admin/assign_groups.html'));
+});
+app.get('/admin/assign-teacher', isAuth, requireRole('ADMIN'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views/admin/assign_teacher.html'));
+});
 
 // ── Supervisor Pages ───────────────────────────────────────────────────────
 app.get('/supervisor/dashboard', isAuth, requireRole('SUPERVISOR', 'COURSE_TEACHER'), (req, res) => {
