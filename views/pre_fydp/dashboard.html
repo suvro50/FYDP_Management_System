@@ -103,12 +103,7 @@
     <div class="pf-filters">
       <label>Smart Filters:</label>
       <select class="pf-filter-select" id="filterDomain"><option>All Domains</option></select>
-      <select class="pf-filter-select" id="filterSkill">
-        <option>All Skills</option>
-        <option>Python</option><option>React</option><option>Node.js</option>
-        <option>MySQL</option><option>TensorFlow</option><option>Backend</option>
-        <option>Frontend</option><option>Docker</option><option>NLP</option>
-      </select>
+      <select class="pf-filter-select" id="filterSkill"><option>All Skills</option></select>
       <span class="pf-filter-count" id="filterCount">0 groups match</span>
     </div>
 
@@ -412,12 +407,17 @@ async function loadStats() {
   } catch(e) { console.error(e); }
 }
 
-// ── DOMAINS ─────────────────────────────────────────────────────────────
+// ── DOMAINS & SKILLS ────────────────────────────────────────────────────
 async function loadDomains() {
   try {
     const doms = await apiFetch('/api/pre-fydp/domains');
     const sel = document.getElementById('filterDomain');
     doms.forEach(d => { const o = document.createElement('option'); o.textContent = d; sel.appendChild(o); });
+  } catch(e) {}
+  try {
+    const skillsList = await apiFetch('/api/pre-fydp/skills');
+    const sel = document.getElementById('filterSkill');
+    skillsList.forEach(s => { const o = document.createElement('option'); o.textContent = s.skill_name; sel.appendChild(o); });
   } catch(e) {}
 }
 
@@ -449,7 +449,7 @@ function renderGroups(groups) {
   grid.innerHTML = groups.map(g => {
     const isFull = g.member_count >= g.max_members;
     const pct = Math.round((g.member_count / g.max_members) * 100);
-    const skills = g.required_skills ? (typeof g.required_skills === 'string' ? JSON.parse(g.required_skills) : g.required_skills) : [];
+    const skills = Array.isArray(g.required_skills) ? g.required_skills : [];
     const color = hashColor(g.group_name);
     return `
       <div class="pf-team-card">
@@ -501,7 +501,7 @@ function openGroupDetail(groupId) {
   const isFull = g.member_count >= g.max_members;
   const openSlots = Math.max(0, g.max_members - g.member_count);
   const pct = Math.round((g.member_count / g.max_members) * 100);
-  const skills = g.required_skills ? (typeof g.required_skills === 'string' ? JSON.parse(g.required_skills) : g.required_skills) : [];
+  const skills = Array.isArray(g.required_skills) ? g.required_skills : [];
   const members = g.members || [];
 
   // Header

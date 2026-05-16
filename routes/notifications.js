@@ -13,6 +13,8 @@ function enrichNotification(n, role) {
     REPORT_REJECTED:      '❌ Report Rejected',
     ESCALATION_COMPLETE:  '📤 Reports Escalated',
     STAGE_PROMOTED:       '⬆️ Stage Promoted',
+    NEW_GROUP_MESSAGE:    '💬 New Group Message',
+    NEW_DIRECT_MESSAGE:   '✉️ New Direct Message',
     SYSTEM_ALERT:         '🔔 Alert',
   };
 
@@ -48,6 +50,18 @@ function enrichNotification(n, role) {
     if (isSupervisor) link = '/supervisor/groups';
     else if (isTeacher) link = '/teacher/groups';
     else link = '/student/dashboard';
+
+  } else if (t === 'NEW_GROUP_MESSAGE') {
+    // [v3.1] New group chat message notification
+    if (isSupervisor) link = '/supervisor/groups';
+    else if (isTeacher) link = '/teacher/groups';
+    else link = '/student/my-group-chat';
+
+  } else if (t === 'NEW_DIRECT_MESSAGE') {
+    // [v3.1] New direct message notification
+    if (isSupervisor) link = '/supervisor/student-inbox';
+    else if (isTeacher) link = '/teacher/student-inbox';
+    else link = '/student/supervisor-chat';
 
   } else if (t === 'SYSTEM_ALERT') {
     if (msg.includes('group message') || msg.includes('new message in')) {

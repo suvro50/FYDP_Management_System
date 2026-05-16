@@ -14,7 +14,7 @@ router.get('/dashboard-stats', async (req, res) => {
 
     // Distinct domains for open groups
     const [[{ domain_count }]] = await db.query(
-      `SELECT COUNT(DISTINCT domain) as domain_count FROM pre_fydp_groups WHERE group_status = 'OPEN'`
+      `SELECT COUNT(DISTINCT domain_id) as domain_count FROM pre_fydp_groups WHERE group_status = 'OPEN'`
     );
 
     // Pending outgoing requests
@@ -54,22 +54,30 @@ router.get('/dashboard-stats', async (req, res) => {
 router.get('/groups', async (req, res) => {
   try {
     const { domain, skill, search } = req.query;
-    
+
     let sql = `
-      SELECT g.*, u.full_name as creator_name, u.department as creator_dept,
-        (SELECT COUNT(*) FROM pre_fydp_group_members gm WHERE gm.group_id = g.group_id) as member_count
+      SELECT g.group_id, g.group_name, pd.domain_name as domain, g.description,
+             g.max_members, g.github_url, g.created_by, g.group_status, g.created_at,
+             u.full_name as creator_name, d.short_code as creator_dept,
+             (SELECT COUNT(*) FROM pre_fydp_group_members gm WHERE gm.group_id = g.group_id) as member_count
       FROM pre_fydp_groups g
       JOIN users u ON g.created_by = u.user_id
+      JOIN departments d ON u.department_id = d.department_id
+      JOIN project_domains pd ON g.domain_id = pd.domain_id
       WHERE 1=1
     `;
     const params = [];
 
     if (domain && domain !== 'All Domains') {
-      sql += ` AND g.domain = ?`;
+      sql += ` AND pd.domain_name = ?`;
       params.push(domain);
     }
     if (skill && skill !== 'All Skills') {
-      sql += ` AND JSON_CONTAINS(g.required_skills, JSON_QUOTE(?))`;
+      sql += ` AND g.group_id IN (
+        SELECT pgrs.group_id FROM pre_fydp_group_required_skills pgrs
+        JOIN skills s ON pgrs.skill_id = s.skill_id
+        WHERE s.skill_name = ?
+      )`;
       params.push(skill);
     }
     if (search) {
@@ -80,18 +88,28 @@ router.get('/groups', async (req, res) => {
 
     const [groups] = await db.query(sql, params);
 
-    // Get members for each group
+    // Get members and skills for each group
     for (const group of groups) {
       const [members] = await db.query(
-        `SELECT gm.*, u.full_name, u.department 
+        `SELECT gm.member_id, gm.user_id, gm.member_role, u.full_name, d.short_code as department 
          FROM pre_fydp_group_members gm
          JOIN users u ON gm.user_id = u.user_id
+         JOIN departments d ON u.department_id = d.department_id
          WHERE gm.group_id = ?`, [group.group_id]
       );
       group.members = members;
+
       // Find lead
       const lead = members.find(m => m.member_role === 'Lead');
       group.lead_name = lead ? lead.full_name : group.creator_name;
+
+      // Get required skills
+      const [skillRows] = await db.query(
+        `SELECT s.skill_name FROM pre_fydp_group_required_skills pgrs
+         JOIN skills s ON pgrs.skill_id = s.skill_id
+         WHERE pgrs.group_id = ?`, [group.group_id]
+      );
+      group.required_skills = skillRows.map(s => s.skill_name);
     }
 
     res.json(groups);
@@ -105,11 +123,25 @@ router.get('/groups', async (req, res) => {
 router.get('/domains', async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT DISTINCT domain FROM pre_fydp_groups ORDER BY domain`
+      `SELECT DISTINCT pd.domain_name 
+       FROM project_domains pd
+       ORDER BY pd.domain_name`
     );
-    res.json(rows.map(r => r.domain));
+    res.json(rows.map(r => r.domain_name));
   } catch (err) {
     res.status(500).json({ error: 'Failed to load domains' });
+  }
+});
+
+// ── Get All Skills ─────────────────────────────────────────────────────────
+router.get('/skills', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT skill_id, skill_name, skill_category FROM skills ORDER BY skill_name`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load skills' });
   }
 });
 
@@ -123,21 +155,59 @@ router.post('/groups', async (req, res) => {
       return res.status(400).json({ error: 'Group name and domain are required' });
     }
 
-    const [result] = await db.query(
-      `INSERT INTO pre_fydp_groups (group_name, domain, description, required_skills, max_members, github_url, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [group_name, domain, description || null, 
-       required_skills ? JSON.stringify(required_skills) : null,
-       max_members || 5, github_url || null, userId]
+    // Resolve domain_id
+    const [domainRows] = await db.query(
+      `SELECT domain_id FROM project_domains WHERE domain_name = ?`, [domain]
     );
+    if (domainRows.length === 0) {
+      return res.status(400).json({ error: 'Invalid domain selected' });
+    }
+    const domain_id = domainRows[0].domain_id;
+
+    const [result] = await db.query(
+      `INSERT INTO pre_fydp_groups (group_name, domain_id, description, max_members, github_url, created_by)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [group_name, domain_id, description || null, max_members || 5, github_url || null, userId]
+    );
+
+    const groupId = result.insertId;
 
     // Add creator as lead member
     await db.query(
       `INSERT INTO pre_fydp_group_members (group_id, user_id, member_role) VALUES (?, ?, 'Lead')`,
-      [result.insertId, userId]
+      [groupId, userId]
     );
 
-    res.json({ success: true, group_id: result.insertId, message: 'Group created successfully!' });
+    // Add required skills if provided
+    if (required_skills && Array.isArray(required_skills) && required_skills.length > 0) {
+      for (const skillName of required_skills) {
+        // Find or insert skill
+        const [existingSkill] = await db.query(
+          `SELECT skill_id FROM skills WHERE skill_name = ?`, [skillName.trim()]
+        );
+        let skill_id;
+        if (existingSkill.length > 0) {
+          skill_id = existingSkill[0].skill_id;
+        } else {
+          const [newSkill] = await db.query(
+            `INSERT INTO skills (skill_name, skill_category) VALUES (?, 'Other')`, [skillName.trim()]
+          );
+          skill_id = newSkill.insertId;
+        }
+        await db.query(
+          `INSERT IGNORE INTO pre_fydp_group_required_skills (group_id, skill_id) VALUES (?, ?)`,
+          [groupId, skill_id]
+        ).catch(() => {}); // ignore duplicates
+      }
+    }
+
+    // Update user profile to IN_TEAM
+    await db.query(
+      `UPDATE pre_fydp_profiles SET availability_status = 'IN_TEAM' WHERE user_id = ?`,
+      [userId]
+    ).catch(() => {});
+
+    res.json({ success: true, group_id: groupId, message: 'Group created successfully!' });
   } catch (err) {
     console.error('Pre-FYDP create group error:', err);
     res.status(500).json({ error: 'Failed to create group' });
@@ -199,9 +269,11 @@ router.get('/my-requests', async (req, res) => {
 
     // Sent requests
     const [sent] = await db.query(
-      `SELECT jr.*, g.group_name, g.domain, u.full_name as group_lead
+      `SELECT jr.request_id, jr.group_id, jr.sender_id, jr.message, jr.request_status, jr.created_at,
+              g.group_name, pd.domain_name as domain, u.full_name as group_lead
        FROM pre_fydp_join_requests jr
        JOIN pre_fydp_groups g ON jr.group_id = g.group_id
+       JOIN project_domains pd ON g.domain_id = pd.domain_id
        JOIN users u ON g.created_by = u.user_id
        WHERE jr.sender_id = ?
        ORDER BY jr.created_at DESC`, [userId]
@@ -209,15 +281,29 @@ router.get('/my-requests', async (req, res) => {
 
     // Received requests (for groups I own)
     const [received] = await db.query(
-      `SELECT jr.*, g.group_name, g.domain, u.full_name as sender_name, 
-              u.department as sender_dept, p.skills as sender_skills, p.preferred_role
+      `SELECT jr.request_id, jr.group_id, jr.sender_id, jr.message, jr.request_status, jr.created_at,
+              g.group_name, pd.domain_name as domain,
+              u.full_name as sender_name, d.short_code as sender_dept,
+              p.preferred_role
        FROM pre_fydp_join_requests jr
        JOIN pre_fydp_groups g ON jr.group_id = g.group_id
+       JOIN project_domains pd ON g.domain_id = pd.domain_id
        JOIN users u ON jr.sender_id = u.user_id
+       JOIN departments d ON u.department_id = d.department_id
        LEFT JOIN pre_fydp_profiles p ON jr.sender_id = p.user_id
        WHERE g.created_by = ? AND jr.sender_id != ?
        ORDER BY jr.created_at DESC`, [userId, userId]
     );
+
+    // Enrich received with sender skills (from pivot table)
+    for (const req of received) {
+      const [skillRows] = await db.query(
+        `SELECT s.skill_name FROM pre_fydp_student_skills pss
+         JOIN skills s ON pss.skill_id = s.skill_id
+         WHERE pss.user_id = ?`, [req.sender_id]
+      );
+      req.sender_skills = skillRows.map(s => s.skill_name);
+    }
 
     res.json({ sent, received });
   } catch (err) {
@@ -241,10 +327,10 @@ router.patch('/join-request/:id', async (req, res) => {
        JOIN pre_fydp_groups g ON jr.group_id = g.group_id
        WHERE jr.request_id = ?`, [id]
     );
-    
+
     if (rows.length === 0) return res.status(404).json({ error: 'Request not found' });
     const request = rows[0];
-    
+
     if (request.created_by !== userId) {
       return res.status(403).json({ error: 'Only the group owner can accept/reject requests' });
     }
@@ -255,7 +341,7 @@ router.patch('/join-request/:id', async (req, res) => {
       }
       // Add to group members
       await db.query(
-        `INSERT IGNORE INTO pre_fydp_group_members (group_id, user_id, member_role) VALUES (?, ?, 'Member')`,
+        `INSERT IGNORE INTO pre_fydp_group_members (group_id, user_id, member_role) VALUES (?, ?, 'Other')`,
         [request.group_id, request.sender_id]
       );
       // Update status
@@ -263,6 +349,12 @@ router.patch('/join-request/:id', async (req, res) => {
         `UPDATE pre_fydp_join_requests SET request_status = 'ACCEPTED', responded_at = NOW() WHERE request_id = ?`,
         [id]
       );
+
+      // Update sender profile to IN_TEAM
+      await db.query(
+        `UPDATE pre_fydp_profiles SET availability_status = 'IN_TEAM' WHERE user_id = ?`,
+        [request.sender_id]
+      ).catch(() => {});
 
       // Check if group is now full and update status
       const [[{ new_count }]] = await db.query(
@@ -296,27 +388,54 @@ router.get('/teammates', async (req, res) => {
     const { domain, skill } = req.query;
 
     let sql = `
-      SELECT u.user_id, u.full_name, u.department, u.batch, 
-             p.bio, p.cgpa, p.skills, p.domain_interests, p.preferred_role,
+      SELECT u.user_id, u.full_name, d.short_code as department, u.batch, 
+             p.bio, p.cgpa, p.preferred_role,
              p.github_url, p.linkedin_url, p.availability_status, p.profile_strength
       FROM users u
       JOIN pre_fydp_profiles p ON u.user_id = p.user_id
+      JOIN departments d ON u.department_id = d.department_id
       WHERE u.role = 'PRE_FYDP_STUDENT' AND u.user_id != ? AND u.account_status = 'ACTIVE'
             AND p.availability_status = 'LOOKING'
     `;
     const params = [userId];
 
     if (domain && domain !== 'All Domains') {
-      sql += ` AND JSON_CONTAINS(p.domain_interests, JSON_QUOTE(?))`;
+      sql += ` AND u.user_id IN (
+        SELECT pdi.user_id FROM pre_fydp_student_domain_interests pdi
+        JOIN project_domains pd ON pdi.domain_id = pd.domain_id
+        WHERE pd.domain_name = ?
+      )`;
       params.push(domain);
     }
     if (skill && skill !== 'All Skills') {
-      sql += ` AND JSON_CONTAINS(p.skills, JSON_QUOTE(?))`;
+      sql += ` AND u.user_id IN (
+        SELECT pss.user_id FROM pre_fydp_student_skills pss
+        JOIN skills s ON pss.skill_id = s.skill_id
+        WHERE s.skill_name = ?
+      )`;
       params.push(skill);
     }
 
     sql += ` ORDER BY p.profile_strength DESC`;
     const [students] = await db.query(sql, params);
+
+    // Enrich each student with their skills and domain interests
+    for (const student of students) {
+      const [skillRows] = await db.query(
+        `SELECT s.skill_name FROM pre_fydp_student_skills pss
+         JOIN skills s ON pss.skill_id = s.skill_id
+         WHERE pss.user_id = ?`, [student.user_id]
+      );
+      student.skills = skillRows.map(s => s.skill_name);
+
+      const [domainRows] = await db.query(
+        `SELECT pd.domain_name FROM pre_fydp_student_domain_interests pdi
+         JOIN project_domains pd ON pdi.domain_id = pd.domain_id
+         WHERE pdi.user_id = ?`, [student.user_id]
+      );
+      student.domain_interests = domainRows.map(d => d.domain_name);
+    }
+
     res.json(students);
   } catch (err) {
     console.error('Pre-FYDP find teammates error:', err);
@@ -329,14 +448,35 @@ router.get('/profile', async (req, res) => {
   try {
     const userId = req.session.user.user_id;
     const [rows] = await db.query(
-      `SELECT u.full_name, u.email, u.department, u.batch, u.phone,
-              p.*
+      `SELECT u.full_name, u.email, d.short_code as department, u.batch, u.phone,
+              p.profile_id, p.bio, p.cgpa, p.preferred_role, p.github_url, p.linkedin_url,
+              p.portfolio_url, p.availability_status, p.profile_strength
        FROM users u
+       JOIN departments d ON u.department_id = d.department_id
        LEFT JOIN pre_fydp_profiles p ON u.user_id = p.user_id
        WHERE u.user_id = ?`, [userId]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
-    res.json(rows[0]);
+    
+    const profile = rows[0];
+
+    // Get skills from pivot table
+    const [skillRows] = await db.query(
+      `SELECT s.skill_name FROM pre_fydp_student_skills pss
+       JOIN skills s ON pss.skill_id = s.skill_id
+       WHERE pss.user_id = ?`, [userId]
+    );
+    profile.skills = skillRows.map(s => s.skill_name);
+
+    // Get domain interests from pivot table
+    const [domainRows] = await db.query(
+      `SELECT pd.domain_name FROM pre_fydp_student_domain_interests pdi
+       JOIN project_domains pd ON pdi.domain_id = pd.domain_id
+       WHERE pdi.user_id = ?`, [userId]
+    );
+    profile.domain_interests = domainRows.map(d => d.domain_name);
+
+    res.json(profile);
   } catch (err) {
     console.error('Pre-FYDP profile error:', err);
     res.status(500).json({ error: 'Failed to load profile' });
@@ -361,6 +501,20 @@ router.put('/profile', async (req, res) => {
     if (portfolio_url) strength += 5;
     strength = Math.min(strength, 100);
 
+    // Map preferred_role from display name to enum value if needed
+    const roleMap = {
+      'Frontend Developer': 'FRONTEND_DEVELOPER',
+      'Backend Developer': 'BACKEND_DEVELOPER',
+      'Full-stack Developer': 'FULL_STACK_DEVELOPER',
+      'ML Engineer': 'ML_ENGINEER',
+      'Security Analyst': 'SECURITY_ANALYST',
+      'Embedded Developer': 'EMBEDDED_DEVELOPER',
+      'UI/UX Designer': 'UI_UX_DESIGNER',
+      'Data Analyst': 'DATA_SCIENTIST',
+      'DevOps Engineer': 'DEVOPS_ENGINEER'
+    };
+    const roleEnum = roleMap[preferred_role] || preferred_role || null;
+
     // Upsert profile
     const [existing] = await db.query(
       `SELECT profile_id FROM pre_fydp_profiles WHERE user_id = ?`, [userId]
@@ -368,22 +522,66 @@ router.put('/profile', async (req, res) => {
 
     if (existing.length > 0) {
       await db.query(
-        `UPDATE pre_fydp_profiles SET bio=?, cgpa=?, skills=?, domain_interests=?, 
-         preferred_role=?, github_url=?, linkedin_url=?, portfolio_url=?, profile_strength=?
+        `UPDATE pre_fydp_profiles SET bio=?, cgpa=?, preferred_role=?, 
+         github_url=?, linkedin_url=?, portfolio_url=?, profile_strength=?
          WHERE user_id = ?`,
-        [bio, cgpa, skills ? JSON.stringify(skills) : null,
-         domain_interests ? JSON.stringify(domain_interests) : null,
-         preferred_role, github_url, linkedin_url, portfolio_url, strength, userId]
+        [bio || null, cgpa || null, roleEnum, github_url || null, linkedin_url || null, portfolio_url || null, strength, userId]
       );
     } else {
       await db.query(
         `INSERT INTO pre_fydp_profiles 
-         (user_id, bio, cgpa, skills, domain_interests, preferred_role, github_url, linkedin_url, portfolio_url, profile_strength)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, bio, cgpa, skills ? JSON.stringify(skills) : null,
-         domain_interests ? JSON.stringify(domain_interests) : null,
-         preferred_role, github_url, linkedin_url, portfolio_url, strength]
+         (user_id, bio, cgpa, preferred_role, github_url, linkedin_url, portfolio_url, profile_strength)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, bio || null, cgpa || null, roleEnum, github_url || null, linkedin_url || null, portfolio_url || null, strength]
       );
+    }
+
+    // Update skills — replace all existing
+    if (skills !== undefined) {
+      await db.query(`DELETE FROM pre_fydp_student_skills WHERE user_id = ?`, [userId]);
+      if (Array.isArray(skills) && skills.length > 0) {
+        for (const skillName of skills) {
+          const trimmed = skillName.trim();
+          if (!trimmed) continue;
+          // Find or create skill
+          let [existingSkill] = await db.query(
+            `SELECT skill_id FROM skills WHERE skill_name = ?`, [trimmed]
+          );
+          let skill_id;
+          if (existingSkill.length > 0) {
+            skill_id = existingSkill[0].skill_id;
+          } else {
+            const [newSkill] = await db.query(
+              `INSERT INTO skills (skill_name, skill_category) VALUES (?, 'Other')`, [trimmed]
+            );
+            skill_id = newSkill.insertId;
+          }
+          await db.query(
+            `INSERT IGNORE INTO pre_fydp_student_skills (user_id, skill_id, proficiency_level) VALUES (?, ?, 'INTERMEDIATE')`,
+            [userId, skill_id]
+          );
+        }
+      }
+    }
+
+    // Update domain interests — replace all existing
+    if (domain_interests !== undefined) {
+      await db.query(`DELETE FROM pre_fydp_student_domain_interests WHERE user_id = ?`, [userId]);
+      if (Array.isArray(domain_interests) && domain_interests.length > 0) {
+        for (const domainName of domain_interests) {
+          const trimmed = domainName.trim();
+          if (!trimmed) continue;
+          const [domRows] = await db.query(
+            `SELECT domain_id FROM project_domains WHERE domain_name = ?`, [trimmed]
+          );
+          if (domRows.length > 0) {
+            await db.query(
+              `INSERT IGNORE INTO pre_fydp_student_domain_interests (user_id, domain_id, interest_level) VALUES (?, ?, 'HIGH')`,
+              [userId, domRows[0].domain_id]
+            );
+          }
+        }
+      }
     }
 
     res.json({ success: true, profile_strength: strength, message: 'Profile updated!' });

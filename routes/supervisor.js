@@ -83,11 +83,15 @@ router.get('/groups', async (req, res) => {
 
     // Get all my groups with full details
     const [groups] = await db.query(
-      `SELECT pg.*, fs.stage_name, fs.stage_order, pd.domain_name,
+      `SELECT pg.group_id, pg.group_code, pg.project_title, pg.supervisor_id,
+              pg.is_active, pg.created_at,
+              fs.stage_name, fs.stage_order, pd.domain_name,
+              s.section_code,
               (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = pg.group_id) as member_count
        FROM project_groups pg
        JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
        JOIN project_domains pd ON pd.domain_id = pg.project_domain_id
+       LEFT JOIN sections s ON s.section_id = pg.section_id
        WHERE pg.supervisor_id = ? AND pg.is_active = 1
        ORDER BY fs.stage_order, pg.group_code`,
       [supId]
@@ -278,7 +282,7 @@ router.post('/reports/:id/review', async (req, res) => {
         : `Your Week ${report.week_no} report for ${report.group_code} was rejected by ${supName}. Reason: ${feedback}. Please correct and resubmit.`;
 
       await db.query(
-        'INSERT INTO notifications (user_id, type, title, message) VALUES (?, ?, ?, ?)',
+        'INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, ?, ?, ?)',
         [report.student_id, notifType, notifTitle, notifMsg]
       );
     }

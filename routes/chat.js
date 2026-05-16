@@ -45,11 +45,12 @@ router.get('/contacts', async (req, res) => {
     else return res.status(403).json({ error: 'Chat not available for your role' });
 
     const [contacts] = await db.query(
-      `SELECT u.user_id, u.full_name, u.email, u.department,
+      `SELECT u.user_id, u.full_name, u.email, d.short_code AS department,
               (SELECT COUNT(*) FROM direct_messages dm 
                WHERE dm.sender_id = u.user_id AND dm.receiver_id = ? AND dm.is_read = 0
               ) as unread_count
        FROM users u 
+       LEFT JOIN departments d ON d.department_id = u.department_id
        WHERE u.role = ? AND u.is_active = 1
        ORDER BY u.full_name`,
       [user.user_id, targetRole]
@@ -58,18 +59,20 @@ router.get('/contacts', async (req, res) => {
     // Enrich contacts with section/group info
     for (let c of contacts) {
       if (targetRole === 'COURSE_TEACHER') {
-        // Get sections managed by this course teacher
+        // Get sections managed by this course teacher (join sections for section_code)
         const [sections] = await db.query(
-          `SELECT cts.section_code FROM course_teacher_sections cts WHERE cts.course_teacher_id = ?`,
+          `SELECT s.section_code FROM course_teacher_sections cts
+           JOIN sections s ON s.section_id = cts.section_id
+           WHERE cts.course_teacher_id = ?`,
           [c.user_id]
         );
         c.sections = sections.map(s => s.section_code);
 
-        // Get groups in those sections
+        // Get groups in those sections via section_id FK
         const [groups] = await db.query(
-          `SELECT pg.group_code, pg.project_title FROM project_groups pg 
-           WHERE pg.section_code IN (SELECT cts.section_code FROM course_teacher_sections cts WHERE cts.course_teacher_id = ?) 
-           AND pg.is_active = 1`,
+          `SELECT pg.group_code, pg.project_title FROM project_groups pg
+           JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
+           WHERE cts.course_teacher_id = ? AND pg.is_active = 1`,
           [c.user_id]
         );
         c.groups = groups;
@@ -282,25 +285,29 @@ router.get('/unread-count', async (req, res) => {
     let teacher_unread = 0;
 
     if (req.session.user.role === 'STUDENT') {
-      // Get student's active group
-      const [[studentData]] = await db.query('SELECT group_id FROM students WHERE user_id = ?', [userId]);
-      if (studentData && studentData.group_id) {
-        const [[groupData]] = await db.query('SELECT supervisor_id, course_teacher_id FROM groups WHERE group_id = ?', [studentData.group_id]);
-        if (groupData) {
-          if (groupData.supervisor_id) {
-            const [[{ supCount }]] = await db.query(
-              'SELECT COUNT(*) as supCount FROM direct_messages WHERE receiver_id = ? AND sender_id = ? AND is_read = 0',
-              [userId, groupData.supervisor_id]
-            );
-            supervisor_unread = supCount;
-          }
-          if (groupData.course_teacher_id) {
-            const [[{ tcCount }]] = await db.query(
-              'SELECT COUNT(*) as tcCount FROM direct_messages WHERE receiver_id = ? AND sender_id = ? AND is_read = 0',
-              [userId, groupData.course_teacher_id]
-            );
-            teacher_unread = tcCount;
-          }
+      // Get student's group and supervisor/teacher via group_members + project_groups
+      const [[gm]] = await db.query(
+        `SELECT pg.group_id, pg.supervisor_id, cts.course_teacher_id
+         FROM group_members gm
+         JOIN project_groups pg ON pg.group_id = gm.group_id AND pg.is_active = 1
+         LEFT JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
+         WHERE gm.student_id = ? LIMIT 1`,
+        [userId]
+      );
+      if (gm) {
+        if (gm.supervisor_id) {
+          const [[{ supCount }]] = await db.query(
+            'SELECT COUNT(*) as supCount FROM direct_messages WHERE receiver_id = ? AND sender_id = ? AND is_read = 0',
+            [userId, gm.supervisor_id]
+          );
+          supervisor_unread = supCount;
+        }
+        if (gm.course_teacher_id) {
+          const [[{ tcCount }]] = await db.query(
+            'SELECT COUNT(*) as tcCount FROM direct_messages WHERE receiver_id = ? AND sender_id = ? AND is_read = 0',
+            [userId, gm.course_teacher_id]
+          );
+          teacher_unread = tcCount;
         }
       }
     }
@@ -509,11 +516,11 @@ router.post('/group/:groupId/messages', uploadSingle('attachment'), async (req, 
         notifyUsers.push(sup[0].supervisor_id);
       }
     } else if (type === 'WITH_TEACHER') {
-      // Teachers are mapped via course_teacher_sections (by section_code), not directly on project_groups
+      // Teachers are mapped via course_teacher_sections (by section_id FK)
       const [teach] = await db.query(
         `SELECT cts.course_teacher_id
          FROM project_groups pg
-         JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+         JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
          WHERE pg.group_id = ?
          LIMIT 1`,
         [groupId]
@@ -607,7 +614,7 @@ router.get('/teacher/student-inbox', async (req, res) => {
        FROM users u
        LEFT JOIN group_members gm ON gm.student_id = u.user_id
        LEFT JOIN project_groups pg ON pg.group_id = gm.group_id
-       LEFT JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       LEFT JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
          AND cts.course_teacher_id = ?
        WHERE u.user_id IN (${placeholders}) AND u.role = 'STUDENT'
        GROUP BY u.user_id, u.full_name, u.university_id, u.email, u.role`,

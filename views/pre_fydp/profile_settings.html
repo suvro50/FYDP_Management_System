@@ -158,17 +158,18 @@
             </div>
             <div class="pf-form-group">
               <label>Preferred Role</label>
-              <select id="pRole">
+            <select id="pRole">
                 <option value="">Select a role</option>
-                <option>Frontend Developer</option>
-                <option>Backend Developer</option>
-                <option>Full-stack Developer</option>
-                <option>ML Engineer</option>
-                <option>Security Analyst</option>
-                <option>Embedded Developer</option>
-                <option>UI/UX Designer</option>
-                <option>Data Analyst</option>
-                <option>DevOps Engineer</option>
+                <option value="FRONTEND_DEVELOPER">Frontend Developer</option>
+                <option value="BACKEND_DEVELOPER">Backend Developer</option>
+                <option value="FULL_STACK_DEVELOPER">Full-stack Developer</option>
+                <option value="ML_ENGINEER">ML Engineer</option>
+                <option value="SECURITY_ANALYST">Security Analyst</option>
+                <option value="EMBEDDED_DEVELOPER">Embedded Developer</option>
+                <option value="UI_UX_DESIGNER">UI/UX Designer</option>
+                <option value="DATA_SCIENTIST">Data Analyst</option>
+                <option value="DEVOPS_ENGINEER">DevOps Engineer</option>
+                <option value="OTHER">Other</option>
               </select>
             </div>
           </div>
@@ -239,14 +240,15 @@ async function loadProfile() {
     // Fill form
     if (p.bio) document.getElementById('pBio').value = p.bio;
     if (p.cgpa) document.getElementById('pCgpa').value = p.cgpa;
+    // preferred_role is stored as enum value (e.g. FRONTEND_DEVELOPER) — set directly
     if (p.preferred_role) document.getElementById('pRole').value = p.preferred_role;
     if (p.github_url) document.getElementById('pGithub').value = p.github_url;
     if (p.linkedin_url) document.getElementById('pLinkedin').value = p.linkedin_url;
     if (p.portfolio_url) document.getElementById('pPortfolio').value = p.portfolio_url;
 
-    // Skills chips
-    skills = p.skills ? (typeof p.skills === 'string' ? JSON.parse(p.skills) : p.skills) : [];
-    domains = p.domain_interests ? (typeof p.domain_interests === 'string' ? JSON.parse(p.domain_interests) : p.domain_interests) : [];
+    // Skills chips — API now returns plain arrays
+    skills = Array.isArray(p.skills) ? p.skills : [];
+    domains = Array.isArray(p.domain_interests) ? p.domain_interests : [];
     renderChips();
 
     // Strength ring
@@ -259,7 +261,7 @@ async function loadProfile() {
       badge.textContent = labels[p.availability_status] || p.availability_status;
       badge.className = 'pf-status-badge ' + p.availability_status.toLowerCase();
     }
-  } catch(e) { console.error(e); }
+  } catch(e) { console.error('loadProfile error:', e); }
 }
 
 function updateStrength(val) {

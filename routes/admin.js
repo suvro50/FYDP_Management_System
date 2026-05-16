@@ -82,7 +82,7 @@ router.get("/users", async (req, res) => {
       params.push(role);
     }
     if (department) {
-      where += " AND u.department = ?";
+      where += " AND d.department_name = ?";
       params.push(department);
     }
     if (status) {
@@ -96,15 +96,17 @@ router.get("/users", async (req, res) => {
     }
 
     const [[{ total }]] = await db.query(
-      `SELECT COUNT(*) as total FROM users u ${where}`,
+      `SELECT COUNT(*) as total FROM users u LEFT JOIN departments d ON d.department_id = u.department_id ${where}`,
       params,
     );
 
     const [users] = await db.query(
-      `SELECT u.user_id, u.university_id, u.full_name, u.email, u.role, 
-              u.department, u.batch, u.phone, u.account_status, u.is_active,
+      `SELECT u.user_id, u.university_id, u.full_name, u.email, u.role,
+              d.department_name as department, u.batch, u.phone, u.account_status, u.is_active,
               u.created_at
-       FROM users u ${where}
+       FROM users u
+       LEFT JOIN departments d ON d.department_id = u.department_id
+       ${where}
        ORDER BY u.created_at DESC
        LIMIT ? OFFSET ?`,
       [...params, limit, offset],
@@ -264,7 +266,7 @@ router.get("/groups", async (req, res) => {
       params.push(stage);
     }
     if (section) {
-      where += " AND pg.section_code = ?";
+      where += " AND s.section_code = ?";
       params.push(section);
     }
     if (status) {
@@ -282,17 +284,20 @@ router.get("/groups", async (req, res) => {
 
     const [[{ total }]] = await db.query(
       `SELECT COUNT(*) as total FROM project_groups pg
-       JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id ${where}`,
+       JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+       JOIN sections s ON s.section_id = pg.section_id ${where}`,
       params,
     );
 
     const [groups] = await db.query(
       `SELECT pg.*, fs.stage_name, pd.domain_name, u.full_name as supervisor_name,
+              s.section_code,
               (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = pg.group_id) as member_count
        FROM project_groups pg
        JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
        JOIN project_domains pd ON pd.domain_id = pg.project_domain_id
        JOIN users u ON u.user_id = pg.supervisor_id
+       JOIN sections s ON s.section_id = pg.section_id
        ${where}
        ORDER BY pg.created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset],
@@ -416,9 +421,10 @@ router.get("/topic-history", async (req, res) => {
 router.get("/supervisors", async (req, res) => {
   try {
     const [supervisors] = await db.query(
-      `SELECT u.user_id, u.full_name, u.department,
+      `SELECT u.user_id, u.full_name, d.department_name as department,
               COUNT(pg.group_id) as assigned_groups
        FROM users u
+       LEFT JOIN departments d ON d.department_id = u.department_id
        LEFT JOIN project_groups pg ON pg.supervisor_id = u.user_id AND pg.is_active=1
        WHERE u.role='SUPERVISOR' AND u.is_active=1
        GROUP BY u.user_id
@@ -426,6 +432,7 @@ router.get("/supervisors", async (req, res) => {
     );
     res.json({ supervisors });
   } catch (err) {
+    console.error('supervisors error:', err);
     res.status(500).json({ error: "Failed to load supervisors" });
   }
 });
@@ -436,9 +443,10 @@ router.get("/supervisors", async (req, res) => {
 router.get('/course-teachers', async (req, res) => {
   try {
     const [teachers] = await db.query(
-      `SELECT u.user_id, u.full_name, u.department,
+      `SELECT u.user_id, u.full_name, d.department_name as department,
               COUNT(DISTINCT cts.mapping_id) as assigned_sections
        FROM users u
+       LEFT JOIN departments d ON d.department_id = u.department_id
        LEFT JOIN course_teacher_sections cts ON cts.course_teacher_id = u.user_id
        WHERE u.role='COURSE_TEACHER' AND u.is_active=1
        GROUP BY u.user_id
@@ -446,6 +454,7 @@ router.get('/course-teachers', async (req, res) => {
     );
     res.json({ teachers });
   } catch (err) {
+    console.error('course-teachers error:', err);
     res.status(500).json({ error: 'Failed to load course teachers' });
   }
 });
@@ -469,7 +478,7 @@ router.get("/assign-supervisor/groups", async (req, res) => {
     }
 
     const [groups] = await db.query(
-      `SELECT pg.group_id, pg.group_code, pg.section_code,
+      `SELECT pg.group_id, pg.group_code, s.section_code,
               fs.stage_name, pd.domain_name,
               pg.supervisor_id,
               u_sup.full_name as supervisor_name,
@@ -477,6 +486,7 @@ router.get("/assign-supervisor/groups", async (req, res) => {
        FROM project_groups pg
        JOIN fydp_stages fs ON fs.stage_id=pg.current_stage_id
        JOIN project_domains pd ON pd.domain_id=pg.project_domain_id
+       JOIN sections s ON s.section_id=pg.section_id
        LEFT JOIN users u_sup ON u_sup.user_id=pg.supervisor_id
        ${where}
        ORDER BY pg.group_code`,
@@ -506,7 +516,7 @@ router.put("/assign-supervisor", async (req, res) => {
         [group_id],
       );
       await db.query(
-        `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+        `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
         [
           supervisor_id,
           "📋 New Group Assigned",
@@ -554,9 +564,9 @@ router.get("/domains", async (req, res) => {
 router.get("/sections", async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT DISTINCT section_code FROM project_groups WHERE section_code IS NOT NULL ORDER BY section_code`,
+      `SELECT section_id, section_code FROM sections ORDER BY section_code`,
     );
-    res.json({ sections: rows.map((r) => r.section_code) });
+    res.json({ sections: rows });
   } catch (err) {
     res.status(500).json({ error: "Failed to load sections" });
   }
@@ -646,7 +656,7 @@ router.post("/ucam-sync/student-status", async (req, res) => {
     // Notify supervisors
     for (const m of memberships) {
       await db.query(
-        `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+        `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
         [
           m.supervisor_id,
           `⚠️ Student ${status}`,
@@ -713,9 +723,18 @@ router.post("/ucam-sync/group", async (req, res) => {
       if (domain) domainId = domain.domain_id;
     }
 
+    // Resolve section ID from section_code
+    let sectionId = null;
+    if (section_code) {
+      const [[sec]] = await db.query(
+        'SELECT section_id FROM sections WHERE section_code = ?', [section_code]
+      );
+      if (sec) sectionId = sec.section_id;
+    }
+
     // Create the group directly — already accepted on UCAM
     const [insertResult] = await db.query(
-      `INSERT INTO project_groups (group_code, project_title, project_domain_id, supervisor_id, current_stage_id, section_code)
+      `INSERT INTO project_groups (group_code, project_title, project_domain_id, supervisor_id, current_stage_id, section_id)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
         group_code,
@@ -723,7 +742,7 @@ router.post("/ucam-sync/group", async (req, res) => {
         domainId,
         supervisor_id,
         stage.stage_id,
-        section_code || null,
+        sectionId,
       ],
     );
 
@@ -743,7 +762,7 @@ router.post("/ucam-sync/group", async (req, res) => {
           );
           // Notify student
           await db.query(
-            `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+            `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
             [
               ids[i],
               "✅ Group Confirmed",
@@ -758,7 +777,7 @@ router.post("/ucam-sync/group", async (req, res) => {
 
     // Notify supervisor
     await db.query(
-      `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+      `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
       [
         supervisor_id,
         "📋 New Group Synced from UCAM",
@@ -783,19 +802,23 @@ router.post("/ucam-sync/group", async (req, res) => {
 router.get('/teacher-sections', async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT cts.mapping_id, cts.course_teacher_id, cts.section_code, cts.assigned_stage_id,
-              u.full_name as teacher_name, u.department,
+      `SELECT cts.mapping_id, cts.course_teacher_id, cts.assigned_stage_id,
+              s.section_code, s.section_id,
+              u.full_name as teacher_name, d.department_name as department,
               fs.stage_name,
               COUNT(DISTINCT pg.group_id) as group_count
        FROM course_teacher_sections cts
        JOIN users u ON u.user_id = cts.course_teacher_id
+       LEFT JOIN departments d ON d.department_id = u.department_id
        JOIN fydp_stages fs ON fs.stage_id = cts.assigned_stage_id
-       LEFT JOIN project_groups pg ON pg.section_code = cts.section_code AND pg.is_active=1
+       JOIN sections s ON s.section_id = cts.section_id
+       LEFT JOIN project_groups pg ON pg.section_id = cts.section_id AND pg.is_active=1
        GROUP BY cts.mapping_id
-       ORDER BY fs.stage_order, cts.section_code, u.full_name`
+       ORDER BY fs.stage_order, s.section_code, u.full_name`
     );
     res.json({ mappings: rows });
   } catch (err) {
+    console.error('teacher-sections error:', err);
     res.status(500).json({ error: 'Failed to load teacher sections' });
   }
 });
@@ -809,16 +832,22 @@ router.post('/assign-teacher', async (req, res) => {
     if (!teacher_id || !section_code || !stage_id)
       return res.status(400).json({ error: 'teacher_id, section_code, stage_id required' });
 
+    // Resolve section_id from section_code
+    const [[sec]] = await db.query(
+      'SELECT section_id FROM sections WHERE section_code = ?', [section_code]
+    );
+    if (!sec) return res.status(404).json({ error: `Section '${section_code}' not found` });
+
     await db.query(
-      `INSERT INTO course_teacher_sections (course_teacher_id, section_code, assigned_stage_id)
+      `INSERT INTO course_teacher_sections (course_teacher_id, section_id, assigned_stage_id)
        VALUES (?, ?, ?)
        ON DUPLICATE KEY UPDATE assigned_stage_id = VALUES(assigned_stage_id)`,
-      [teacher_id, section_code, stage_id]
+      [teacher_id, sec.section_id, stage_id]
     );
 
     const [[st]] = await db.query('SELECT stage_name FROM fydp_stages WHERE stage_id=?', [stage_id]);
     await db.query(
-      `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+      `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
       [teacher_id, '📋 Section Assigned', `You have been assigned to section ${section_code} (${st?.stage_name}) by Admin.`]
     );
 

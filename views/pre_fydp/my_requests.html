@@ -203,7 +203,7 @@ function renderReceived(reqs) {
   const el = document.getElementById('receivedPanel');
   if (!reqs.length) { el.innerHTML = '<div class="pf-empty"><i class="fas fa-inbox"></i><h3>No received requests</h3><p>When someone wants to join your group, it will appear here.</p></div>'; return; }
   el.innerHTML = reqs.map(r => {
-    const skills = r.sender_skills ? (typeof r.sender_skills==='string'? JSON.parse(r.sender_skills):r.sender_skills) : [];
+    const skills = Array.isArray(r.sender_skills) ? r.sender_skills : [];
     return `
     <div class="pf-req-card" style="flex-wrap:wrap">
       <div class="pf-req-avatar" style="background:${hashColor(r.sender_name)}">${getInitials(r.sender_name)}</div>

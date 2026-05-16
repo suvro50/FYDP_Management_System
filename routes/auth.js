@@ -20,10 +20,12 @@ router.post('/login', async (req, res) => {
     }
 
     const [rows] = await db.query(
-      `SELECT user_id, university_id, full_name, email, role, department, batch, 
-              phone, profile_photo, account_status
-       FROM users
-       WHERE email = ? AND password_hash = SHA2(?, 256) AND is_active = 1`,
+      `SELECT u.user_id, u.university_id, u.full_name, u.email, u.role,
+              d.department_name AS department, u.batch,
+              u.phone, u.profile_photo, u.account_status
+       FROM users u
+       LEFT JOIN departments d ON d.department_id = u.department_id
+       WHERE u.email = ? AND u.password_hash = SHA2(?, 256) AND u.is_active = 1`,
       [email, password]
     );
 

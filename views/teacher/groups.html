@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -67,7 +67,7 @@
     .sem-card-top { padding:28px 26px 24px; position:relative; overflow:hidden; min-height:170px; display:flex; flex-direction:column; }
     .sem-card.fydp1 .sem-card-top { background:linear-gradient(145deg,#5b21b6,#7c3aed,#6d28d9)!important; }
     .sem-card.fydp2 .sem-card-top { background:linear-gradient(145deg,#0e7490,#0891b2,#06b6d4)!important; }
-    .sem-card.fydp3 .sem-card-top { background:linear-gradient(145deg,#065f46,#047857,#059669)!important; }
+    .sem-card.fydp3 .sem-card-top { background:linear-gradient(145deg,#065f46,#059669,#10b981)!important; }
     .sem-card-top::before { content:''; position:absolute; top:-30px; right:-30px; width:160px; height:160px; border-radius:50%; background:rgba(255,255,255,0.07); pointer-events:none; }
     .sem-card-icon { width:50px; height:50px; background:rgba(255,255,255,0.18); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin-bottom:18px; position:relative; z-index:1; }
     .sem-card-title { font-size:2rem; font-weight:900; color:#fff; margin-bottom:4px; position:relative; z-index:1; }
@@ -79,8 +79,10 @@
     .sem-stat-val { font-size:1.3rem; font-weight:800; color:#fff; display:block; }
     .sem-stat-lbl { font-size:0.62rem; color:#475569; display:block; margin-top:3px; }
     .sem-open-link { display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:700; color:#a78bfa; margin-top:auto; }
-    .sem-card.fydp2 .sem-open-link { color:#38bdf8; }
+    .sem-card.fydp2 .sem-open-link { color:#22d3ee; }
     .sem-card.fydp3 .sem-open-link { color:#34d399; }
+    .sem-card.fydp2 .sem-stat-val { color:#67e8f9; }
+    .sem-card.fydp3 .sem-stat-val { color:#6ee7b7; }
 
     /* Section Cards (Layer 2) */
     .section-cards-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
@@ -104,7 +106,7 @@
     .legend-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
     .legend-dot.approved { background:#10b981; }
     .legend-dot.pending { background:#f59e0b; }
-    .legend-dot.overdue { background:#ef4444; }
+    .legend-dot.overdue { background:#44ef72; }
     .group-cards-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
     .group-item-card { background:#161929; border:1px solid #1e2240; border-radius:14px; padding:20px; cursor:pointer; transition:all 0.2s; display:flex; flex-direction:column; gap:12px; }
     .group-item-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
@@ -487,9 +489,7 @@
       document.getElementById('sidebar').classList.toggle('sidebar-collapsed');
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // VIEW SWITCHING
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     function showView(id) {
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       document.getElementById(id).classList.add('active');
@@ -501,9 +501,7 @@
       if (to === 'detail')   showView('viewGroupDetail');
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // DATA LOADING
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     async function loadData() {
       try {
         const res = await apiFetch('/api/teacher/groups-by-stage');
@@ -515,14 +513,12 @@
       }
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // LAYER 1: FYDP STAGE CARDS
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // LAYER 1: FYDP STAGE CARDS - always show all 3 stages
     function renderStages() {
       const c = document.getElementById('stageCards');
-      const stages = DATA.stages.filter(s => s.total_sections > 0);
+      const stages = DATA.stages; // Show ALL stages — not just assigned ones
       if (!stages.length) {
-        c.innerHTML = '<div style="color:#64748b;text-align:center;padding:60px;grid-column:1/-1;">No stages assigned to you yet.</div>';
+        c.innerHTML = '<div style="color:#64748b;text-align:center;padding:60px;grid-column:1/-1;">No stages found.</div>';
         return;
       }
       const cls = ['fydp1','fydp2','fydp3'];
@@ -532,32 +528,38 @@
         const ci = s.stage_order - 1;
         const totalGroups = s.sections.reduce((a,sec) => a + sec.groups.length, 0);
         const totalStudents = s.sections.reduce((a,sec) => a + sec.groups.reduce((b,g) => b + g.member_count, 0), 0);
+        const isEmpty = s.total_sections === 0;
         return `
-        <div class="sem-card ${cls[ci]}" onclick="openStage(${i})">
+        <div class="sem-card ${cls[ci]}" onclick="openStage(${i})" style="${isEmpty ? 'border:1.5px dashed rgba(255,255,255,0.18);' : ''}">
           <div class="sem-card-top">
             <div class="sem-card-icon"><i class="fas ${icons[ci]}"></i></div>
             <div class="sem-card-title">${s.stage_name}</div>
-            <div class="sem-card-sub">${subtitles[ci]}</div>
+            <div class="sem-card-sub">${isEmpty ? 'No groups assigned yet' : subtitles[ci]}</div>
           </div>
           <div class="sem-card-bottom">
-            <div class="sem-card-info">Semester ${6 + s.stage_order} Â· Fall 2025</div>
+            <div class="sem-card-info">Semester ${6 + s.stage_order} · Fall 2025</div>
             <div class="sem-stats">
               <div class="sem-stat"><span class="sem-stat-val">${s.total_sections}</span><span class="sem-stat-lbl">Sections</span></div>
               <div class="sem-stat"><span class="sem-stat-val">${totalGroups}</span><span class="sem-stat-lbl">Groups</span></div>
               <div class="sem-stat"><span class="sem-stat-val">${totalStudents}</span><span class="sem-stat-lbl">Students</span></div>
             </div>
-            <div class="sem-open-link">Open ${s.stage_name} <i class="fas fa-chevron-right"></i></div>
+            <div class="sem-open-link">${isEmpty ? '<i class="fas fa-lock" style="font-size:0.75rem;margin-right:4px;"></i>No Assignments' : `Open ${s.stage_name} <i class="fas fa-chevron-right"></i>`}</div>
           </div>
         </div>`;
       }).join('');
     }
 
     function openStage(idx) {
-      const stages = DATA.stages.filter(s => s.total_sections > 0);
-      NAV.stage = stages[idx];
+      const stage = DATA.stages[idx]; // Use full stages array (no filter)
+      if (!stage || stage.total_sections === 0) {
+        if (typeof showToast === 'function') showToast('No groups assigned to you in this stage yet.', 'info');
+        return;
+      }
+      NAV.stage = stage;
       renderSections();
       showView('viewSections');
     }
+
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // LAYER 2: SECTION CARDS

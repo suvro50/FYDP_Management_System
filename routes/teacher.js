@@ -10,20 +10,20 @@ router.get('/stats', async (req, res) => {
     const teacherId = req.session.user.user_id;
 
     const [[sectionCount]] = await db.query(
-      'SELECT COUNT(DISTINCT section_code) as count FROM course_teacher_sections WHERE course_teacher_id = ?',
+      'SELECT COUNT(DISTINCT section_id) as count FROM course_teacher_sections WHERE course_teacher_id = ?',
       [teacherId]
     );
     const [[groupCount]] = await db.query(
       `SELECT COUNT(DISTINCT pg.group_id) as count
        FROM project_groups pg
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE cts.course_teacher_id = ? AND pg.is_active = 1`,
       [teacherId]
     );
     const [[pendingInbox]] = await db.query(
       `SELECT COUNT(*) as count FROM course_teacher_inbox cti
        JOIN project_groups pg ON pg.group_id = cti.group_id
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE cts.course_teacher_id = ? AND cti.escalation_status = 'PENDING_REVIEW'`,
       [teacherId]
     );
@@ -31,14 +31,14 @@ router.get('/stats', async (req, res) => {
       `SELECT COUNT(DISTINCT gm.student_id) as count
        FROM group_members gm
        JOIN project_groups pg ON pg.group_id = gm.group_id
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE cts.course_teacher_id = ? AND pg.is_active = 1`,
       [teacherId]
     );
     const [[reviewedWeek]] = await db.query(
       `SELECT COUNT(*) as count FROM course_teacher_inbox cti
        JOIN project_groups pg ON pg.group_id = cti.group_id
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE cts.course_teacher_id = ? AND cti.escalation_status = 'REVIEWED'
        AND cti.reviewed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`,
       [teacherId]
@@ -64,14 +64,16 @@ router.get('/sections', async (req, res) => {
   try {
     const teacherId = req.session.user.user_id;
     const [sections] = await db.query(
-      `SELECT cts.*, fs.stage_name, fs.stage_order,
+      `SELECT cts.mapping_id, cts.course_teacher_id, cts.section_id, cts.assigned_stage_id,
+              s.section_code, fs.stage_name, fs.stage_order,
               COUNT(DISTINCT pg.group_id) as group_count
        FROM course_teacher_sections cts
        JOIN fydp_stages fs ON fs.stage_id = cts.assigned_stage_id
-       LEFT JOIN project_groups pg ON pg.section_code = cts.section_code AND pg.is_active = 1
+       JOIN sections s ON s.section_id = cts.section_id
+       LEFT JOIN project_groups pg ON pg.section_id = cts.section_id AND pg.is_active = 1
        WHERE cts.course_teacher_id = ?
-       GROUP BY cts.mapping_id, cts.section_code, cts.assigned_stage_id, fs.stage_name, fs.stage_order
-       ORDER BY fs.stage_order, cts.section_code`,
+       GROUP BY cts.mapping_id, cts.section_id, s.section_code, cts.assigned_stage_id, fs.stage_name, fs.stage_order
+       ORDER BY fs.stage_order, s.section_code`,
       [teacherId]
     );
     res.json({ sections });
@@ -87,8 +89,11 @@ router.get('/groups', async (req, res) => {
   try {
     const teacherId = req.session.user.user_id;
     const [groups] = await db.query(
-      `SELECT pg.*, fs.stage_name, fs.stage_order, pd.domain_name,
+      `SELECT pg.group_id, pg.group_code, pg.project_title, pg.supervisor_id,
+              pg.is_active, pg.created_at,
+              fs.stage_name, fs.stage_order, pd.domain_name,
               sup.full_name as supervisor_name,
+              s.section_code,
               (SELECT COUNT(*) FROM group_members gm2 WHERE gm2.group_id = pg.group_id) as member_count,
               (SELECT COUNT(*) FROM course_teacher_inbox cti
                WHERE cti.group_id = pg.group_id AND cti.escalation_status = 'PENDING_REVIEW') as pending_inbox,
@@ -98,9 +103,10 @@ router.get('/groups', async (req, res) => {
        JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
        JOIN project_domains pd ON pd.domain_id = pg.project_domain_id
        JOIN users sup ON sup.user_id = pg.supervisor_id
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN sections s ON s.section_id = pg.section_id
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE cts.course_teacher_id = ? AND pg.is_active = 1
-       ORDER BY fs.stage_order, pg.section_code, pg.group_code`,
+       ORDER BY fs.stage_order, s.section_code, pg.group_code`,
       [teacherId]
     );
 
@@ -138,17 +144,18 @@ router.get('/inbox', async (req, res) => {
     }
 
     const [items] = await db.query(
-      `SELECT cti.*, pg.group_code, pg.project_title, pg.section_code,
-              fs.stage_name, sup.full_name as supervisor_name,
-              (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = cti.group_id) as member_count,
-              (SELECT COUNT(*) FROM weekly_progress_reports wpr
-               WHERE wpr.group_id = cti.group_id AND wpr.week_no = cti.week_no
-               AND wpr.supervisor_status = 'APPROVED') as approved_count
+      `SELECT cti.inbox_id, cti.group_id, cti.week_no, cti.escalated_at,
+              cti.escalation_status, cti.reviewed_at, cti.reviewed_by, cti.notes,
+              cti.total_members, cti.approved_count, cti.is_fully_approved,
+              CONCAT(cti.approved_count, ' / ', cti.total_members) AS approval_progress,
+              pg.group_code, pg.project_title, s.section_code,
+              fs.stage_name, sup.full_name as supervisor_name
        FROM course_teacher_inbox cti
        JOIN project_groups pg ON pg.group_id = cti.group_id
        JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
        JOIN users sup ON sup.user_id = pg.supervisor_id
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN sections s ON s.section_id = pg.section_id
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        ${where}
        ORDER BY CASE cti.escalation_status WHEN 'PENDING_REVIEW' THEN 0 ELSE 1 END,
                 cti.escalated_at DESC`,
@@ -173,7 +180,7 @@ router.get('/inbox/:id/reports', async (req, res) => {
     const [[inbox]] = await db.query(
       `SELECT cti.*, pg.group_code, pg.project_title FROM course_teacher_inbox cti
        JOIN project_groups pg ON pg.group_id = cti.group_id
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE cti.inbox_id = ? AND cts.course_teacher_id = ?`,
       [inboxId, teacherId]
     );
@@ -212,7 +219,7 @@ router.post('/inbox/:id/review', async (req, res) => {
     const [[inbox]] = await db.query(
       `SELECT cti.*, pg.group_code, pg.project_title FROM course_teacher_inbox cti
        JOIN project_groups pg ON pg.group_id = cti.group_id
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE cti.inbox_id = ? AND cts.course_teacher_id = ?`,
       [inboxId, teacherId]
     );
@@ -238,8 +245,8 @@ router.post('/inbox/:id/review', async (req, res) => {
         ? `⚠️ Your Week ${inbox.week_no} package for ${inbox.group_code} has been flagged by ${teacherName}. ${notes ? 'Note: ' + notes : ''}`
         : `✅ Your Week ${inbox.week_no} package for ${inbox.group_code} has been reviewed by ${teacherName}.`;
       await db.query(
-        `INSERT INTO notifications (user_id, notification_type, message) VALUES (?, 'SYSTEM_ALERT', ?)`,
-        [m.student_id, notifMsg]
+        `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+        [m.student_id, status === 'FLAGGED' ? '⚠️ Package Flagged' : '✅ Package Reviewed', notifMsg]
       );
       if (io) io.to(`user_${m.student_id}`).emit('notification', { message: notifMsg });
     }
@@ -260,15 +267,16 @@ router.get('/students-status', async (req, res) => {
     const [students] = await db.query(
       `SELECT DISTINCT u.user_id, u.full_name, u.university_id, u.is_active,
               gm.member_role, pg.group_id, pg.group_code, pg.project_title,
-              pg.section_code, fs.stage_name, sup.full_name as supervisor_name
+              s.section_code, fs.stage_name, sup.full_name as supervisor_name
        FROM course_teacher_sections cts
-       JOIN project_groups pg ON pg.section_code = cts.section_code AND pg.is_active = 1
+       JOIN project_groups pg ON pg.section_id = cts.section_id AND pg.is_active = 1
+       JOIN sections s ON s.section_id = pg.section_id
        JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
        JOIN group_members gm ON gm.group_id = pg.group_id
        JOIN users u ON u.user_id = gm.student_id
        JOIN users sup ON sup.user_id = pg.supervisor_id
        WHERE cts.course_teacher_id = ?
-       ORDER BY pg.section_code, pg.group_code, u.full_name`,
+       ORDER BY s.section_code, pg.group_code, u.full_name`,
       [teacherId]
     );
     res.json({ students });
@@ -327,8 +335,8 @@ router.post('/announcements', async (req, res) => {
     
     for (const u of usersToNotify) {
       await db.query(
-        `INSERT INTO notifications (user_id, notification_type, message) VALUES (?, 'SYSTEM_ALERT', ?)`,
-        [u.user_id, msg]
+        `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+        [u.user_id, title, msg]
       );
       if (io) io.to(`user_${u.user_id}`).emit('notification', { message: msg });
     }
@@ -407,7 +415,7 @@ router.get('/grades', async (req, res) => {
             u.full_name as supervisor_name,
             ge.evaluation_type, ge.score
         FROM project_groups pg
-        JOIN course_teacher_sections cts ON pg.section_code = cts.section_code
+        JOIN course_teacher_sections cts ON pg.section_id = cts.section_id
         LEFT JOIN users u ON pg.supervisor_id = u.user_id
         LEFT JOIN group_evaluations ge ON pg.group_id = ge.group_id
         WHERE cts.course_teacher_id = ?
@@ -453,8 +461,11 @@ router.get('/groups-by-stage', async (req, res) => {
 
     // All groups in teacher's sections, with full detail
     const [groups] = await db.query(
-      `SELECT pg.*, fs.stage_name, fs.stage_order, pd.domain_name,
+      `SELECT pg.group_id, pg.group_code, pg.project_title, pg.supervisor_id,
+              pg.is_active, pg.created_at,
+              fs.stage_name, fs.stage_order, pd.domain_name,
               sup.full_name as supervisor_name,
+              s.section_code,
               (SELECT COUNT(*) FROM group_members gm2 WHERE gm2.group_id = pg.group_id) as member_count,
               (SELECT COUNT(DISTINCT wpr.week_no) FROM weekly_progress_reports wpr
                WHERE wpr.group_id = pg.group_id AND wpr.supervisor_status = 'APPROVED') as approved_count
@@ -462,9 +473,10 @@ router.get('/groups-by-stage', async (req, res) => {
        JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
        JOIN project_domains pd ON pd.domain_id = pg.project_domain_id
        JOIN users sup ON sup.user_id = pg.supervisor_id
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN sections s ON s.section_id = pg.section_id
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE cts.course_teacher_id = ? AND pg.is_active = 1
-       ORDER BY fs.stage_order, pg.section_code, pg.group_code`,
+       ORDER BY fs.stage_order, s.section_code, pg.group_code`,
       [teacherId]
     );
 
@@ -547,7 +559,7 @@ router.get('/groups/:id/weekly-summary', async (req, res) => {
     // Verify teacher has access to this group
     const [[access]] = await db.query(
       `SELECT pg.group_id FROM project_groups pg
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE pg.group_id = ? AND cts.course_teacher_id = ? AND pg.is_active = 1`,
       [groupId, teacherId]
     );
@@ -633,7 +645,7 @@ router.get('/groups/:id/tasks', async (req, res) => {
     // Access check
     const [[access]] = await db.query(
       `SELECT pg.group_id FROM project_groups pg
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE pg.group_id = ? AND cts.course_teacher_id = ? AND pg.is_active = 1`,
       [groupId, teacherId]
     );
@@ -664,7 +676,7 @@ router.post('/groups/:id/tasks', teacherTaskUpload.single('task_file'), async (r
     // Access check
     const [[group]] = await db.query(
       `SELECT pg.group_id, pg.group_code FROM project_groups pg
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE pg.group_id = ? AND cts.course_teacher_id = ? AND pg.is_active = 1`,
       [groupId, teacherId]
     );
@@ -718,8 +730,9 @@ router.get('/groups/:id/week/:weekNo/reports', async (req, res) => {
 
     // Access check
     const [[access]] = await db.query(
-      `SELECT pg.group_id, pg.group_code, pg.section_code FROM project_groups pg
-       JOIN course_teacher_sections cts ON cts.section_code = pg.section_code
+      `SELECT pg.group_id, pg.group_code, s.section_code FROM project_groups pg
+       JOIN sections s ON s.section_id = pg.section_id
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE pg.group_id = ? AND cts.course_teacher_id = ? AND pg.is_active = 1`,
       [groupId, teacherId]
     );
@@ -950,7 +963,7 @@ router.post('/supervising-groups/reports/:id/review', async (req, res) => {
       const notifMsg = status === 'APPROVED'
         ? `Your Week ${report.week_no} report for ${report.group_code} has been approved by ${supName}.`
         : `Your Week ${report.week_no} report for ${report.group_code} was rejected by ${supName}. Reason: ${feedback}`;
-      await db.query('INSERT INTO notifications (user_id, type, title, message) VALUES (?, ?, ?, ?)',
+      await db.query('INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, ?, ?, ?)',
         [report.student_id, status === 'APPROVED' ? 'REPORT_APPROVED' : 'REPORT_REJECTED', notifTitle, notifMsg]);
     }
     res.json({ success: true, message: `Report ${status.toLowerCase()} successfully` });

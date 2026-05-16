@@ -118,13 +118,9 @@
       <label>Filter:</label>
       <select class="pf-filter-select" id="filterDomain">
         <option>All Domains</option>
-        <option>AI</option><option>ML</option><option>Cybersecurity</option>
-        <option>Software Engineering</option><option>IoT</option><option>Data Analytics</option><option>NLP</option>
       </select>
       <select class="pf-filter-select" id="filterSkill">
         <option>All Skills</option>
-        <option>Python</option><option>React</option><option>Node.js</option>
-        <option>TensorFlow</option><option>Docker</option><option>MySQL</option>
       </select>
       <span class="pf-filter-count" id="filterCount">0 students found</span>
     </div>
@@ -156,6 +152,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (s.incoming_requests > 0) { const b=document.getElementById('navBadge'); b.textContent=s.incoming_requests; b.style.display=''; }
   } catch(e){}
 
+  // Load domains
+  try {
+    const doms = await apiFetch('/api/pre-fydp/domains');
+    const sel = document.getElementById('filterDomain');
+    doms.forEach(d => { const o = document.createElement('option'); o.textContent = d; sel.appendChild(o); });
+  } catch(e) {}
+
+  // Load skills
+  try {
+    const skillsList = await apiFetch('/api/pre-fydp/skills');
+    const sel = document.getElementById('filterSkill');
+    skillsList.forEach(s => { const o = document.createElement('option'); o.textContent = s.skill_name; sel.appendChild(o); });
+  } catch(e) {}
+
   loadTeammates();
 });
 
@@ -178,8 +188,8 @@ function renderMates(students) {
     return;
   }
   grid.innerHTML = students.map(s => {
-    const skills = s.skills ? (typeof s.skills==='string'? JSON.parse(s.skills):s.skills) : [];
-    const domains = s.domain_interests ? (typeof s.domain_interests==='string'? JSON.parse(s.domain_interests):s.domain_interests) : [];
+    const skills = Array.isArray(s.skills) ? s.skills : [];
+    const domains = Array.isArray(s.domain_interests) ? s.domain_interests : [];
     const color = hashColor(s.full_name);
     return `
       <div class="pf-mate-card">

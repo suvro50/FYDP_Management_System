@@ -47,6 +47,11 @@
   scrollbar-color: var(--border-color) transparent;
 }
 
+.chat-messages::before {
+  content: "";
+  margin-top: auto;
+}
+
 .chat-messages::-webkit-scrollbar {
   width: 6px;
 }

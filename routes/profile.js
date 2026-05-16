@@ -25,9 +25,12 @@ const upload = multer({
 router.get('/me', async (req, res) => {
   try {
     const [[user]] = await db.query(
-      `SELECT user_id, full_name, email, university_id, department, role, 
-              profile_photo, bio, phone, is_active, created_at
-       FROM users WHERE user_id = ?`,
+      `SELECT u.user_id, u.full_name, u.email, u.university_id,
+              d.department_name AS department, u.role,
+              u.profile_photo, u.phone, u.is_active, u.created_at
+       FROM users u
+       LEFT JOIN departments d ON d.department_id = u.department_id
+       WHERE u.user_id = ?`,
       [req.session.user.user_id]
     );
     res.json({ user });
@@ -40,9 +43,12 @@ router.get('/me', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   try {
     const [[user]] = await db.query(
-      `SELECT user_id, full_name, email, university_id, department, role, 
-              profile_photo, bio, phone, created_at
-       FROM users WHERE user_id = ? AND is_active = 1`,
+      `SELECT u.user_id, u.full_name, u.email, u.university_id,
+              d.department_name AS department, u.role,
+              u.profile_photo, u.phone, u.created_at
+       FROM users u
+       LEFT JOIN departments d ON d.department_id = u.department_id
+       WHERE u.user_id = ? AND u.is_active = 1`,
       [req.params.userId]
     );
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -55,12 +61,12 @@ router.get('/:userId', async (req, res) => {
 // PUT /api/profile/update — Update my profile info
 router.put('/update', async (req, res) => {
   try {
-    const { bio, phone, full_name } = req.body;
+    const { phone, full_name } = req.body;
     const userId = req.session.user.user_id;
 
     await db.query(
-      'UPDATE users SET bio = ?, phone = ?, full_name = ? WHERE user_id = ?',
-      [bio || null, phone || null, full_name, userId]
+      'UPDATE users SET phone = ?, full_name = ? WHERE user_id = ?',
+      [phone || null, full_name, userId]
     );
 
     // Update session

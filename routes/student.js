@@ -17,10 +17,25 @@ const storage = multer.diskStorage({
     cb(null, uniqueName);
   }
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: (req, file, cb) => {
+const upload = multer({ storage, limits: { fileSize: 80 * 1024 * 1024 }, fileFilter: (req, file, cb) => {
   if (file.mimetype === 'application/pdf') cb(null, true);
   else cb(new Error('Only PDF files are allowed'));
 }});
+
+// Custom middleware to handle Multer upload and catch errors gracefully
+const uploadReport = (req, res, next) => {
+  upload.single('report_file')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'File is too large. Maximum size allowed is 80MB.' });
+      }
+      return res.status(400).json({ error: `Upload error: ${err.message}` });
+    } else if (err) {
+      return res.status(400).json({ error: err.message || 'Error uploading file' });
+    }
+    next();
+  });
+};
 
 // ─── Middleware: Check group membership ────────────────────────────────────
 async function checkGroupStatus(req, res, next) {
@@ -28,11 +43,13 @@ async function checkGroupStatus(req, res, next) {
     const studentId = req.session.user.user_id;
     const [groupRows] = await db.query(
       `SELECT gm.group_id, gm.member_role, pg.group_code, pg.project_title,
-              pd.domain_name, fs.stage_name, fs.stage_id, pg.supervisor_id, pg.section_code
+              pd.domain_name, fs.stage_name, fs.stage_id, pg.supervisor_id,
+              s.section_code
        FROM group_members gm
        JOIN project_groups pg ON gm.group_id = pg.group_id
        LEFT JOIN project_domains pd ON pg.project_domain_id = pd.domain_id
        LEFT JOIN fydp_stages fs ON pg.current_stage_id = fs.stage_id
+       LEFT JOIN sections s ON pg.section_id = s.section_id
        WHERE gm.student_id = ? AND pg.is_active = 1
        ORDER BY pg.created_at DESC LIMIT 1`,
       [studentId]
@@ -64,7 +81,10 @@ router.get('/dashboard-data', checkGroupStatus, async (req, res) => {
     );
 
     const [supRows] = await db.query(
-      `SELECT user_id, full_name, email, department, profile_photo FROM users WHERE user_id = ?`,
+      `SELECT u.user_id, u.full_name, u.email, d.department_name AS department, u.profile_photo
+       FROM users u
+       LEFT JOIN departments d ON d.department_id = u.department_id
+       WHERE u.user_id = ?`,
       [req.activeGroup.supervisor_id]
     );
 
@@ -132,7 +152,7 @@ router.get('/reports', checkGroupStatus, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // POST /api/student/submit-report — Submit weekly report
 // ═══════════════════════════════════════════════════════════════════════════
-router.post('/submit-report', checkGroupStatus, upload.single('report_file'), async (req, res) => {
+router.post('/submit-report', checkGroupStatus, uploadReport, async (req, res) => {
   try {
     if (!req.activeGroup) return res.status(403).json({ error: 'You are not in a group' });
 
@@ -237,10 +257,12 @@ router.get('/teacher-chat', checkGroupStatus, async (req, res) => {
 
     // Find the course teacher for this student's section + stage
     const [ctRows] = await db.query(
-      `SELECT u.user_id, u.full_name, u.department, u.email
+      `SELECT u.user_id, u.full_name, d.department_name AS department, u.email
        FROM course_teacher_sections cts
        JOIN users u ON cts.course_teacher_id = u.user_id
-       WHERE cts.section_code = ? AND cts.assigned_stage_id = ?
+       LEFT JOIN departments d ON d.department_id = u.department_id
+       JOIN sections s ON cts.section_id = s.section_id
+       WHERE s.section_code = ? AND cts.assigned_stage_id = ?
        LIMIT 1`,
       [sectionCode, stageId]
     );
