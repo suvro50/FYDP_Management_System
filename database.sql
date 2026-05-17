@@ -14,17 +14,6 @@ USE fydp;
 -- ─────────────────────────────────────────────────────────────────────────────
 -- SECTION 2 — TABLE DEFINITIONS
 -- ─────────────────────────────────────────────────────────────────────────────
-
--- ══════════════════════════════════════════════════════════════════════════════
--- MODULE 0: REFERENCE / MASTER TABLES
--- Pure lookup tables. All satisfy BCNF.
--- ══════════════════════════════════════════════════════════════════════════════
-
--- ----------------------------------------------------------------------------
--- TABLE: departments
--- 3NF/BCNF: department_id, department_name, short_code are all candidate keys.
--- Each determines only its own tuple.
--- ----------------------------------------------------------------------------
 CREATE TABLE departments (
     department_id       INT UNSIGNED     NOT NULL AUTO_INCREMENT,
     department_name     VARCHAR(150)     NOT NULL  COMMENT 'Full official name',
@@ -42,11 +31,6 @@ CREATE TABLE departments (
 
 -- ----------------------------------------------------------------------------
 -- TABLE: sections                                                [NEW v3.0]
--- Reason: project_groups.section_code and course_teacher_sections.section_code
---   were raw VARCHAR — update anomaly possible (renaming a section required
---   touching every row). Now a proper reference table with FK.
--- BCNF: section_id and section_code are both candidate keys.
--- ----------------------------------------------------------------------------
 CREATE TABLE sections (
     section_id      INT UNSIGNED    NOT NULL  AUTO_INCREMENT,
     section_code    VARCHAR(20)     NOT NULL  COMMENT 'e.g. CSE-A, EEE-B',
@@ -63,10 +47,7 @@ CREATE TABLE sections (
 
 -- ----------------------------------------------------------------------------
 -- TABLE: trimesters                                              [NEW v3.0]
--- Reason: student_profiles.target_trimester and pre_fydp_profiles.target_trimester
---   were raw VARCHAR — typo-prone ('Sring 2026'), no date validation.
--- BCNF: trimester_id and trimester_name are both candidate keys.
--- ----------------------------------------------------------------------------
+
 CREATE TABLE trimesters (
     trimester_id    INT UNSIGNED    NOT NULL  AUTO_INCREMENT,
     trimester_name  VARCHAR(30)     NOT NULL  COMMENT 'e.g. Spring 2026',
@@ -165,10 +146,6 @@ CREATE TABLE users (
 
 -- ----------------------------------------------------------------------------
 -- TABLE: user_status_log
--- Immutable audit trail. Trigger trg_after_users_status_log auto-populates.
--- Pattern: users.account_status = current state | user_status_log = history
--- 3NF: log_id → all attributes. No transitive dependencies.
--- ----------------------------------------------------------------------------
 CREATE TABLE user_status_log (
     log_id          BIGINT UNSIGNED     NOT NULL  AUTO_INCREMENT,
     user_id         INT UNSIGNED        NOT NULL,
@@ -332,11 +309,6 @@ CREATE TABLE notifications (
 -- MODULE 3: FYDP GROUP MANAGEMENT & ESCALATION ENGINE
 -- ══════════════════════════════════════════════════════════════════════════════
 
--- ----------------------------------------------------------------------------
--- TABLE: announcements
--- Purpose : Teacher-created announcements broadcast to all/role/section users.
--- 3NF/BCNF : announcement_id is the sole determinant.
--- ----------------------------------------------------------------------------
 CREATE TABLE announcements (
     announcement_id INT UNSIGNED        NOT NULL  AUTO_INCREMENT,
     author_id       INT UNSIGNED        NOT NULL
@@ -906,12 +878,7 @@ CREATE TABLE group_tasks (
 
 -- ----------------------------------------------------------------------------
 -- TABLE: group_chat_messages                                    [NEW v3.1]
--- Purpose : Real-time in-group messaging with three visibility channels:
---           STUDENT_ONLY  — visible to group members only
---           WITH_SUPERVISOR — includes the assigned supervisor
---           WITH_TEACHER    — includes the assigned course teacher
--- 3NF/BCNF : message_id is the sole determinant (proved above).
--- ----------------------------------------------------------------------------
+
 CREATE TABLE group_chat_messages (
     message_id      INT UNSIGNED        NOT NULL  AUTO_INCREMENT,
     group_id        INT UNSIGNED        NOT NULL
@@ -2354,7 +2321,7 @@ JOIN fydp_stages fs    ON fs.stage_id   = pg.current_stage_id
 JOIN sections sec      ON sec.section_id = pg.section_id
 ORDER BY ci.escalated_at DESC;
 
--- ── VIEW 7: Pre-FYDP Skill Matchmaking Leaderboard ───────────────────────────
+-- ── VIEW 7: Pre-FYDP Skill Matchmaking Leaderboard ────────────────
 CREATE OR REPLACE VIEW vw_pre_fydp_skill_match AS
 SELECT
     u.university_id                                       AS student_uid,
@@ -2380,9 +2347,6 @@ WHERE u.role             = 'PRE_FYDP_STUDENT'
 ORDER BY u.user_id, skill_match_pct DESC;
 
 -- ── VIEW 8: Group Chat Feed                              [NEW v3.1] ──────────
--- Returns the full message thread for a group, per channel (chat_type).
--- Usage: SELECT * FROM vw_group_chat_feed WHERE group_code='UIU-G001'
---          AND chat_type='STUDENT_ONLY' ORDER BY created_at;
 CREATE OR REPLACE VIEW vw_group_chat_feed AS
 SELECT
     gcm.message_id,
@@ -2403,11 +2367,7 @@ JOIN users u           ON u.user_id   = gcm.sender_id
 ORDER BY gcm.group_id, gcm.chat_type, gcm.created_at;
 
 -- ── VIEW 9: Direct Message Conversation Threads          [NEW v3.1] ──────────
--- Returns all DMs grouped as conversation pairs.
--- Usage: SELECT * FROM vw_dm_conversation_threads
---          WHERE (participant_a = X AND participant_b = Y)
---             OR (participant_a = Y AND participant_b = X)
---          ORDER BY created_at;
+
 CREATE OR REPLACE VIEW vw_dm_conversation_threads AS
 SELECT
     dm.message_id,
