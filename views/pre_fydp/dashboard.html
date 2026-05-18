@@ -76,7 +76,7 @@
           </button>
         </div>
         <button class="pf-icon-btn" title="Dark Mode" onclick="toggleDarkMode()" id="darkModeToggle"><i class="fas fa-moon"></i></button>
-        <button class="pf-create-btn" onclick="openCreateModal()">
+        <button class="pf-create-btn" id="createGroupBtn" onclick="openCreateModal()">
           <i class="fas fa-plus"></i> Create Group
         </button>
       </div>
@@ -422,11 +422,21 @@ async function loadDomains() {
 }
 
 // ── GROUPS ───────────────────────────────────────────────────────────────
+let _userIsInTeam = false;
+
 async function loadGroups() {
   const domain = document.getElementById('filterDomain').value;
   const skill = document.getElementById('filterSkill').value;
   const search = document.getElementById('searchInput').value;
   try {
+    // Check if the current user is already in any group
+    const memberCheck = await apiFetch('/api/pre-fydp/my-group-status').catch(() => ({ in_team: false, group_name: null }));
+    _userIsInTeam = memberCheck.in_team;
+
+    // Hide "Create Group" button if already in a team
+    const createBtn = document.getElementById('createGroupBtn');
+    if (createBtn) createBtn.style.display = _userIsInTeam ? 'none' : '';
+
     const groups = await apiFetch(`/api/pre-fydp/groups?domain=${encodeURIComponent(domain)}&skill=${encodeURIComponent(skill)}&search=${encodeURIComponent(search)}`);
     document.getElementById('filterCount').textContent = `${groups.length} groups match`;
     renderGroups(groups);
@@ -434,6 +444,7 @@ async function loadGroups() {
     document.getElementById('teamGrid').innerHTML = '<div class="pf-empty"><i class="fas fa-exclamation-triangle"></i><h3>Failed to load</h3></div>';
   }
 }
+
 
 // Store loaded groups for detail view
 let _loadedGroups = [];
@@ -451,6 +462,24 @@ function renderGroups(groups) {
     const pct = Math.round((g.member_count / g.max_members) * 100);
     const skills = Array.isArray(g.required_skills) ? g.required_skills : [];
     const color = hashColor(g.group_name);
+    const isMyGroup = g.members && g.members.some(m => currentUser && m.user_id === currentUser.user_id);
+    const myMembership = isMyGroup && g.members.find(m => m.user_id === currentUser.user_id);
+    const isLead = myMembership && myMembership.member_role === 'Lead';
+
+    let actionBtn;
+    if (isMyGroup && isLead) {
+      actionBtn = `<button class="pf-join-btn" style="background:var(--pf-success);color:#fff;cursor:default" disabled><i class="fas fa-crown"></i> Your Team (Lead)</button>`;
+    } else if (isMyGroup && !isLead) {
+      actionBtn = `<button class="pf-join-btn" style="background:#ef4444;color:#fff" onclick="sendLeaveRequest(${g.group_id})"><i class="fas fa-sign-out-alt"></i> Request to Leave</button>`;
+    } else if (_userIsInTeam) {
+      actionBtn = `<button class="pf-join-btn disabled" disabled title="Leave your current group first"><i class="fas fa-ban"></i> Already in a Team</button>`;
+    } else if (isFull) {
+      actionBtn = `<button class="pf-join-btn disabled" disabled>Team Full</button>`;
+    } else {
+      actionBtn = `<button class="pf-join-btn" onclick="sendJoinRequest(${g.group_id})">Send Join Request</button>`;
+
+    }
+
     return `
       <div class="pf-team-card">
         <div class="pf-team-header">
@@ -466,19 +495,17 @@ function renderGroups(groups) {
         <div class="pf-skill-tags">${skills.map(s => `<span class="pf-skill-tag">${s}</span>`).join('')}</div>
         <div class="pf-capacity">
           <span class="pf-capacity-label">Team Capacity</span>
-          <span class="pf-capacity-count ${isFull?'full':''}}">${g.member_count}/${g.max_members} Members</span>
+          <span class="pf-capacity-count ${isFull?'full':''}">${g.member_count}/${g.max_members} Members</span>
         </div>
         <div class="pf-capacity-bar"><div class="pf-capacity-fill ${isFull?'full':''}" style="width:${pct}%"></div></div>
         <div class="pf-card-actions" style="margin-top:12px">
           <button class="pf-view-btn" title="View Details" onclick="openGroupDetail(${g.group_id})"><i class="fas fa-eye"></i></button>
-          ${isFull
-            ? `<button class="pf-join-btn disabled" disabled>Team Full</button>`
-            : `<button class="pf-join-btn" onclick="sendJoinRequest(${g.group_id})">Send Join Request</button>`
-          }
+          ${actionBtn}
         </div>
       </div>`;
   }).join('');
 }
+
 
 // ── JOIN REQUEST ────────────────────────────────────────────────────────
 let _currentDetailGroupId = null;
@@ -490,6 +517,16 @@ async function sendJoinRequest(groupId) {
     loadGroups(); loadStats();
   } catch(e) { toast(e.message, 'error'); }
 }
+
+async function sendLeaveRequest(groupId) {
+  if (!confirm('Are you sure you want to request to leave this group? The group leader must approve your request.')) return;
+  try {
+    await apiFetch('/api/pre-fydp/leave-request', { method:'POST', body:{ group_id: groupId }});
+    toast('Leave request sent to the group leader!', 'success');
+    loadGroups(); loadStats();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
 
 // ── GROUP DETAIL MODAL ──────────────────────────────────────────────────
 function openGroupDetail(groupId) {
@@ -570,14 +607,35 @@ function openGroupDetail(groupId) {
 
   // Join button
   const joinBtn = document.getElementById('gdJoinBtn');
-  if (isFull) {
+  const isMyGroup = g.members && g.members.some(m => currentUser && m.user_id === currentUser.user_id);
+  const myRole = isMyGroup && g.members.find(m => m.user_id === currentUser.user_id);
+  const amLead = myRole && myRole.member_role === 'Lead';
+
+  if (isMyGroup && amLead) {
+    joinBtn.disabled = true;
+    joinBtn.innerHTML = '<i class="fas fa-crown"></i> You are the Team Leader';
+    joinBtn.style.background = 'var(--pf-success)';
+    joinBtn.onclick = null;
+  } else if (isMyGroup && !amLead) {
+    joinBtn.disabled = false;
+    joinBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Request to Leave';
+    joinBtn.style.background = '#ef4444';
+    joinBtn.onclick = () => { sendLeaveRequest(g.group_id); closeGroupDetail(); };
+  } else if (_userIsInTeam) {
+    joinBtn.disabled = true;
+    joinBtn.innerHTML = '<i class="fas fa-ban"></i> Already in Another Team';
+    joinBtn.style.background = 'var(--pf-text-muted)';
+    joinBtn.onclick = null;
+  } else if (isFull) {
     joinBtn.disabled = true;
     joinBtn.innerHTML = '<i class="fas fa-lock"></i> Team Full';
     joinBtn.style.background = 'var(--pf-btn-disabled-bg)';
+    joinBtn.onclick = null;
   } else {
     joinBtn.disabled = false;
     joinBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Join Request';
     joinBtn.style.background = '';
+    joinBtn.onclick = () => sendJoinFromDetail();
   }
 
   document.getElementById('groupDetailModal').classList.add('show');

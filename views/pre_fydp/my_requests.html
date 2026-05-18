@@ -186,37 +186,51 @@ async function loadRequests() {
 function renderSent(reqs) {
   const el = document.getElementById('sentPanel');
   if (!reqs.length) { el.innerHTML = '<div class="pf-empty"><i class="fas fa-paper-plane"></i><h3>No sent requests</h3><p>Browse groups on the Dashboard and send join requests!</p></div>'; return; }
-  el.innerHTML = reqs.map(r => `
-    <div class="pf-req-card">
+  el.innerHTML = reqs.map(r => {
+    const isLeave = r.request_type === 'LEAVE_REQUEST';
+    const typeLabel = isLeave
+      ? '<span style="background:rgba(239,68,68,0.1);color:#dc2626;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:600;margin-left:6px"><i class="fas fa-sign-out-alt"></i> LEAVE</span>'
+      : '<span style="background:rgba(79,70,229,0.1);color:#4f46e5;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:600;margin-left:6px"><i class="fas fa-sign-in-alt"></i> JOIN</span>';
+    return `
+    <div class="pf-req-card" style="${isLeave ? 'border-left:3px solid #ef4444' : ''}">
       <div class="pf-req-avatar" style="background:${hashColor(r.group_name)}">${getInitials(r.group_name)}</div>
       <div class="pf-req-info">
-        <div class="pf-req-title">${r.group_name}</div>
+        <div class="pf-req-title">${r.group_name} ${typeLabel}</div>
         <div class="pf-req-meta"><i class="fas fa-tag"></i> ${r.domain} · Lead: ${r.group_lead} · ${timeAgo(r.created_at)}</div>
         ${r.message ? `<div class="pf-req-msg">"${r.message}"</div>` : ''}
       </div>
       <span class="pf-req-status ${r.request_status.toLowerCase()}">${r.request_status}</span>
       ${r.request_status === 'PENDING' ? `<button class="pf-cancel-btn" onclick="cancelRequest(${r.request_id})"><i class="fas fa-times"></i> Cancel</button>` : ''}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function renderReceived(reqs) {
   const el = document.getElementById('receivedPanel');
-  if (!reqs.length) { el.innerHTML = '<div class="pf-empty"><i class="fas fa-inbox"></i><h3>No received requests</h3><p>When someone wants to join your group, it will appear here.</p></div>'; return; }
+  if (!reqs.length) { el.innerHTML = '<div class="pf-empty"><i class="fas fa-inbox"></i><h3>No received requests</h3><p>When someone wants to join or leave your group, it will appear here.</p></div>'; return; }
   el.innerHTML = reqs.map(r => {
     const skills = Array.isArray(r.sender_skills) ? r.sender_skills : [];
+    const isLeave = r.request_type === 'LEAVE_REQUEST';
+    const actionVerb = isLeave ? 'wants to leave' : 'wants to join';
+    const actionHandler = isLeave ? 'handleLeaveRequest' : 'handleRequest';
+    const typeLabel = isLeave
+      ? '<span style="background:rgba(239,68,68,0.1);color:#dc2626;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:600;margin-left:6px"><i class="fas fa-sign-out-alt"></i> LEAVE</span>'
+      : '<span style="background:rgba(79,70,229,0.1);color:#4f46e5;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:600;margin-left:6px"><i class="fas fa-sign-in-alt"></i> JOIN</span>';
+    const acceptLabel = isLeave ? 'Approve Leave' : 'Accept';
+    const rejectLabel = isLeave ? 'Deny Leave' : 'Reject';
     return `
-    <div class="pf-req-card" style="flex-wrap:wrap">
+    <div class="pf-req-card" style="flex-wrap:wrap;${isLeave ? 'border-left:3px solid #ef4444' : ''}">
       <div class="pf-req-avatar" style="background:${hashColor(r.sender_name)}">${getInitials(r.sender_name)}</div>
       <div class="pf-req-info">
-        <div class="pf-req-title">${r.sender_name} <span style="font-weight:400;color:var(--pf-text-muted);font-size:0.8rem">wants to join</span> ${r.group_name}</div>
+        <div class="pf-req-title">${r.sender_name} <span style="font-weight:400;color:var(--pf-text-muted);font-size:0.8rem">${actionVerb}</span> ${r.group_name} ${typeLabel}</div>
         <div class="pf-req-meta">${r.sender_dept || ''} · ${r.preferred_role || 'Developer'} · ${timeAgo(r.created_at)}</div>
         ${r.message ? `<div class="pf-req-msg">"${r.message}"</div>` : ''}
         <div class="pf-sender-skills">${skills.slice(0,4).map(s=>`<span class="pf-skill-tag">${s}</span>`).join('')}</div>
       </div>
       ${r.request_status === 'PENDING' ? `
         <div class="pf-req-actions">
-          <button class="pf-accept-btn" onclick="handleRequest(${r.request_id},'accept')"><i class="fas fa-check"></i> Accept</button>
-          <button class="pf-reject-btn" onclick="handleRequest(${r.request_id},'reject')"><i class="fas fa-times"></i> Reject</button>
+          <button class="pf-accept-btn" onclick="${actionHandler}(${r.request_id},'accept')"><i class="fas fa-check"></i> ${acceptLabel}</button>
+          <button class="pf-reject-btn" onclick="${actionHandler}(${r.request_id},'reject')"><i class="fas fa-times"></i> ${rejectLabel}</button>
         </div>` : `<span class="pf-req-status ${r.request_status.toLowerCase()}">${r.request_status}</span>`}
     </div>`;
   }).join('');
@@ -233,6 +247,15 @@ async function handleRequest(id, action) {
   try {
     await apiFetch(`/api/pre-fydp/join-request/${id}`, {method:'PATCH', body:{action}});
     toast(`Request ${action}ed!`,'success'); loadRequests();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function handleLeaveRequest(id, action) {
+  const verb = action === 'accept' ? 'approve this leave request' : 'deny this leave request';
+  if (!confirm(`Are you sure you want to ${verb}? ${action === 'accept' ? 'The member will be removed from your group.' : 'The member will stay in the group.'}`)) return;
+  try {
+    await apiFetch(`/api/pre-fydp/leave-request/${id}`, {method:'PATCH', body:{action}});
+    toast(`Leave request ${action}ed!`,'success'); loadRequests();
   } catch(e) { toast(e.message,'error'); }
 }
 

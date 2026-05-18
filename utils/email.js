@@ -1,51 +1,52 @@
 const nodemailer = require("nodemailer");
 
-async function createTransporter() {
-  // If no real credentials, use Ethereal for demo
-  if (!process.env.SMTP_HOST) {
-    let testAccount = await nodemailer.createTestAccount();
-    return nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: testAccount.user, // generated ethereal user
-        pass: testAccount.pass, // generated ethereal password
-      },
-    });
+let cachedTransporter = null;
+
+function getTransporter() {
+  if (cachedTransporter) return cachedTransporter;
+
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.error("❌ SMTP_USER and SMTP_PASS are required in .env for email delivery!");
+    console.error("   Set up Gmail App Password: https://myaccount.google.com/apppasswords");
+    throw new Error("Email service not configured. Set SMTP_USER and SMTP_PASS in .env");
   }
 
-  // Real credentials
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT || 587,
-    secure: process.env.SMTP_PORT == 465,
+  cachedTransporter = nodemailer.createTransport({
+    service: "gmail",
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
   });
+
+  // Verify connection on first use
+  cachedTransporter.verify()
+    .then(() => console.log("✅ Gmail SMTP connected successfully"))
+    .catch(err => {
+      console.error("❌ Gmail SMTP connection failed:", err.message);
+      cachedTransporter = null;
+    });
+
+  return cachedTransporter;
 }
 
 async function sendEmail({ to, subject, html }) {
   try {
-    const transporter = await createTransporter();
+    const transporter = getTransporter();
     const info = await transporter.sendMail({
-      from: '"FYDP Matchmaking System" <noreply@fydpsystem.local>',
+      from: `"FYDP Management System" <${process.env.SMTP_USER}>`,
       to,
       subject,
       html,
     });
 
-    console.log(`✉️ Email sent to ${to}`);
-    // If using ethereal, output the preview URL
-    if (info.messageId && !process.env.SMTP_HOST) {
-      console.log(`   Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
-    }
+    console.log(`✉️  Email sent to ${to} (ID: ${info.messageId})`);
     return true;
   } catch (error) {
-    console.error("Failed to send email:", error);
-    return false;
+    console.error("❌ Failed to send email to", to);
+    console.error("   Error:", error.message);
+    throw error; // Let the caller handle it so user sees the error
   }
 }
+
 module.exports = { sendEmail };

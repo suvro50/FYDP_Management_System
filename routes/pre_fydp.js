@@ -50,7 +50,27 @@ router.get('/dashboard-stats', async (req, res) => {
   }
 });
 
+// ── My Group Status (am I in any group?) ──────────────────────────────────
+router.get('/my-group-status', async (req, res) => {
+  try {
+    const userId = req.session.user.user_id;
+    const [rows] = await db.query(
+      `SELECT gm.group_id, g.group_name FROM pre_fydp_group_members gm
+       JOIN pre_fydp_groups g ON gm.group_id = g.group_id
+       WHERE gm.user_id = ?`, [userId]
+    );
+    if (rows.length > 0) {
+      res.json({ in_team: true, group_id: rows[0].group_id, group_name: rows[0].group_name });
+    } else {
+      res.json({ in_team: false, group_id: null, group_name: null });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to check group status' });
+  }
+});
+
 // ── List All Open Groups ───────────────────────────────────────────────────
+
 router.get('/groups', async (req, res) => {
   try {
     const { domain, skill, search } = req.query;
@@ -155,6 +175,18 @@ router.post('/groups', async (req, res) => {
       return res.status(400).json({ error: 'Group name and domain are required' });
     }
 
+    // Block if user is already in any group (as member or creator)
+    const [alreadyIn] = await db.query(
+      `SELECT gm.group_id, g.group_name FROM pre_fydp_group_members gm
+       JOIN pre_fydp_groups g ON gm.group_id = g.group_id
+       WHERE gm.user_id = ?`, [userId]
+    );
+    if (alreadyIn.length > 0) {
+      return res.status(400).json({
+        error: `You are already in the group "${alreadyIn[0].group_name}". You cannot create another group.`
+      });
+    }
+
     // Resolve domain_id
     const [domainRows] = await db.query(
       `SELECT domain_id FROM project_domains WHERE domain_name = ?`, [domain]
@@ -163,6 +195,7 @@ router.post('/groups', async (req, res) => {
       return res.status(400).json({ error: 'Invalid domain selected' });
     }
     const domain_id = domainRows[0].domain_id;
+
 
     const [result] = await db.query(
       `INSERT INTO pre_fydp_groups (group_name, domain_id, description, max_members, github_url, created_by)
@@ -220,7 +253,7 @@ router.post('/join-request', async (req, res) => {
     const userId = req.session.user.user_id;
     const { group_id, message } = req.body;
 
-    // Check if already a member
+    // Check if already a member of THIS group
     const [existing] = await db.query(
       `SELECT * FROM pre_fydp_group_members WHERE group_id = ? AND user_id = ?`,
       [group_id, userId]
@@ -229,7 +262,20 @@ router.post('/join-request', async (req, res) => {
       return res.status(400).json({ error: 'You are already a member of this group' });
     }
 
+    // Block if already a member of ANY group
+    const [anyGroup] = await db.query(
+      `SELECT gm.group_id, g.group_name FROM pre_fydp_group_members gm
+       JOIN pre_fydp_groups g ON gm.group_id = g.group_id
+       WHERE gm.user_id = ?`, [userId]
+    );
+    if (anyGroup.length > 0) {
+      return res.status(400).json({
+        error: `You are already a member of "${anyGroup[0].group_name}". Leave that group first before joining another.`
+      });
+    }
+
     // Check if already has a pending request
+
     const [pendingReq] = await db.query(
       `SELECT * FROM pre_fydp_join_requests 
        WHERE group_id = ? AND sender_id = ? AND request_status = 'PENDING'`,
@@ -269,7 +315,7 @@ router.get('/my-requests', async (req, res) => {
 
     // Sent requests
     const [sent] = await db.query(
-      `SELECT jr.request_id, jr.group_id, jr.sender_id, jr.message, jr.request_status, jr.created_at,
+      `SELECT jr.request_id, jr.group_id, jr.sender_id, jr.request_type, jr.message, jr.request_status, jr.created_at,
               g.group_name, pd.domain_name as domain, u.full_name as group_lead
        FROM pre_fydp_join_requests jr
        JOIN pre_fydp_groups g ON jr.group_id = g.group_id
@@ -279,9 +325,9 @@ router.get('/my-requests', async (req, res) => {
        ORDER BY jr.created_at DESC`, [userId]
     );
 
-    // Received requests (for groups I own)
+    // Received requests (for groups I own) — both JOIN and LEAVE
     const [received] = await db.query(
-      `SELECT jr.request_id, jr.group_id, jr.sender_id, jr.message, jr.request_status, jr.created_at,
+      `SELECT jr.request_id, jr.group_id, jr.sender_id, jr.request_type, jr.message, jr.request_status, jr.created_at,
               g.group_name, pd.domain_name as domain,
               u.full_name as sender_name, d.short_code as sender_dept,
               p.preferred_role
@@ -356,6 +402,14 @@ router.patch('/join-request/:id', async (req, res) => {
         [request.sender_id]
       ).catch(() => {});
 
+      // Auto-cancel all other pending join requests from this user
+      await db.query(
+        `UPDATE pre_fydp_join_requests
+         SET request_status = 'CANCELLED', responded_at = NOW()
+         WHERE sender_id = ? AND request_id != ? AND request_status = 'PENDING' AND request_type = 'JOIN_REQUEST'`,
+        [request.sender_id, id]
+      );
+
       // Check if group is now full and update status
       const [[{ new_count }]] = await db.query(
         `SELECT COUNT(*) as new_count FROM pre_fydp_group_members WHERE group_id = ?`,
@@ -372,6 +426,31 @@ router.patch('/join-request/:id', async (req, res) => {
         `UPDATE pre_fydp_join_requests SET request_status = 'REJECTED', responded_at = NOW() WHERE request_id = ?`,
         [id]
       );
+    }
+
+    // ── Send notification to the requester ────────────────────────────────
+    // Fetch group name for the notification message
+    const [[grpInfo]] = await db.query(
+      `SELECT g.group_name, u.full_name as owner_name
+       FROM pre_fydp_groups g JOIN users u ON g.created_by = u.user_id
+       WHERE g.group_id = ?`, [request.group_id]
+    );
+
+    if (grpInfo) {
+      const notifType = action === 'accept' ? 'INVITATION_ACCEPTED' : 'INVITATION_REJECTED';
+      const notifTitle = action === 'accept'
+        ? `🎉 Request Accepted — ${grpInfo.group_name}`
+        : `Request Rejected — ${grpInfo.group_name}`;
+      const notifMsg = action === 'accept'
+        ? `${grpInfo.owner_name} accepted your request to join "${grpInfo.group_name}". Welcome to the team!`
+        : `${grpInfo.owner_name} declined your request to join "${grpInfo.group_name}".`;
+
+      await db.query(
+        `INSERT INTO notifications
+           (user_id, notification_type, title, message, reference_entity_id, reference_entity_type, is_read)
+         VALUES (?, ?, ?, ?, ?, 'pre_fydp_join_requests', 0)`,
+        [request.sender_id, notifType, notifTitle, notifMsg, id]
+      ).catch(err => console.error('Notification insert failed:', err.message));
     }
 
     res.json({ success: true, message: `Request ${action}ed successfully` });
@@ -611,6 +690,149 @@ router.delete('/join-request/:id', async (req, res) => {
   } catch (err) {
     console.error('Pre-FYDP cancel request error:', err);
     res.status(500).json({ error: 'Failed to cancel request' });
+  }
+});
+
+// ── Send Leave Request ─────────────────────────────────────────────────────
+router.post('/leave-request', async (req, res) => {
+  try {
+    const userId = req.session.user.user_id;
+    const { group_id, message } = req.body;
+
+    // Verify user is actually in this group
+    const [membership] = await db.query(
+      `SELECT * FROM pre_fydp_group_members WHERE group_id = ? AND user_id = ?`,
+      [group_id, userId]
+    );
+    if (membership.length === 0) {
+      return res.status(400).json({ error: 'You are not a member of this group' });
+    }
+
+    // Block if user is the Lead (owner) — leader cannot leave their own group
+    if (membership[0].member_role === 'Lead') {
+      return res.status(400).json({ error: 'As the group leader, you cannot leave your own group. You can delete the group instead.' });
+    }
+
+    // Check if already has a pending leave request
+    const [pending] = await db.query(
+      `SELECT * FROM pre_fydp_join_requests
+       WHERE group_id = ? AND sender_id = ? AND request_type = 'LEAVE_REQUEST' AND request_status = 'PENDING'`,
+      [group_id, userId]
+    );
+    if (pending.length > 0) {
+      return res.status(400).json({ error: 'You already have a pending leave request for this group' });
+    }
+
+    await db.query(
+      `INSERT INTO pre_fydp_join_requests (group_id, sender_id, request_type, message)
+       VALUES (?, ?, 'LEAVE_REQUEST', ?)`,
+      [group_id, userId, message || 'I would like to leave this group.']
+    );
+
+    // Notify the group leader
+    const [[groupInfo]] = await db.query(
+      `SELECT g.created_by, g.group_name, u.full_name as sender_name
+       FROM pre_fydp_groups g, users u
+       WHERE g.group_id = ? AND u.user_id = ?`, [group_id, userId]
+    );
+    if (groupInfo) {
+      await db.query(
+        `INSERT INTO notifications (user_id, notification_type, title, message, reference_entity_id, reference_entity_type, is_read)
+         VALUES (?, 'LEAVE_REQUEST', ?, ?, ?, 'pre_fydp_join_requests', 0)`,
+        [groupInfo.created_by, `🚪 Leave Request — ${groupInfo.group_name}`,
+         `${groupInfo.sender_name} wants to leave your group "${groupInfo.group_name}". Review the request.`,
+         group_id]
+      ).catch(() => {});
+    }
+
+    res.json({ success: true, message: 'Leave request sent to the group leader!' });
+  } catch (err) {
+    console.error('Pre-FYDP leave request error:', err);
+    res.status(500).json({ error: 'Failed to send leave request' });
+  }
+});
+
+// ── Accept/Reject Leave Request ────────────────────────────────────────────
+router.patch('/leave-request/:id', async (req, res) => {
+  try {
+    const userId = req.session.user.user_id;
+    const { id } = req.params;
+    const { action } = req.body; // 'accept' or 'reject'
+
+    // Get the request and verify ownership
+    const [rows] = await db.query(
+      `SELECT jr.*, g.created_by, g.group_name
+       FROM pre_fydp_join_requests jr
+       JOIN pre_fydp_groups g ON jr.group_id = g.group_id
+       WHERE jr.request_id = ? AND jr.request_type = 'LEAVE_REQUEST'`, [id]
+    );
+
+    if (rows.length === 0) return res.status(404).json({ error: 'Leave request not found' });
+    const request = rows[0];
+
+    if (request.created_by !== userId) {
+      return res.status(403).json({ error: 'Only the group leader can approve leave requests' });
+    }
+
+    if (request.request_status !== 'PENDING') {
+      return res.status(400).json({ error: 'This request has already been processed' });
+    }
+
+    if (action === 'accept') {
+      // Remove the member from the group
+      await db.query(
+        `DELETE FROM pre_fydp_group_members WHERE group_id = ? AND user_id = ?`,
+        [request.group_id, request.sender_id]
+      );
+
+      // Update request status
+      await db.query(
+        `UPDATE pre_fydp_join_requests SET request_status = 'ACCEPTED', responded_at = NOW() WHERE request_id = ?`, [id]
+      );
+
+      // Reset their profile to AVAILABLE
+      await db.query(
+        `UPDATE pre_fydp_profiles SET availability_status = 'AVAILABLE' WHERE user_id = ?`,
+        [request.sender_id]
+      ).catch(() => {});
+
+      // If group was FULL, re-open it
+      await db.query(
+        `UPDATE pre_fydp_groups SET group_status = 'OPEN' WHERE group_id = ? AND group_status = 'FULL'`,
+        [request.group_id]
+      ).catch(() => {});
+
+      // Notify the member that they've been released
+      await db.query(
+        `INSERT INTO notifications (user_id, notification_type, title, message, reference_entity_id, reference_entity_type, is_read)
+         VALUES (?, 'LEAVE_APPROVED', ?, ?, ?, 'pre_fydp_join_requests', 0)`,
+        [request.sender_id,
+         `✅ Leave Approved — ${request.group_name}`,
+         `Your request to leave "${request.group_name}" has been approved. You are now free to join or create another group.`,
+         id]
+      ).catch(() => {});
+
+    } else {
+      // Reject — member stays in the group
+      await db.query(
+        `UPDATE pre_fydp_join_requests SET request_status = 'REJECTED', responded_at = NOW() WHERE request_id = ?`, [id]
+      );
+
+      // Notify the member
+      await db.query(
+        `INSERT INTO notifications (user_id, notification_type, title, message, reference_entity_id, reference_entity_type, is_read)
+         VALUES (?, 'LEAVE_REJECTED', ?, ?, ?, 'pre_fydp_join_requests', 0)`,
+        [request.sender_id,
+         `❌ Leave Denied — ${request.group_name}`,
+         `Your request to leave "${request.group_name}" was declined by the group leader.`,
+         id]
+      ).catch(() => {});
+    }
+
+    res.json({ success: true, message: `Leave request ${action}ed successfully` });
+  } catch (err) {
+    console.error('Pre-FYDP leave request action error:', err);
+    res.status(500).json({ error: 'Failed to process leave request' });
   }
 });
 
