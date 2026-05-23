@@ -208,6 +208,9 @@ app.get('/student/supervisor-group-chat', isAuth, requireRole('STUDENT'), (req, 
 app.get('/student/teacher-group-chat', isAuth, requireRole('STUDENT'), (req, res) => {
   res.sendFile(path.join(__dirname, 'views/student/teacher_group_chat.html'));
 });
+app.get('/student/tasks', isAuth, requireRole('STUDENT'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views/student/tasks.html'));
+});
 
 // ── Root redirect ──────────────────────────────────────────────────────────
 app.get('/', (req, res) => {

@@ -30,6 +30,7 @@
         <a href="/student/dashboard"><span class="nav-icon"><i class="fas fa-home"></i></span> Dashboard</a>
         <a href="/student/submit-report"><span class="nav-icon"><i class="fas fa-upload"></i></span> Submit Report</a>
         <a href="/student/reports"><span class="nav-icon"><i class="fas fa-file-alt"></i></span> My Reports</a>
+        <a href="/student/tasks"><span class="nav-icon"><i class="fas fa-tasks"></i></span> My Tasks</a>
         <div class="nav-label" style="margin-top:20px;">CHATS</div>
         <a href="/student/my-group-chat"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> Students Group</a>
         <a href="/student/supervisor-group-chat"><span class="nav-icon"><i class="fas fa-users"></i></span> Group with Supervisor</a>
@@ -127,6 +128,32 @@
   <!-- Delete Context Menu -->
   <div id="msgCtxMenu" class="msg-ctx-menu" style="display:none;">
     <div class="msg-ctx-item" onclick="confirmDelete()"><i class="fas fa-trash-alt"></i> Delete Message</div>
+  </div>
+
+  <!-- PDF Viewer Modal -->
+  <div class="pdf-overlay" id="pdfOverlay">
+    <div class="pdf-viewer">
+      <div class="pdf-viewer-header">
+        <h4 id="pdfTitle" style="margin:0; font-weight:700; display:flex; align-items:center; gap:10px;"><i class="fas fa-file-pdf" style="color:#ef4444;"></i> <span>Document</span></h4>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <a id="pdfDownload" href="#" download class="btn btn-sm" style="background:rgba(255,255,255,0.1); color:#fff; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:0.85rem; font-weight:600;"><i class="fas fa-download"></i> Download</a>
+          <button onclick="closePdf()" style="background:#ef4444; border:none; color:#fff; width:36px; height:36px; border-radius:8px; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+      </div>
+      <iframe id="pdfFrame" src=""></iframe>
+    </div>
+  </div>
+
+  <!-- Image Viewer Modal -->
+  <div class="pdf-overlay" id="imageOverlay" onclick="if(event.target===this)closeImage()">
+    <div style="position:relative; max-width:90vw; max-height:90vh; display:flex; flex-direction:column; align-items:center;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; background:rgba(0,0,0,0.6); padding:10px 20px; border-radius:12px; backdrop-filter:blur(10px);">
+        <h4 id="imageTitle" style="margin:0; font-weight:700; color:#fff; display:flex; align-items:center; gap:10px; font-size:0.95rem;"><i class="fas fa-image" style="color:#4caf50;"></i> <span>Image</span></h4>
+        <a id="imageDownload" href="#" download class="btn btn-sm" style="background:rgba(255,255,255,0.15); color:#fff; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:0.85rem; font-weight:600;"><i class="fas fa-download"></i> Download</a>
+        <button onclick="closeImage()" style="background:#ef4444; border:none; color:#fff; width:36px; height:36px; border-radius:8px; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+      <img id="imageViewerImg" src="" style="max-width:90vw; max-height:80vh; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.5); object-fit:contain;">
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -321,7 +348,17 @@
       } else {
         if (m.message_text && m.message_text !== '📎 File attached') content = `<div>${escapeHtml(m.message_text)}</div>`;
         if (m.attachment_path) {
-          content += `<div style="font-size:0.78rem;padding:4px 8px;background:rgba(0,0,0,0.05);border-radius:6px;margin-top:4px;"><i class="fas fa-file"></i> ${escapeHtml(m.attachment_name||'File')} <a href="${m.attachment_path}" download style="color:#e64a19;">Download</a></div>`;
+          const isPdf = m.attachment_path.toLowerCase().endsWith('.pdf');
+          const isImage = /\.(png|jpg|jpeg|gif|webp)$/i.test(m.attachment_path);
+          let attachLinks = `<a href="${m.attachment_path}" download style="color:var(--accent-color);text-decoration:none;font-weight:600;font-size:0.75rem;">Download</a>`;
+          if (isPdf) { attachLinks = `<a href="#" onclick="event.preventDefault();viewPdf('${m.attachment_path}', '${escapeHtml(m.attachment_name)}')" style="color:var(--accent-color);text-decoration:none;font-weight:600;font-size:0.75rem;margin-right:12px;">View</a> ` + attachLinks; }
+          if (isImage) {
+            content += `<div style="margin-top:6px;"><img src="${m.attachment_path}" alt="${escapeHtml(m.attachment_name||'Image')}" style="max-width:260px;max-height:200px;border-radius:10px;display:block;cursor:pointer;border:1px solid rgba(255,255,255,0.08);" onclick="viewImage('${m.attachment_path}', '${escapeHtml(m.attachment_name||'Image')}')"></div>`;
+            attachLinks = `<a href="#" onclick="event.preventDefault();viewImage('${m.attachment_path}', '${escapeHtml(m.attachment_name||'Image')}')" style="color:var(--accent-color);text-decoration:none;font-weight:600;font-size:0.75rem;margin-right:12px;">View</a> ` + `<a href="${m.attachment_path}" download style="color:var(--accent-color);text-decoration:none;font-weight:600;font-size:0.75rem;">Download</a>`;
+          }
+          const fileIcon = isPdf ? 'file-pdf' : (isImage ? 'file-image' : 'file');
+          const iconColor = isPdf ? '#ff5252' : (isImage ? '#4caf50' : 'var(--accent-color)');
+          content += `<div style="font-size:0.78rem;padding:6px 10px;background:rgba(255,255,255,0.05);border-radius:6px;margin-top:${isImage?'4':'6'}px;display:flex;align-items:center;gap:8px;"><i class="fas fa-${fileIcon}" style="color:${iconColor};"></i> <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(m.attachment_name||'File')}</span> <div>${attachLinks}</div></div>`;
         }
       }
 
@@ -370,6 +407,34 @@
             attachment_name: result.attachment_name, is_read: 0, created_at: new Date().toISOString() }, false);
         }
       } catch (err) { showToast('Send failed','error'); }
+    }
+
+    // PDF Viewer Functions
+    function viewPdf(path, name) {
+      document.querySelector('#pdfTitle span').textContent = name || 'Document';
+      document.getElementById('pdfFrame').src = path;
+      document.getElementById('pdfDownload').href = path;
+      document.getElementById('pdfOverlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closePdf() {
+      document.getElementById('pdfOverlay').classList.remove('active');
+      setTimeout(() => { document.getElementById('pdfFrame').src = ''; }, 300);
+      document.body.style.overflow = '';
+    }
+
+    // Image Viewer Functions
+    function viewImage(path, name) {
+      document.querySelector('#imageTitle span').textContent = name || 'Image';
+      document.getElementById('imageViewerImg').src = path;
+      document.getElementById('imageDownload').href = path;
+      document.getElementById('imageOverlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeImage() {
+      document.getElementById('imageOverlay').classList.remove('active');
+      setTimeout(() => { document.getElementById('imageViewerImg').src = ''; }, 300);
+      document.body.style.overflow = '';
     }
   </script>
 </body>

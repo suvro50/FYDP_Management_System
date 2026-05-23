@@ -29,7 +29,7 @@ async function loadDropdowns() {
     const selS = document.getElementById('selSection');
     (sData.sections || []).forEach(s => {
       const o = document.createElement('option');
-      o.value = s; o.textContent = `Section: ${s}`;
+      o.value = s.section_code; o.textContent = `Section: ${s.section_code}`;
       selS.appendChild(o);
     });
 

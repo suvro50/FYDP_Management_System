@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -462,6 +462,7 @@
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     let DATA = { stages: [] };
     let NAV = { stage: null, section: null, group: null };
+    let _historyNav = false;  // true when restoring state via popstate
     const AVATAR_COLORS = ['#e74c3c','#8e44ad','#2ecc71','#e67e22','#3498db','#1abc9c','#f39c12','#e91e63'];
     function avatarColor(i) { return AVATAR_COLORS[i % AVATAR_COLORS.length]; }
     function initials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
@@ -482,6 +483,13 @@
       loadData();
     });
 
+    // ─ Helper: find stage/section/group indices by IDs ─
+    function _findNavIndices(stageIdx, sectionIdx, groupIdx) {
+      NAV.stage = DATA.stages[stageIdx] ?? null;
+      NAV.section = NAV.stage?.sections?.[sectionIdx] ?? null;
+      NAV.group = NAV.section?.groups?.[groupIdx] ?? null;
+    }
+
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // SIDEBAR
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -493,12 +501,15 @@
     function showView(id) {
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       document.getElementById(id).classList.add('active');
+      window.scrollTo(0,0);
+      // Push state when navigating back to stages via breadcrumbs
+      if (!_historyNav && id === 'viewStages') {
+        history.pushState({ view: 'stages' }, '', '/teacher/groups');
+      }
     }
     function goBack(to) {
-      if (to === 'stages')   showView('viewStages');
-      if (to === 'sections') showView('viewSections');
-      if (to === 'groups')   showView('viewGroups');
-      if (to === 'detail')   showView('viewGroupDetail');
+      // Use browser history when available; back buttons already set proper state
+      history.back();
     }
 
     // DATA LOADING
@@ -507,6 +518,47 @@
         const res = await apiFetch('/api/teacher/groups-by-stage');
         DATA = res;
         renderStages();
+
+        // Set initial history state
+        history.replaceState({ view: 'stages' }, '', '/teacher/groups');
+
+        // Browser back/forward support
+        window.addEventListener('popstate', async (e) => {
+          if (!e.state) return;
+          const s = e.state;
+          _historyNav = true;
+          try {
+            if (s.view === 'stages') {
+              document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+              document.getElementById('viewStages').classList.add('active');
+              window.scrollTo(0,0);
+            } else if (s.view === 'sections') {
+              _findNavIndices(s.stageIdx, 0, 0);
+              renderSections();
+              document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+              document.getElementById('viewSections').classList.add('active');
+              window.scrollTo(0,0);
+            } else if (s.view === 'groups') {
+              _findNavIndices(s.stageIdx, s.sectionIdx, 0);
+              renderGroups();
+              document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+              document.getElementById('viewGroups').classList.add('active');
+              window.scrollTo(0,0);
+            } else if (s.view === 'group-detail') {
+              _findNavIndices(s.stageIdx, s.sectionIdx, s.groupIdx);
+              renderGroupDetail();
+              document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+              document.getElementById('viewGroupDetail').classList.add('active');
+              window.scrollTo(0,0);
+            } else if (s.view === 'week-detail') {
+              _findNavIndices(s.stageIdx, s.sectionIdx, s.groupIdx);
+              renderGroupDetail();
+              await openWeekDetail(NAV.group.group_id, s.weekNo);
+            }
+          } finally {
+            _historyNav = false;
+          }
+        });
       } catch(e) {
         document.getElementById('stageCards').innerHTML =
           '<div style="color:#ef4444;text-align:center;padding:40px;grid-column:1/-1;">Failed to load data. Please refresh.</div>';
@@ -550,13 +602,15 @@
     }
 
     function openStage(idx) {
-      const stage = DATA.stages[idx]; // Use full stages array (no filter)
+      const stage = DATA.stages[idx];
       if (!stage || stage.total_sections === 0) {
         if (typeof showToast === 'function') showToast('No groups assigned to you in this stage yet.', 'info');
         return;
       }
       NAV.stage = stage;
+      NAV._stageIdx = idx;
       renderSections();
+      if (!_historyNav) history.pushState({ view: 'sections', stageIdx: idx }, '', '/teacher/groups');
       showView('viewSections');
     }
 
@@ -589,7 +643,9 @@
 
     function openSection(idx) {
       NAV.section = NAV.stage.sections[idx];
+      NAV._sectionIdx = idx;
       renderGroups();
+      if (!_historyNav) history.pushState({ view: 'groups', stageIdx: NAV._stageIdx, sectionIdx: idx }, '', '/teacher/groups');
       showView('viewGroups');
     }
 
@@ -640,7 +696,9 @@
 
     function openGroup(idx) {
       NAV.group = NAV.section.groups[idx];
+      NAV._groupIdx = idx;
       renderGroupDetail();
+      if (!_historyNav) history.pushState({ view: 'group-detail', stageIdx: NAV._stageIdx, sectionIdx: NAV._sectionIdx, groupIdx: idx }, '', '/teacher/groups');
       showView('viewGroupDetail');
     }
 
@@ -810,6 +868,7 @@
     // WEEK DETAIL VIEW (VIEW 5)
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     async function openWeekDetail(groupId, weekNo) {
+      if (!_historyNav) history.pushState({ view: 'week-detail', stageIdx: NAV._stageIdx, sectionIdx: NAV._sectionIdx, groupIdx: NAV._groupIdx, weekNo }, '', '/teacher/groups');
       showView('viewWeekDetail');
       const g = NAV.group;
       document.getElementById('weekDetailTitle').textContent = `Week ${weekNo} Reports`;

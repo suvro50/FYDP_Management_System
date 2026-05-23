@@ -576,6 +576,7 @@
     let allGroupsData = null;   // raw API response cached
     let currentStage = null;    // e.g. 'FYDP-1'
     let currentGroup = null;    // group object
+    let _historyNav = false;    // true when restoring state via popstate (skip pushState)
 
     const AVATAR_COLORS = ['#6c5ce7','#0891b2','#059669','#dc2626','#d97706','#7c3aed','#0284c7','#16a34a'];
     function avatarColor(str) { let h=0; for(let c of (str||'')) h=c.charCodeAt(0)+((h<<5)-h); return AVATAR_COLORS[Math.abs(h)%AVATAR_COLORS.length]; }
@@ -587,6 +588,33 @@
         document.getElementById('userAvatar').textContent = getInitials(currentUser.full_name);
       }
       await loadAllGroups();
+
+      // ── Set initial history state for the semester view ──
+      history.replaceState({ view: 'semester' }, '', '/teacher/supervising-groups');
+
+      // ── Browser back/forward support ──
+      window.addEventListener('popstate', async (e) => {
+        if (!e.state) return;
+        const s = e.state;
+        _historyNav = true;
+        try {
+          if (s.view === 'semester') {
+            showView('semester');
+          } else if (s.view === 'groups') {
+            currentStage = s.stage;
+            openStage(s.stage);
+          } else if (s.view === 'group-detail') {
+            currentStage = s.stage;
+            await openGroupDetail(s.groupId);
+          } else if (s.view === 'week-detail') {
+            currentStage = s.stage;
+            await openGroupDetail(s.groupId);
+            await openWeekDetail(s.groupId, s.weekNo);
+          }
+        } finally {
+          _historyNav = false;
+        }
+      });
     });
 
     // ══════════════════════════════════════════
@@ -679,6 +707,7 @@
       } else {
         grid.innerHTML = stage.groups.map(g => renderGroupItemCard(g)).join('');
       }
+      if (!_historyNav) history.pushState({ view: 'groups', stage: stageName }, '', '/teacher/supervising-groups');
       showView('groups');
     }
 
@@ -752,10 +781,11 @@
       // Reset to weekly tab
       switchTab('weekly');
       loadWeeklyGrid(groupId);
+      if (!_historyNav) history.pushState({ view: 'group-detail', stage: currentStage, groupId }, '', '/teacher/supervising-groups');
       showView('group-detail');
     }
 
-    function goBackFromDetail() { openStage(currentStage); }
+    function goBackFromDetail() { history.back(); }
 
     function switchTab(tab) {
       ['weekly','tasks','chat'].forEach(t => {
@@ -816,6 +846,7 @@
       document.getElementById('wdStatCards').innerHTML = `<div style="color:#475569;grid-column:1/-1;padding:20px;text-align:center">Loading...</div>`;
       document.getElementById('wdStudentCards').innerHTML = '';
       document.getElementById('wdSuccessBanner').innerHTML = '';
+      if (!_historyNav) history.pushState({ view: 'week-detail', stage: currentStage, groupId, weekNo }, '', '/teacher/supervising-groups');
       showView('week-detail');
 
       try {
@@ -907,6 +938,9 @@
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       document.getElementById(`view-${name}`).classList.add('active');
       window.scrollTo(0,0);
+      if (!_historyNav && name === 'semester') {
+        history.pushState({ view: 'semester' }, '', '/teacher/supervising-groups');
+      }
     }
 
     function breadcrumb(labels, actions) {

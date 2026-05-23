@@ -151,6 +151,18 @@ router.post('/direct/send', uploadSingle('attachment'), async (req, res) => {
       io.to(`user_${receiver_id}`).emit('new_dm', msgData);
       io.to(`user_${myId}`).emit('new_dm', msgData);
     }
+
+    // Persistent notification for receiver
+    const senderName = req.session.user.full_name;
+    const preview = (message_text || '').substring(0, 60) || (attachmentName ? `📎 ${attachmentName}` : 'Sent a file');
+    await db.query(
+      `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+      [receiver_id, `💬 New Message from ${senderName}`, preview]
+    );
+    if (io) {
+      io.to(`user_${receiver_id}`).emit('notification', { title: `New message from ${senderName}`, message: preview });
+    }
+
     res.json({ 
       success: true, 
       message_id: result.insertId,
@@ -502,7 +514,7 @@ router.post('/group/:groupId/messages', uploadSingle('attachment'), async (req, 
     }
 
     // ─────────────────────────────────────────────────────────────────
-    // Notification for other group members
+    // Notification for other group members + supervisor + course teacher
     // ─────────────────────────────────────────────────────────────────
     const [members] = await db.query(
       'SELECT student_id as user_id FROM group_members WHERE group_id = ? AND student_id != ?',
@@ -510,33 +522,34 @@ router.post('/group/:groupId/messages', uploadSingle('attachment'), async (req, 
     );
     const notifyUsers = members.map(m => m.user_id);
 
-    if (type === 'WITH_SUPERVISOR') {
-      const [sup] = await db.query('SELECT supervisor_id FROM project_groups WHERE group_id = ?', [groupId]);
-      if (sup.length > 0 && sup[0].supervisor_id && sup[0].supervisor_id !== myId) {
-        notifyUsers.push(sup[0].supervisor_id);
-      }
-    } else if (type === 'WITH_TEACHER') {
-      // Teachers are mapped via course_teacher_sections (by section_id FK)
-      const [teach] = await db.query(
-        `SELECT cts.course_teacher_id
-         FROM project_groups pg
-         JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
-         WHERE pg.group_id = ?
-         LIMIT 1`,
-        [groupId]
-      );
-      if (teach.length > 0 && teach[0].course_teacher_id && teach[0].course_teacher_id !== myId) {
-        notifyUsers.push(teach[0].course_teacher_id);
-      }
+    // Always notify supervisor (regardless of chat type)
+    const [sup] = await db.query('SELECT supervisor_id FROM project_groups WHERE group_id = ?', [groupId]);
+    if (sup.length > 0 && sup[0].supervisor_id && sup[0].supervisor_id !== myId) {
+      if (!notifyUsers.includes(sup[0].supervisor_id)) notifyUsers.push(sup[0].supervisor_id);
     }
 
+    // Always notify course teacher (regardless of chat type)
+    const [teach] = await db.query(
+      `SELECT cts.course_teacher_id
+       FROM project_groups pg
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
+       WHERE pg.group_id = ?
+       LIMIT 1`,
+      [groupId]
+    );
+    if (teach.length > 0 && teach[0].course_teacher_id && teach[0].course_teacher_id !== myId) {
+      if (!notifyUsers.includes(teach[0].course_teacher_id)) notifyUsers.push(teach[0].course_teacher_id);
+    }
+
+    const senderName = req.session.user.full_name;
+    const msgPreview = (message_text || '').substring(0, 60) || (attachmentName ? `📎 ${attachmentName}` : 'Sent a file');
     for (const uid of notifyUsers) {
       await db.query(
-        `INSERT INTO notifications (user_id, notification_type, message) VALUES (?, 'SYSTEM_ALERT', ?)`,
-        [uid, `New group message from ${req.session.user.full_name}`]
+        `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+        [uid, `💬 Group Message from ${senderName}`, msgPreview]
       );
       if (io) {
-        io.to(`user_${uid}`).emit('notification', { message: `New group message from ${req.session.user.full_name}` });
+        io.to(`user_${uid}`).emit('notification', { title: `Group message from ${senderName}`, message: msgPreview });
       }
     }
 

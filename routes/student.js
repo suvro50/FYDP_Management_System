@@ -130,63 +130,295 @@ router.get('/dashboard-data', checkGroupStatus, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GET /api/student/reports — All my reports
+// GET /api/student/reports — All my reports (includes per-week status)
+//   Now also includes group reports submitted by other group members
 // ═══════════════════════════════════════════════════════════════════════════
 router.get('/reports', checkGroupStatus, async (req, res) => {
   try {
-    if (!req.activeGroup) return res.json({ reports: [] });
-    const [reports] = await db.query(
-      `SELECT report_id, week_no, report_title, report_content, supervisor_status,
-              supervisor_feedback, supervisor_signed_at, report_file_path, submitted_at
-       FROM weekly_progress_reports
-       WHERE group_id = ? AND student_id = ?
-       ORDER BY week_no DESC`,
-      [req.activeGroup.group_id, req.session.user.user_id]
+    if (!req.activeGroup) return res.json({ reports: [], week_status: [] });
+    const groupId = req.activeGroup.group_id;
+    const studentId = req.session.user.user_id;
+
+    // 1. Get this student's own reports
+    const [myReports] = await db.query(
+      `SELECT wpr.report_id, wpr.week_no, wpr.report_title, wpr.report_content, 
+              wpr.supervisor_status, wpr.supervisor_feedback, wpr.supervisor_signed_at, 
+              wpr.report_file_path, wpr.submitted_at, wpr.is_group_report,
+              u.full_name AS submitted_by_name
+       FROM weekly_progress_reports wpr
+       JOIN users u ON u.user_id = wpr.student_id
+       WHERE wpr.group_id = ? AND wpr.student_id = ?
+       ORDER BY wpr.week_no DESC`,
+      [groupId, studentId]
     );
-    res.json({ reports, group: req.activeGroup });
+
+    // 2. Get group reports submitted by OTHER members for weeks this student hasn't submitted
+    const myWeeks = myReports.map(r => r.week_no);
+    const [otherGroupReports] = await db.query(
+      `SELECT wpr.report_id, wpr.week_no, wpr.report_title, wpr.report_content, 
+              wpr.supervisor_status, wpr.supervisor_feedback, wpr.supervisor_signed_at, 
+              wpr.report_file_path, wpr.submitted_at, wpr.is_group_report,
+              u.full_name AS submitted_by_name
+       FROM weekly_progress_reports wpr
+       JOIN users u ON u.user_id = wpr.student_id
+       WHERE wpr.group_id = ? AND wpr.student_id != ? AND wpr.is_group_report = 1
+       ORDER BY wpr.week_no DESC`,
+      [groupId, studentId]
+    );
+
+    // Merge: for weeks where student has no report, show the group report from another member
+    const mergedReports = [...myReports];
+    for (const gr of otherGroupReports) {
+      if (!myWeeks.includes(gr.week_no)) {
+        gr.is_from_group_member = true; // Flag so frontend knows this is someone else's submission
+        mergedReports.push(gr);
+        myWeeks.push(gr.week_no); // Avoid duplicates if multiple group reports exist
+      }
+    }
+    // Sort by week descending
+    mergedReports.sort((a, b) => b.week_no - a.week_no);
+
+    // Build per-week status map for frontend lock logic
+    const weekStatusMap = {};
+    mergedReports.forEach(r => {
+      weekStatusMap[r.week_no] = r.supervisor_status;
+    });
+
+    // Compute which week is next available to submit
+    let nextAvailableWeek = 1;
+    for (let w = 1; w <= 12; w++) {
+      const status = weekStatusMap[w];
+      if (status === 'APPROVED') {
+        nextAvailableWeek = w + 1;
+        continue;
+      }
+      if (status === 'PENDING') {
+        nextAvailableWeek = null;
+        break;
+      }
+      if (status === 'REJECTED') {
+        // Only allow resubmit if it's the student's own report (not someone else's group report)
+        const report = mergedReports.find(r => r.week_no === w);
+        if (report && report.is_from_group_member) {
+          nextAvailableWeek = null; // Another member's group report was rejected; they must resubmit
+        } else {
+          nextAvailableWeek = w;
+        }
+        break;
+      }
+      nextAvailableWeek = w;
+      break;
+    }
+
+    if (nextAvailableWeek > 12) nextAvailableWeek = null;
+
+    // 3. Also fetch group members list (used by submit page for group report info)
+    const [groupMembers] = await db.query(
+      `SELECT u.user_id, u.full_name, u.university_id, gm.member_role
+       FROM group_members gm
+       JOIN users u ON u.user_id = gm.student_id
+       WHERE gm.group_id = ?
+       ORDER BY FIELD(gm.member_role,'TEAM_LEAD','DEVELOPER','DESIGNER','RESEARCHER','TESTER','DATA_ENGINEER')`,
+      [groupId]
+    );
+
+    res.json({
+      reports: mergedReports,
+      group: req.activeGroup,
+      week_status: weekStatusMap,
+      next_available_week: nextAvailableWeek,
+      group_members: groupMembers
+    });
   } catch (err) {
+    console.error('Load reports error:', err);
     res.status(500).json({ error: 'Failed to load reports' });
   }
 });
 
+
 // ═══════════════════════════════════════════════════════════════════════════
-// POST /api/student/submit-report — Submit weekly report
+// POST /api/student/submit-report — Submit weekly report (sequential enforcement)
+//   Now supports is_group_report flag for group-wide submissions
 // ═══════════════════════════════════════════════════════════════════════════
 router.post('/submit-report', checkGroupStatus, uploadReport, async (req, res) => {
   try {
     if (!req.activeGroup) return res.status(403).json({ error: 'You are not in a group' });
 
     const { week_no, report_title, report_content } = req.body;
+    const isGroupReport = req.body.is_group_report === '1' || req.body.is_group_report === 1;
     const studentId = req.session.user.user_id;
     const groupId = req.activeGroup.group_id;
+    const weekNum = parseInt(week_no);
 
     if (!week_no || !report_title) {
       return res.status(400).json({ error: 'Week number and title are required' });
     }
 
-    // Check duplicate
-    const [existing] = await db.query(
-      `SELECT report_id FROM weekly_progress_reports WHERE group_id = ? AND student_id = ? AND week_no = ?`,
-      [groupId, studentId, week_no]
+    if (weekNum < 1 || weekNum > 12) {
+      return res.status(400).json({ error: 'Invalid week number' });
+    }
+
+    // ── Sequential Enforcement ──────────────────────────────────────────
+    // Fetch all reports for this student in this group
+    const [allMyReports] = await db.query(
+      `SELECT week_no, supervisor_status FROM weekly_progress_reports
+       WHERE group_id = ? AND student_id = ? ORDER BY week_no ASC`,
+      [groupId, studentId]
     );
-    if (existing.length > 0) {
-      return res.status(400).json({ error: `You already submitted a report for Week ${week_no}` });
+
+    // Also fetch group reports from other members (to build complete week status)
+    const [otherGroupReports] = await db.query(
+      `SELECT week_no, supervisor_status FROM weekly_progress_reports
+       WHERE group_id = ? AND student_id != ? AND is_group_report = 1
+       ORDER BY week_no ASC`,
+      [groupId, studentId]
+    );
+
+    const weekStatusMap = {};
+    // First fill in group reports from others
+    otherGroupReports.forEach(r => { weekStatusMap[r.week_no] = r.supervisor_status; });
+    // Then override with this student's own reports (own reports take priority)
+    allMyReports.forEach(r => { weekStatusMap[r.week_no] = r.supervisor_status; });
+
+    // Check if this week already has a report from this student
+    const myExistingStatus = allMyReports.find(r => r.week_no === weekNum)?.supervisor_status || null;
+
+    if (myExistingStatus === 'APPROVED') {
+      return res.status(400).json({ error: `Week ${weekNum} report is already approved. You cannot resubmit.` });
+    }
+
+    if (myExistingStatus === 'PENDING') {
+      return res.status(400).json({ error: `Week ${weekNum} report is pending review. Please wait for your supervisor's decision.` });
+    }
+
+    // ── Group Report Conflict Checks ────────────────────────────────────
+    // Check if any member already has a report for this week
+    const [existingWeekReports] = await db.query(
+      `SELECT wpr.student_id, wpr.supervisor_status, wpr.is_group_report, u.full_name
+       FROM weekly_progress_reports wpr
+       JOIN users u ON u.user_id = wpr.student_id
+       WHERE wpr.group_id = ? AND wpr.week_no = ?`,
+      [groupId, weekNum]
+    );
+
+    if (isGroupReport) {
+      // Submitting a GROUP report — block if any member already has PENDING/APPROVED for this week
+      const conflicting = existingWeekReports.find(r => 
+        r.student_id !== studentId && 
+        (r.supervisor_status === 'PENDING' || r.supervisor_status === 'APPROVED')
+      );
+      if (conflicting) {
+        return res.status(400).json({ 
+          error: `Cannot submit group report for Week ${weekNum}. ${conflicting.full_name} already has a ${conflicting.supervisor_status.toLowerCase()} report for this week.` 
+        });
+      }
+    } else {
+      // Submitting a PERSONAL report — block if a group report (PENDING/APPROVED) exists from anyone
+      const groupConflict = existingWeekReports.find(r =>
+        r.student_id !== studentId &&
+        r.is_group_report === 1 &&
+        (r.supervisor_status === 'PENDING' || r.supervisor_status === 'APPROVED')
+      );
+      if (groupConflict) {
+        return res.status(400).json({ 
+          error: `A group report for Week ${weekNum} was already submitted by ${groupConflict.full_name}. You don't need to submit a personal report.` 
+        });
+      }
+    }
+
+    // ── Sequential Order Check (for fresh submissions) ──────────────────
+    if (!myExistingStatus) {
+      if (weekNum > 1) {
+        const prevWeekStatus = weekStatusMap[weekNum - 1];
+        if (prevWeekStatus !== 'APPROVED') {
+          let reason = '';
+          if (!prevWeekStatus) {
+            reason = `You must submit and get Week ${weekNum - 1} approved first.`;
+          } else if (prevWeekStatus === 'PENDING') {
+            reason = `Week ${weekNum - 1} is still pending review. Wait for approval before submitting Week ${weekNum}.`;
+          } else if (prevWeekStatus === 'REJECTED') {
+            reason = `Week ${weekNum - 1} was rejected. Please resubmit Week ${weekNum - 1} and get it approved first.`;
+          }
+          return res.status(400).json({
+            error: `Cannot submit Week ${weekNum} yet. ${reason}`
+          });
+        }
+      }
+    }
+
+    // If REJECTED, delete the old rejected report first to allow resubmission
+    if (myExistingStatus === 'REJECTED') {
+      const [oldReport] = await db.query(
+        `SELECT report_file_path FROM weekly_progress_reports WHERE group_id = ? AND student_id = ? AND week_no = ?`,
+        [groupId, studentId, weekNum]
+      );
+      if (oldReport.length > 0 && oldReport[0].report_file_path) {
+        const oldPath = path.join(__dirname, '../public', oldReport[0].report_file_path);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      await db.query(
+        `DELETE FROM weekly_progress_reports WHERE group_id = ? AND student_id = ? AND week_no = ?`,
+        [groupId, studentId, weekNum]
+      );
     }
 
     const filePath = req.file ? `/uploads/reports/${req.file.filename}` : null;
 
     await db.query(
-      `INSERT INTO weekly_progress_reports (group_id, student_id, week_no, report_title, report_content, report_file_path, submitted_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-      [groupId, studentId, week_no, report_title, report_content, filePath]
+      `INSERT INTO weekly_progress_reports (group_id, student_id, week_no, report_title, report_content, report_file_path, is_group_report, submitted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [groupId, studentId, weekNum, report_title, report_content, filePath, isGroupReport ? 1 : 0]
     );
 
-    res.json({ success: true, message: `Week ${week_no} report submitted successfully!` });
+    const actionMsg = myExistingStatus === 'REJECTED' ? 'resubmitted' : 'submitted';
+    const reportTypeLabel = isGroupReport ? 'group' : 'personal';
+
+    // ── Notify Supervisor & Course Teacher ───────────────────────────────
+    const studentName = req.session.user.full_name;
+    try {
+      const [[groupInfo]] = await db.query(
+        `SELECT pg.supervisor_id, pg.group_code, cts.course_teacher_id
+         FROM project_groups pg
+         LEFT JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
+         WHERE pg.group_id = ?`,
+        [groupId]
+      );
+      if (groupInfo) {
+        const notifTitle = myExistingStatus === 'REJECTED'
+          ? `🔄 Week ${weekNum} ${isGroupReport ? 'Group ' : ''}Report Resubmitted`
+          : `📄 New Week ${weekNum} ${isGroupReport ? 'Group ' : ''}Report Submitted`;
+        const notifMsg = `${studentName} has ${actionMsg} a ${reportTypeLabel} Week ${weekNum} report for group ${groupInfo.group_code}.`;
+
+        // Notify supervisor
+        if (groupInfo.supervisor_id) {
+          await db.query(
+            `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+            [groupInfo.supervisor_id, notifTitle, notifMsg]
+          );
+          const io = req.app.get('io');
+          if (io) io.to(`user_${groupInfo.supervisor_id}`).emit('notification', { title: notifTitle, message: notifMsg });
+        }
+        // Notify course teacher
+        if (groupInfo.course_teacher_id) {
+          await db.query(
+            `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+            [groupInfo.course_teacher_id, notifTitle, notifMsg]
+          );
+          const io = req.app.get('io');
+          if (io) io.to(`user_${groupInfo.course_teacher_id}`).emit('notification', { title: notifTitle, message: notifMsg });
+        }
+      }
+    } catch (notifErr) {
+      console.error('Report notification error (non-fatal):', notifErr);
+    }
+
+    res.json({ success: true, message: `Week ${weekNum} ${reportTypeLabel} report ${actionMsg} successfully!` });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message || 'Failed to submit report' });
   }
 });
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /api/student/group-chat — Group messages
@@ -317,6 +549,45 @@ router.delete('/reports/:reportId', checkGroupStatus, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to cancel report' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/student/tasks — View tasks assigned by Supervisor or Course Teacher
+// Shows group-wide tasks AND tasks individually assigned to this student
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/tasks', checkGroupStatus, async (req, res) => {
+  try {
+    if (!req.activeGroup) return res.json({ tasks: [], group: null });
+    const groupId = req.activeGroup.group_id;
+    const studentId = req.session.user.user_id;
+
+    // Fetch all tasks for this group, join with creator info
+    const [tasks] = await db.query(
+      `SELECT gt.task_id, gt.group_id, gt.supervisor_id, gt.week_no,
+              gt.title, gt.description, gt.file_path, gt.file_name,
+              gt.due_date, gt.assigned_to, gt.created_at,
+              u.full_name AS creator_name, u.role AS creator_role
+       FROM group_tasks gt
+       JOIN users u ON u.user_id = gt.supervisor_id
+       WHERE gt.group_id = ?
+       ORDER BY gt.week_no DESC, gt.created_at DESC`,
+      [groupId]
+    );
+
+    // Filter: show tasks where assigned_to is NULL (all members) or includes this student
+    const myTasks = tasks.filter(t => {
+      if (!t.assigned_to) return true; // NULL = all members
+      try {
+        const assigned = typeof t.assigned_to === 'string' ? JSON.parse(t.assigned_to) : t.assigned_to;
+        return Array.isArray(assigned) && assigned.includes(studentId);
+      } catch(e) { return true; }
+    });
+
+    res.json({ tasks: myTasks, group: req.activeGroup });
+  } catch (err) {
+    console.error('Student tasks error:', err);
+    res.status(500).json({ error: 'Failed to load tasks' });
   }
 });
 

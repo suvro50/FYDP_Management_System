@@ -560,14 +560,14 @@
 
         return `<tr style="border-bottom:1px solid #1e2240;transition:background 0.15s;" onmouseover="this.style.background='#1a1d2e'" onmouseout="this.style.background=''">
           <td style="padding:12px 16px;"><span style="width:10px;height:10px;border-radius:50%;background:${dotColor};display:inline-block;"></span></td>
-          <td style="padding:12px 16px;"><a href="/supervisor/groups/${g.group_id}" style="color:#60a5fa;font-weight:700;text-decoration:none;font-size:0.85rem;">${escapeHtml(grpCode)}</a></td>
+          <td style="padding:12px 16px;"><a href="/supervisor/groups?group=${g.group_id}" style="color:#60a5fa;font-weight:700;text-decoration:none;font-size:0.85rem;">${escapeHtml(grpCode)}</a></td>
           <td style="padding:12px 16px;color:${sc};font-size:0.82rem;font-weight:700;text-transform:uppercase;">${escapeHtml(domName)}</td>
           <td style="padding:12px 16px;"><span style="background:${sc}20;color:${sc};border:1px solid ${sc}40;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">${escapeHtml(g.stage_name)}</span></td>
           <td style="padding:12px 16px;color:#94a3b8;font-size:0.82rem;">${escapeHtml(secName)}</td>
           <td style="padding:12px 16px;"><div style="display:flex;align-items:center;">${avatars}<span style="margin-left:${memberCount>4?4:8}px;color:#94a3b8;font-size:0.78rem;">${memberCount}</span></div></td>
           <td style="padding:12px 16px;color:#94a3b8;font-size:0.82rem;">Week ${wkNum}</td>
           <td style="padding:12px 16px;"><span style="background:${reportBg};color:${reportColor};border:1px solid ${reportColor}40;padding:3px 10px;border-radius:6px;font-size:0.72rem;font-weight:800;letter-spacing:0.04em;">${reportLabel}</span></td>
-          <td style="padding:12px 16px;"><a href="/supervisor/groups/${g.group_id}" style="width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:#1e2240;border:1px solid #2d3354;border-radius:8px;color:#94a3b8;text-decoration:none;" title="View"><i class="fas fa-eye" style="font-size:0.8rem;"></i></a></td>
+          <td style="padding:12px 16px;"><a href="/supervisor/groups?group=${g.group_id}" style="width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;background:#1e2240;border:1px solid #2d3354;border-radius:8px;color:#94a3b8;text-decoration:none;" title="View"><i class="fas fa-eye" style="font-size:0.8rem;"></i></a></td>
         </tr>`;
       }).join('');
     }

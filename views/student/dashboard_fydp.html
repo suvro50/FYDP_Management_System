@@ -78,6 +78,7 @@
         <a href="/student/dashboard" class="active"><span class="nav-icon"><i class="fas fa-home"></i></span> Dashboard</a>
         <a href="/student/submit-report"><span class="nav-icon"><i class="fas fa-upload"></i></span> Submit Report</a>
         <a href="/student/reports"><span class="nav-icon"><i class="fas fa-file-alt"></i></span> My Reports</a>
+        <a href="/student/tasks"><span class="nav-icon"><i class="fas fa-tasks"></i></span> My Tasks</a>
         <div class="nav-label" style="margin-top:20px;">CHATS</div>
         <a href="/student/my-group-chat"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> Students Group</a>
         <a href="/student/supervisor-group-chat"><span class="nav-icon"><i class="fas fa-users"></i></span> Group with Supervisor</a>
@@ -200,6 +201,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start;">
               <a href="/student/submit-report" class="action-btn"><i class="fas fa-upload"></i><span>Submit Report</span></a>
               <a href="/student/reports" class="action-btn"><i class="fas fa-file-alt" style="color:#10b981;"></i><span>My Reports</span></a>
+              <a href="/student/tasks" class="action-btn"><i class="fas fa-tasks" style="color:#a78bfa;"></i><span>My Tasks</span></a>
               <a href="/student/my-group-chat" class="action-btn"><i class="fas fa-users" style="color:#3b82f6;"></i><span>Group Chat</span></a>
               <a href="/student/supervisor-chat" class="action-btn"><i class="fas fa-user-tie" style="color:#f59e0b;"></i><span>Ask Supervisor</span></a>
               <a href="/student/teacher-chat" class="action-btn"><i class="fas fa-chalkboard-teacher" style="color:#06b6d4;"></i><span>Ask Teacher</span></a>
@@ -417,7 +419,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
               ${statusBadge}
-              <a href="/student/reports/${r.report_id}" class="btn btn-outline btn-sm" style="padding:4px 12px;border-radius:6px;font-size:0.8rem;border-color:var(--border-color);color:var(--text-secondary);"><i class="fas fa-eye"></i></a>
+              <a href="/student/reports#report-${r.report_id}" class="btn btn-outline btn-sm" style="padding:4px 12px;border-radius:6px;font-size:0.8rem;border-color:var(--border-color);color:var(--text-secondary);" title="View report details"><i class="fas fa-eye"></i></a>
             </div>
           </div>
           ${r.supervisor_feedback ? `<div style="margin:-4px 16px 0 70px;padding:8px 12px;background:rgba(251,191,36,0.1);border-radius:0 0 8px 8px;font-size:0.8rem;color:var(--text-secondary);border-left:3px solid #f59e0b;margin-bottom:4px;"><i class="fas fa-comment-alt" style="margin-right:6px;"></i>${escapeHtml(r.supervisor_feedback)}</div>` : ''}

@@ -236,6 +236,17 @@ router.get('/pending-reports', async (req, res) => {
       params
     );
 
+    // For group reports, also fetch group member count
+    for (const r of reports) {
+      if (r.is_group_report) {
+        const [[memberCount]] = await db.query(
+          `SELECT COUNT(*) as count FROM group_members WHERE group_id = ?`,
+          [r.group_id]
+        );
+        r.group_member_count = memberCount.count;
+      }
+    }
+
     res.json({ reports });
   } catch (err) {
     console.error('Pending reports error:', err);
@@ -262,9 +273,11 @@ router.post('/reports/:id/review', async (req, res) => {
       [reportId, supId, status, feedback || null]
     );
 
-    // Get report details for notification
+    // Get full report details for notification + group propagation
     const [[report]] = await db.query(
-      `SELECT wpr.student_id, wpr.week_no, pg.group_code
+      `SELECT wpr.student_id, wpr.week_no, wpr.group_id, wpr.is_group_report,
+              wpr.report_title, wpr.report_content, wpr.report_file_path,
+              pg.group_code
        FROM weekly_progress_reports wpr
        JOIN project_groups pg ON pg.group_id = wpr.group_id
        WHERE wpr.report_id = ?`,
@@ -274,22 +287,94 @@ router.post('/reports/:id/review', async (req, res) => {
     if (report) {
       const supName = req.session.user.full_name;
       const notifType = status === 'APPROVED' ? 'REPORT_APPROVED' : 'REPORT_REJECTED';
+
+      // ── Group Report Auto-Propagation ─────────────────────────────────
+      if (report.is_group_report && status === 'APPROVED') {
+        // Get all group members EXCEPT the original submitter
+        const [members] = await db.query(
+          `SELECT gm.student_id FROM group_members gm
+           WHERE gm.group_id = ? AND gm.student_id != ?`,
+          [report.group_id, report.student_id]
+        );
+
+        for (const member of members) {
+          // Check if this member already has an APPROVED report for this week
+          const [[existing]] = await db.query(
+            `SELECT report_id FROM weekly_progress_reports
+             WHERE group_id = ? AND student_id = ? AND week_no = ? AND supervisor_status = 'APPROVED'`,
+            [report.group_id, member.student_id, report.week_no]
+          );
+
+          if (!existing) {
+            // Delete any existing rejected/pending personal report for this member+week
+            await db.query(
+              `DELETE FROM weekly_progress_reports
+               WHERE group_id = ? AND student_id = ? AND week_no = ?`,
+              [report.group_id, member.student_id, report.week_no]
+            );
+
+            // Insert a mirror approved report for this member
+            await db.query(
+              `INSERT INTO weekly_progress_reports 
+               (group_id, student_id, week_no, report_title, report_content, 
+                report_file_path, is_group_report, supervisor_status, 
+                supervisor_feedback, supervisor_signed_at, submitted_at)
+               VALUES (?, ?, ?, ?, ?, ?, 1, 'APPROVED', ?, NOW(), NOW())`,
+              [report.group_id, member.student_id, report.week_no,
+               report.report_title, report.report_content, report.report_file_path,
+               feedback || 'Auto-approved via group report']
+            );
+          }
+
+          // Notify each group member
+          await db.query(
+            `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, ?, ?, ?)`,
+            [member.student_id, notifType,
+             `✅ Week ${report.week_no} Group Report Approved`,
+             `The group report for Week ${report.week_no} in ${report.group_code} has been approved by ${supName}. Your week is automatically marked as approved.`]
+          );
+          const io = req.app.get('io');
+          if (io) io.to(`user_${member.student_id}`).emit('notification', {
+            title: `✅ Week ${report.week_no} Group Report Approved`,
+            message: `Your Week ${report.week_no} is auto-approved via group report.`
+          });
+        }
+      }
+
+      // Notify the original submitter
       const notifTitle = status === 'APPROVED'
-        ? `✅ Week ${report.week_no} Report Approved`
-        : `❌ Week ${report.week_no} Report Rejected`;
+        ? `✅ Week ${report.week_no} ${report.is_group_report ? 'Group ' : ''}Report Approved`
+        : `❌ Week ${report.week_no} ${report.is_group_report ? 'Group ' : ''}Report Rejected`;
       const notifMsg = status === 'APPROVED'
-        ? `Your Week ${report.week_no} report for ${report.group_code} has been approved by ${supName}.`
-        : `Your Week ${report.week_no} report for ${report.group_code} was rejected by ${supName}. Reason: ${feedback}. Please correct and resubmit.`;
+        ? `Your Week ${report.week_no} ${report.is_group_report ? 'group ' : ''}report for ${report.group_code} has been approved by ${supName}.`
+        : `Your Week ${report.week_no} ${report.is_group_report ? 'group ' : ''}report for ${report.group_code} was rejected by ${supName}. Reason: ${feedback}. Please correct and resubmit.`;
 
       await db.query(
         'INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, ?, ?, ?)',
         [report.student_id, notifType, notifTitle, notifMsg]
       );
+
+      // If group report rejected, also notify other group members
+      if (report.is_group_report && status === 'REJECTED') {
+        const [members] = await db.query(
+          `SELECT gm.student_id FROM group_members gm
+           WHERE gm.group_id = ? AND gm.student_id != ?`,
+          [report.group_id, report.student_id]
+        );
+        for (const member of members) {
+          await db.query(
+            `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, ?, ?, ?)`,
+            [member.student_id, 'SYSTEM_ALERT',
+             `❌ Week ${report.week_no} Group Report Rejected`,
+             `The group report for Week ${report.week_no} in ${report.group_code} was rejected. The submitter needs to correct and resubmit.`]
+          );
+        }
+      }
     }
 
     res.json({
       success: true,
-      message: `Report ${status.toLowerCase()} successfully`
+      message: `Report ${status.toLowerCase()} successfully${report && report.is_group_report && status === 'APPROVED' ? ' (all group members updated)' : ''}`
     });
   } catch (err) {
     console.error('Review report error:', err);
@@ -391,9 +476,12 @@ router.get('/groups/:id/weekly-summary', async (req, res) => {
     const [reports] = await db.query(
       `SELECT wpr.report_id, wpr.student_id, wpr.week_no, wpr.report_title,
               wpr.supervisor_status, wpr.submitted_at, wpr.supervisor_feedback,
-              wpr.report_file_path, u.full_name as student_name
+              wpr.supervisor_signed_at, wpr.report_file_path, wpr.is_group_report,
+              wpr.report_content AS progress_summary,
+              u.full_name as student_name, u.university_id as student_uid, gm.member_role
        FROM weekly_progress_reports wpr
        JOIN users u ON u.user_id = wpr.student_id
+       JOIN group_members gm ON gm.student_id = wpr.student_id AND gm.group_id = wpr.group_id
        WHERE wpr.group_id=? ORDER BY wpr.week_no, u.full_name`,
       [req.params.id]
     );
@@ -510,24 +598,42 @@ router.post('/groups/:id/tasks', taskUpload.single('task_file'), async (req, res
     );
     if (!group) return res.status(403).json({ error: 'Not your group' });
 
-    const { title, description, week_no, due_date } = req.body;
+    const { title, description, week_no, due_date, assigned_to } = req.body;
     if (!title || !week_no) return res.status(400).json({ error: 'Title and week number are required' });
 
     const filePath = req.file ? `/uploads/tasks/${req.file.filename}` : null;
     const fileName = req.file ? req.file.originalname : null;
 
+    // Parse assigned_to: null/empty = all members, otherwise JSON array of student IDs
+    let assignedToJson = null;
+    let assignedStudentIds = null;
+    if (assigned_to && assigned_to !== 'all') {
+      try {
+        const parsed = JSON.parse(assigned_to);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          assignedStudentIds = parsed.map(id => parseInt(id));
+          assignedToJson = JSON.stringify(assignedStudentIds);
+        }
+      } catch(e) { /* invalid JSON = assign to all */ }
+    }
+
     const [result] = await db.query(
-      `INSERT INTO group_tasks (group_id, supervisor_id, week_no, title, description, file_path, file_name, due_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [req.params.id, supId, week_no, title, description || null, filePath, fileName, due_date || null]
+      `INSERT INTO group_tasks (group_id, supervisor_id, week_no, title, description, file_path, file_name, due_date, assigned_to)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [req.params.id, supId, week_no, title, description || null, filePath, fileName, due_date || null, assignedToJson]
     );
 
-    // Notify all group members
+    // Notify selected students (or all if none specified)
     const [members] = await db.query(
       `SELECT gm.student_id FROM group_members gm WHERE gm.group_id=?`,
       [req.params.id]
     );
-    for (const m of members) {
+
+    const membersToNotify = assignedStudentIds
+      ? members.filter(m => assignedStudentIds.includes(m.student_id))
+      : members;
+
+    for (const m of membersToNotify) {
       await db.query(
         `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, ?, ?, ?)`,
         [m.student_id, 'SYSTEM_ALERT',

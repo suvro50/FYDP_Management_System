@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,27 +8,40 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
+
 <body>
   <div class="app-layout">
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="brand">
           <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
-          <div class="brand-text"><h3>FYDP System</h3><p>Admin Panel</p></div>
+          <div class="brand-text">
+            <h3>FYDP System</h3>
+            <p>Admin Panel</p>
+          </div>
         </div>
       </div>
       <nav class="sidebar-nav">
-        <div class="nav-label">Main</div>
-        <a href="/admin/dashboard"><span class="nav-icon">📊</span> Dashboard</a>
-        <a href="/admin/users"><span class="nav-icon">👥</span> Manage Users</a>
-        <a href="/admin/groups"><span class="nav-icon">📁</span> Manage Groups</a>
-        <div class="nav-label">Operations</div>
-        <a href="/admin/import" class="active"><span class="nav-icon">📥</span> Bulk Import</a>
+        <div class="nav-label">Overview</div>
+        <a href="/admin/dashboard"><i class="fas fa-th-large" style="width:20px;text-align:center;"></i> Dashboard</a>
+
+        <div class="nav-label">Assignments</div>
+        <a href="/admin/assign-supervisor"><i class="fas fa-user-tie" style="width:20px;text-align:center;"></i> Supervisor Assign</a>
+        <a href="/admin/assign-groups"><i class="fas fa-layer-group" style="width:20px;text-align:center;"></i> FYDP Group Assign</a>
+        <a href="/admin/assign-teacher"><i class="fas fa-chalkboard-teacher" style="width:20px;text-align:center;"></i> Course Teacher Assign</a>
+
+        <div class="nav-label">Management</div>
+        <a href="/admin/users"><i class="fas fa-users" style="width:20px;text-align:center;"></i> Manage Users</a>
+        <a href="/admin/groups"><i class="fas fa-folder-open" style="width:20px;text-align:center;"></i> Manage Groups</a>
+        <a href="/admin/import" class="active"><i class="fas fa-file-import" style="width:20px;text-align:center;"></i> Bulk Import</a>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-user">
           <div class="user-avatar" id="userAvatar">AD</div>
-          <div class="user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
+          <div class="user-info">
+            <h4 id="userName">Admin</h4>
+            <p>Administrator</p>
+          </div>
         </div>
       </div>
     </aside>
@@ -47,12 +61,14 @@
         </div>
 
         <div class="card" style="margin-bottom:20px;">
-          <div class="card-header"><h3>ℹ️ How It Works</h3></div>
+          <div class="card-header">
+            <h3>ℹ️ How It Works</h3>
+          </div>
           <div class="card-body">
             <p style="color:#666;line-height:1.8;">
-              This feature demonstrates the <strong>sp_bulk_import_ucam_groups</strong> stored procedure. 
-              The procedure processes rows from the <code>ucam_import_staging</code> table, validates each row 
-              (student exists, supervisor exists, stage valid, domain valid), creates groups and memberships, 
+              This feature demonstrates the <strong>sp_bulk_import_ucam_groups</strong> stored procedure.
+              The procedure processes rows from the <code>ucam_import_staging</code> table, validates each row
+              (student exists, supervisor exists, stage valid, domain valid), creates groups and memberships,
               and logs failures to <code>import_error_logs</code>.
             </p>
             <div style="margin-top:16px;padding:12px 16px;background:#e3f2fd;border-radius:8px;font-size:0.85rem;">
@@ -66,16 +82,24 @@
         <div class="card">
           <div class="card-header">
             <h3>📜 Import Error Logs</h3>
-            <button class="btn btn-outline btn-sm" onclick="loadErrors()"><i class="fas fa-refresh"></i> Refresh</button>
+            <button class="btn btn-outline btn-sm" onclick="loadErrors()"><i class="fas fa-refresh"></i>
+              Refresh</button>
           </div>
           <div class="card-body" style="padding:0;">
             <div class="table-wrapper">
               <table>
                 <thead>
-                  <tr><th>Row</th><th>Error Message</th><th>Raw Data</th><th>Time</th></tr>
+                  <tr>
+                    <th>Row</th>
+                    <th>Error Message</th>
+                    <th>Raw Data</th>
+                    <th>Time</th>
+                  </tr>
                 </thead>
                 <tbody id="errorsBody">
-                  <tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">Loading...</td></tr>
+                  <tr>
+                    <td colspan="4" style="text-align:center;color:#999;padding:30px;">Loading...</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -115,10 +139,11 @@
           `).join('');
         }
       } catch (err) {
-        document.getElementById('errorsBody').innerHTML = 
+        document.getElementById('errorsBody').innerHTML =
           '<tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">No import errors yet</td></tr>';
       }
     }
   </script>
 </body>
+
 </html>

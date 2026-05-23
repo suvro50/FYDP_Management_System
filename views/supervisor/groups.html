@@ -195,13 +195,14 @@
     .gd-m-badge.leader { background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); }
     .gd-m-badge.member { background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); }
 
-    .gd-right-card { background:#161929; border:1px solid #1e2240; border-radius:14px; overflow:hidden; }
-    .gd-tabs { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid #1e2240; }
+    .gd-right-card { background:#161929; border:1px solid #1e2240; border-radius:14px; }
+    .gd-tabs { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid #1e2240; border-radius:14px 14px 0 0; overflow:hidden; }
     .gd-tab { display:flex; align-items:center; justify-content:center; gap:8px; padding:16px; font-size:0.88rem; font-weight:600; color:#64748b; cursor:pointer; transition:all 0.2s; border-bottom:2px solid transparent; }
     .gd-tab:hover { color:#a78bfa; }
     .gd-tab.active { color:#a78bfa; border-bottom-color:#6c5ce7; background:rgba(108,92,231,0.08); }
     .gd-tab-panel { display:none; padding:20px; }
     .gd-tab-panel.active { display:block; }
+    #panel-tasks { overflow:visible; }
 
     /* Weekly grid */
     .week-legend { display:flex; align-items:center; gap:16px; margin-bottom:16px; font-size:0.75rem; color:#64748b; }
@@ -246,6 +247,74 @@
     .btn-attach:hover { border-color:#6c5ce7; color:#a78bfa; }
     .btn-assign { display:flex; align-items:center; gap:8px; padding:10px 20px; background:linear-gradient(135deg,#6c5ce7,#7c3aed); border:none; border-radius:8px; color:#fff; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s; margin-left:auto; }
     .btn-assign:hover { opacity:0.9; transform:translateY(-1px); }
+
+    /* ═══ ASSIGN TO — Custom Multi-Select Dropdown ═══ */
+    .at-assign-wrap { position:relative; }
+    .at-assign-select {
+      display:flex; align-items:center; gap:10px; padding:10px 14px;
+      background:#0d0f1e; border:1px solid #2d3354; border-radius:8px;
+      cursor:pointer; transition:all 0.2s; user-select:none; min-height:44px;
+    }
+    .at-assign-select:hover { border-color:#6c5ce7; }
+    .at-assign-select.open { border-color:#6c5ce7; border-radius:8px 8px 0 0; }
+    .at-assign-avatars { display:flex; align-items:center; gap:0; flex-shrink:0; }
+    .at-assign-avatars .at-av {
+      width:28px; height:28px; border-radius:50%; display:flex; align-items:center;
+      justify-content:center; font-size:0.6rem; font-weight:700; color:#fff;
+      margin-left:-6px; border:2px solid #0d0f1e; flex-shrink:0;
+    }
+    .at-assign-avatars .at-av:first-child { margin-left:0; }
+    .at-assign-avatars .at-av-more {
+      background:#2d3354; font-size:0.58rem; color:#94a3b8;
+    }
+    .at-assign-text { flex:1; font-size:0.88rem; color:#e2e8f0; font-weight:500; }
+    .at-assign-chevron { color:#64748b; font-size:0.8rem; transition:transform 0.2s; flex-shrink:0; }
+    .at-assign-select.open .at-assign-chevron { transform:rotate(180deg); }
+
+    .at-assign-dropdown {
+      position:absolute; top:100%; left:0; right:0; z-index:50;
+      background:#161929; border:1px solid #6c5ce7; border-top:none;
+      border-radius:0 0 10px 10px; max-height:0; overflow:hidden;
+      transition:max-height 0.25s ease, opacity 0.2s ease; opacity:0;
+      box-shadow:0 12px 32px rgba(0,0,0,0.5);
+    }
+    .at-assign-dropdown.open { max-height:360px; opacity:1; overflow-y:auto; }
+    .at-assign-dropdown::-webkit-scrollbar { width:4px; }
+    .at-assign-dropdown::-webkit-scrollbar-thumb { background:#2d3354; border-radius:2px; }
+
+    .at-assign-option {
+      display:flex; align-items:center; gap:12px; padding:12px 14px;
+      cursor:pointer; transition:background 0.15s; border-bottom:1px solid #1e2240;
+    }
+    .at-assign-option:last-child { border-bottom:none; }
+    .at-assign-option:hover { background:rgba(108,92,231,0.08); }
+    .at-assign-option.all-row { background:rgba(108,92,231,0.05); border-bottom:1px solid #2d3354; }
+    .at-assign-option.all-row:hover { background:rgba(108,92,231,0.12); }
+
+    .at-assign-cb {
+      width:20px; height:20px; border-radius:6px; border:2px solid #2d3354;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+      transition:all 0.15s; font-size:0.7rem; color:transparent;
+    }
+    .at-assign-cb.checked {
+      background:#6c5ce7; border-color:#6c5ce7; color:#fff;
+    }
+    .at-assign-option-avatar {
+      width:36px; height:36px; border-radius:50%; display:flex; align-items:center;
+      justify-content:center; font-size:0.72rem; font-weight:700; color:#fff; flex-shrink:0;
+    }
+    .at-assign-option-info { flex:1; min-width:0; }
+    .at-assign-option-name { font-size:0.88rem; font-weight:600; color:#e2e8f0; }
+    .at-assign-option-detail { font-size:0.72rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .at-assign-option-badge {
+      padding:2px 10px; border-radius:6px; font-size:0.68rem; font-weight:700;
+      background:rgba(108,92,231,0.2); color:#a78bfa; border:1px solid rgba(108,92,231,0.3); flex-shrink:0;
+    }
+    .at-assign-footer {
+      display:flex; align-items:center; gap:6px; padding:10px 14px;
+      font-size:0.72rem; color:#475569; border-top:1px solid #1e2240;
+    }
+    .at-assign-footer i { font-size:0.7rem; }
 
     /* ═══════════════════════════════════
        LEVEL 4: WEEK REPORT DETAILS
@@ -487,6 +556,50 @@
                   <input class="at-input" id="taskTitle" placeholder="e.g. Complete Literature Review for Chapter 2">
                 </div>
                 <div class="at-field">
+                  <label class="at-label">Week Number *</label>
+                  <select class="at-input" id="taskWeekNo" style="cursor:pointer;">
+                    <option value="" disabled selected>— Select Week —</option>
+                    <option value="1">Week 1</option>
+                    <option value="2">Week 2</option>
+                    <option value="3">Week 3</option>
+                    <option value="4">Week 4</option>
+                    <option value="5">Week 5</option>
+                    <option value="6">Week 6</option>
+                    <option value="7">Week 7</option>
+                    <option value="8">Week 8</option>
+                    <option value="9">Week 9</option>
+                    <option value="10">Week 10</option>
+                    <option value="11">Week 11</option>
+                    <option value="12">Week 12</option>
+                  </select>
+                </div>
+                <div class="at-field">
+                  <label class="at-label">Assign To</label>
+                  <div class="at-assign-wrap" id="atAssignWrap">
+                    <div class="at-assign-select" id="atAssignSelect" onclick="toggleAssignDropdown()">
+                      <div class="at-assign-avatars" id="atAssignAvatars"></div>
+                      <span class="at-assign-text" id="atAssignText">All Members (0)</span>
+                      <i class="fas fa-chevron-down at-assign-chevron"></i>
+                    </div>
+                    <div class="at-assign-dropdown" id="atAssignDropdown">
+                      <div class="at-assign-option all-row" onclick="toggleAssignAll()">
+                        <div class="at-assign-cb checked" id="atAssignAllCb"><i class="fas fa-check"></i></div>
+                        <div class="at-assign-option-avatar" style="background:linear-gradient(135deg,#6c5ce7,#7c3aed)"><i class="fas fa-users" style="font-size:0.85rem"></i></div>
+                        <div class="at-assign-option-info">
+                          <div class="at-assign-option-name">All Members</div>
+                          <div class="at-assign-option-detail" id="atAssignAllDetail">Send to all members</div>
+                        </div>
+                        <span class="at-assign-option-badge">All</span>
+                      </div>
+                      <div id="atAssignMembersList"></div>
+                      <div class="at-assign-footer" id="atAssignFooter">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="atAssignFooterText">All members selected</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="at-field">
                   <label class="at-label">Description</label>
                   <textarea class="at-input at-textarea" id="taskDesc" placeholder="Describe the task, deliverables, references, and any specific instructions for the group..."></textarea>
                 </div>
@@ -496,7 +609,7 @@
                   </button>
                   <input type="file" id="taskFile" accept=".pdf,.doc,.docx" style="display:none" onchange="updateAttachLabel(this)">
                   <button class="btn-assign" onclick="submitNewTask()">
-                    <i class="fas fa-plus"></i> Assign Task
+                    <i class="fas fa-paper-plane"></i> Assign Task
                   </button>
                 </div>
               </div>
@@ -604,6 +717,7 @@
     let currentStage = null;    // e.g. 'FYDP-1'
     let currentGroup = null;    // group object
 
+    let _historyNav = false; // true when restoring state via popstate (skip pushState)
     const AVATAR_COLORS = ['#6c5ce7','#0891b2','#059669','#dc2626','#d97706','#7c3aed','#0284c7','#16a34a'];
     function avatarColor(str) { let h=0; for(let c of (str||'')) h=c.charCodeAt(0)+((h<<5)-h); return AVATAR_COLORS[Math.abs(h)%AVATAR_COLORS.length]; }
 
@@ -614,6 +728,50 @@
         document.getElementById('userAvatar').textContent = getInitials(currentUser.full_name);
       }
       await loadAllGroups();
+
+      // ── Set initial history state for the semester view ──
+      history.replaceState({ view: 'semester' }, '', '/supervisor/groups');
+
+      // ── Deep-link: ?group=<id> — auto-open group detail (from dashboard action icon) ──
+      const urlParams = new URLSearchParams(window.location.search);
+      const deepGroupId = parseInt(urlParams.get('group'));
+      if (deepGroupId && allGroupsData && allGroupsData.stages) {
+        for (const stage of allGroupsData.stages) {
+          const found = (stage.groups || []).find(g => g.group_id === deepGroupId);
+          if (found) {
+            currentStage = stage.stage_name;
+            await openGroupDetail(deepGroupId);
+            break;
+          }
+        }
+      }
+
+      // ── Browser back/forward support ──
+      window.addEventListener('popstate', async (e) => {
+        if (!e.state) {
+          // No state = went before our SPA, let browser handle it naturally
+          return;
+        }
+        const s = e.state;
+        _historyNav = true;  // flag: don't push state during restoration
+        try {
+          if (s.view === 'semester') {
+            showView('semester');
+          } else if (s.view === 'groups') {
+            currentStage = s.stage;
+            openStage(s.stage);
+          } else if (s.view === 'group-detail') {
+            currentStage = s.stage;
+            await openGroupDetail(s.groupId);
+          } else if (s.view === 'week-detail') {
+            currentStage = s.stage;
+            await openGroupDetail(s.groupId);
+            await openWeekDetail(s.groupId, s.weekNo);
+          }
+        } finally {
+          _historyNav = false;
+        }
+      });
     });
 
     // ══════════════════════════════════════════
@@ -706,6 +864,7 @@
       } else {
         grid.innerHTML = stage.groups.map(g => renderGroupItemCard(g)).join('');
       }
+      if (!_historyNav) history.pushState({ view: 'groups', stage: stageName }, '', '/supervisor/groups');
       showView('groups');
     }
 
@@ -776,13 +935,17 @@
 
       document.getElementById('atSub').textContent = `${g.group_code} · ${currentStage} · ${g.member_count} members`;
 
+      // Initialize assign-to dropdown with group members
+      initAssignDropdown();
+
       // Reset to weekly tab
       switchTab('weekly');
       loadWeeklyGrid(groupId);
+      if (!_historyNav) history.pushState({ view: 'group-detail', stage: currentStage, groupId }, '', '/supervisor/groups');
       showView('group-detail');
     }
 
-    function goBackFromDetail() { openStage(currentStage); }
+    function goBackFromDetail() { history.back(); }
 
     function switchTab(tab) {
       ['weekly','tasks','chat'].forEach(t => {
@@ -843,6 +1006,7 @@
       document.getElementById('wdStatCards').innerHTML = `<div style="color:#475569;grid-column:1/-1;padding:20px;text-align:center">Loading...</div>`;
       document.getElementById('wdStudentCards').innerHTML = '';
       document.getElementById('wdSuccessBanner').innerHTML = '';
+      if (!_historyNav) history.pushState({ view: 'week-detail', stage: currentStage, groupId, weekNo }, '', '/supervisor/groups');
       showView('week-detail');
 
       try {
@@ -870,15 +1034,19 @@
               <div class="wr-student-header">
                 <div class="wr-s-avatar" style="background:${avatarColor(r.student_name)}">${getInitials(r.student_name)}</div>
                 <div>
-                  <div class="wr-s-name">${escapeHtml(r.student_name)} <span style="display:inline-block;padding:2px 8px;background:rgba(245,158,11,0.2);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:20px;font-size:0.65rem;margin-left:4px;">${r.member_role==='LEADER'?'Leader':'Member'}</span></div>
+                <div class="wr-s-name">${escapeHtml(r.student_name)} <span style="display:inline-block;padding:2px 8px;background:rgba(245,158,11,0.2);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:20px;font-size:0.65rem;margin-left:4px;">${r.member_role==='LEADER'?'Leader':'Member'}</span>${r.is_group_report ? ' <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);border-radius:20px;font-size:0.65rem;font-weight:700;margin-left:4px;"><i class="fas fa-users" style="font-size:0.6rem;"></i> Group Report</span>' : ''}</div>
                   <div class="wr-s-id">${escapeHtml(r.student_uid||'')}</div>
                 </div>
                 <div class="wr-s-status ${statusCls}">${statusLbl}</div>
               </div>
-              <div class="wr-dates">
-                <div class="wr-date-item"><label>Submitted</label><span>${r.submitted_at ? formatDateTime(r.submitted_at) : '—'}</span></div>
-                <div class="wr-date-item"><label>Supervisor Signed</label><span class="${signedDate?'':'not-signed'}">${signedDate || 'Not signed yet'}</span></div>
-              </div>
+                <div class="wr-dates">
+                  <div class="wr-date-item"><label>Submitted</label><span>${r.submitted_at ? formatDateTime(r.submitted_at) : '—'}</span></div>
+                  ${r.supervisor_status === 'APPROVED'
+                    ? `<div class="wr-date-item"><label>Supervisor Signed</label><span>${signedDate || '—'}</span></div>`
+                    : r.supervisor_status === 'REJECTED'
+                    ? `<div class="wr-date-item"><label>Rejected On</label><span style="color:#f87171;">${signedDate || '—'}</span></div>`
+                    : ''}
+                </div>
               ${r.progress_summary ? `<div class="wr-notes">${escapeHtml(r.progress_summary)}</div>` : ''}
               <div class="wr-actions">
                 <div class="wr-action-btns">
@@ -897,8 +1065,135 @@
     }
 
     // ══════════════════════════════════════════
-    //  ASSIGN TASK
+    //  ASSIGN TASK + ASSIGN-TO DROPDOWN
     // ══════════════════════════════════════════
+    let assignSelectedIds = new Set(); // selected student user_ids
+    let assignAllChecked = true;
+
+    function initAssignDropdown() {
+      if (!currentGroup || !currentGroup.members) return;
+      const members = currentGroup.members;
+      assignSelectedIds = new Set(members.map(m => m.user_id));
+      assignAllChecked = true;
+
+      // Render member rows
+      const list = document.getElementById('atAssignMembersList');
+      list.innerHTML = members.map(m => {
+        const color = avatarColor(m.full_name);
+        const initials = getInitials(m.full_name);
+        return `
+          <div class="at-assign-option" data-uid="${m.user_id}" onclick="toggleAssignMember(${m.user_id})">
+            <div class="at-assign-cb checked" id="atCb_${m.user_id}"><i class="fas fa-check"></i></div>
+            <div class="at-assign-option-avatar" style="background:${color}">${initials}</div>
+            <div class="at-assign-option-info">
+              <div class="at-assign-option-name">${escapeHtml(m.full_name)}</div>
+              <div class="at-assign-option-detail">${escapeHtml(m.university_id || '')} · ${escapeHtml(m.email || '')}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('atAssignAllDetail').textContent = `Send to all ${members.length} members`;
+      updateAssignUI();
+    }
+
+    function toggleAssignDropdown() {
+      const sel = document.getElementById('atAssignSelect');
+      const dd = document.getElementById('atAssignDropdown');
+      const isOpen = dd.classList.contains('open');
+      if (isOpen) {
+        dd.classList.remove('open');
+        sel.classList.remove('open');
+      } else {
+        dd.classList.add('open');
+        sel.classList.add('open');
+      }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('atAssignWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('atAssignDropdown')?.classList.remove('open');
+        document.getElementById('atAssignSelect')?.classList.remove('open');
+      }
+    });
+
+    function toggleAssignAll() {
+      const members = currentGroup?.members || [];
+      if (assignAllChecked) {
+        // Uncheck all
+        assignSelectedIds.clear();
+        assignAllChecked = false;
+      } else {
+        // Check all
+        members.forEach(m => assignSelectedIds.add(m.user_id));
+        assignAllChecked = true;
+      }
+      updateAssignUI();
+    }
+
+    function toggleAssignMember(uid) {
+      if (assignSelectedIds.has(uid)) {
+        assignSelectedIds.delete(uid);
+      } else {
+        assignSelectedIds.add(uid);
+      }
+      const members = currentGroup?.members || [];
+      assignAllChecked = assignSelectedIds.size === members.length;
+      updateAssignUI();
+    }
+
+    function updateAssignUI() {
+      const members = currentGroup?.members || [];
+      const total = members.length;
+      const count = assignSelectedIds.size;
+
+      // Update "All Members" checkbox
+      const allCb = document.getElementById('atAssignAllCb');
+      if (allCb) allCb.classList.toggle('checked', assignAllChecked);
+
+      // Update individual checkboxes
+      members.forEach(m => {
+        const cb = document.getElementById(`atCb_${m.user_id}`);
+        if (cb) cb.classList.toggle('checked', assignSelectedIds.has(m.user_id));
+      });
+
+      // Update header text
+      const textEl = document.getElementById('atAssignText');
+      if (assignAllChecked || count === total) {
+        textEl.textContent = `All Members (${total})`;
+      } else if (count === 0) {
+        textEl.textContent = 'Select members...';
+      } else if (count === 1) {
+        const selectedMember = members.find(m => assignSelectedIds.has(m.user_id));
+        textEl.textContent = selectedMember ? selectedMember.full_name : `${count} Member`;
+      } else {
+        textEl.textContent = `${count} Members selected`;
+      }
+
+      // Update avatars in header
+      const avContainer = document.getElementById('atAssignAvatars');
+      const selectedMembers = members.filter(m => assignSelectedIds.has(m.user_id));
+      const showMax = 3;
+      let avHtml = selectedMembers.slice(0, showMax).map(m =>
+        `<div class="at-av" style="background:${avatarColor(m.full_name)}">${getInitials(m.full_name)}</div>`
+      ).join('');
+      if (selectedMembers.length > showMax) {
+        avHtml += `<div class="at-av at-av-more">+${selectedMembers.length - showMax}</div>`;
+      }
+      avContainer.innerHTML = avHtml;
+
+      // Update footer text
+      const footerText = document.getElementById('atAssignFooterText');
+      if (count === total) {
+        footerText.textContent = 'All members selected';
+      } else if (count === 0) {
+        footerText.textContent = 'No members selected';
+      } else {
+        footerText.textContent = `${count} of ${total} members selected`;
+      }
+    }
+
     function updateAttachLabel(input) {
       const btn = document.querySelector('.btn-attach');
       if (input.files[0]) btn.innerHTML = `<i class="fas fa-paperclip"></i> ${input.files[0].name}`;
@@ -906,24 +1201,39 @@
 
     async function submitNewTask() {
       if (!currentGroup) return;
-      const title = document.getElementById('taskTitle').value.trim();
-      const desc  = document.getElementById('taskDesc').value.trim();
-      const file  = document.getElementById('taskFile').files[0];
-      if (!title) { showToast('Task title is required','warning'); return; }
+      const title  = document.getElementById('taskTitle').value.trim();
+      const weekNo = document.getElementById('taskWeekNo').value;
+      const desc   = document.getElementById('taskDesc').value.trim();
+      const file   = document.getElementById('taskFile').files[0];
+      if (!title)  { showToast('Task title is required','warning'); return; }
+      if (!weekNo) { showToast('Please select a week number','warning'); return; }
+      if (assignSelectedIds.size === 0) { showToast('Select at least one member','warning'); return; }
       try {
         const fd = new FormData();
         fd.append('title', title);
-        fd.append('week_no', 1);
+        fd.append('week_no', weekNo);
         if (desc) fd.append('description', desc);
         if (file) fd.append('task_file', file);
+
+        // Send assigned_to: 'all' or JSON array of user_ids
+        const members = currentGroup?.members || [];
+        if (assignSelectedIds.size === members.length) {
+          fd.append('assigned_to', 'all');
+        } else {
+          fd.append('assigned_to', JSON.stringify([...assignSelectedIds]));
+        }
+
         const res = await fetch(`/api/supervisor/groups/${currentGroup.group_id}/tasks`, { method:'POST', body:fd, credentials:'same-origin' });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error||'Failed');
-        showToast('Task assigned!','success');
-        document.getElementById('taskTitle').value = '';
-        document.getElementById('taskDesc').value  = '';
-        document.getElementById('taskFile').value  = '';
+        showToast('Task assigned successfully for Week ' + weekNo + '!','success');
+        document.getElementById('taskTitle').value  = '';
+        document.getElementById('taskWeekNo').value = '';
+        document.getElementById('taskDesc').value   = '';
+        document.getElementById('taskFile').value   = '';
         document.querySelector('.btn-attach').innerHTML = '<i class="fas fa-paperclip"></i> Attach PDF / Doc';
+        // Reset assign-to to all members
+        initAssignDropdown();
       } catch(e) { showToast(e.message,'error'); }
     }
 
@@ -934,6 +1244,10 @@
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       document.getElementById(`view-${name}`).classList.add('active');
       window.scrollTo(0,0);
+      // For direct showView('semester') calls from breadcrumbs, push state
+      if (!_historyNav && name === 'semester') {
+        history.pushState({ view: 'semester' }, '', '/supervisor/groups');
+      }
     }
 
     function breadcrumb(labels, actions) {
@@ -956,6 +1270,14 @@
       document.getElementById('rejectBtn').style.display = '';
       document.getElementById('reviewDetail').innerHTML = `
         <div style="background:#0d0f1e;border-radius:8px;padding:16px;border:1px solid #1e2240;">
+          ${report.is_group_report ? `
+          <div style="margin-bottom:14px;padding:12px 16px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;font-size:1rem;color:#10b981;flex-shrink:0;"><i class="fas fa-users"></i></div>
+            <div>
+              <div style="font-weight:700;font-size:0.85rem;color:#10b981;margin-bottom:2px;">👥 Group Report</div>
+              <div style="font-size:0.78rem;color:#94a3b8;">Approving this will mark <strong style="color:#e2e8f0;">all group members'</strong> Week ${report.week_no} as approved.</div>
+            </div>
+          </div>` : ''}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
             <div><span style="color:#64748b;font-size:0.75rem;">Student:</span><br><strong>${escapeHtml(report.student_name)}</strong></div>
             <div><span style="color:#64748b;font-size:0.75rem;">Week:</span><br><strong>Week ${report.week_no}</strong></div>

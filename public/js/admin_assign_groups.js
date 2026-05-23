@@ -25,7 +25,7 @@ async function loadDropdowns() {
     const sel = document.getElementById('secFilter');
     sData.sections.forEach(s => {
       const o = document.createElement('option');
-      o.value = s; o.textContent = `Section: ${s}`;
+      o.value = s.section_code; o.textContent = `Section: ${s.section_code}`;
       sel.appendChild(o);
     });
   } catch (e) { /* silent */ }

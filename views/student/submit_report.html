@@ -17,18 +17,13 @@
       --success-color: #10b981;
       --warning-color: #f59e0b;
       --danger-color: #ef4444;
-      --sidebar-width: 280px;
-      --sidebar-collapsed-width: 80px;
+      --danger-color: #ef4444;
     }
 
     body { background-color: var(--bg-dark); color: var(--text-primary); font-family: 'Inter', sans-serif; margin: 0; }
     
     .app-layout { display: flex; min-height: 100vh; }
-    .sidebar { width: var(--sidebar-width); background: var(--card-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: fixed; height: 100vh; z-index: 1000; overflow-x: hidden; }
-    .sidebar.collapsed { width: var(--sidebar-collapsed-width); }
-    
-    .main-content { flex: 1; margin-left: var(--sidebar-width); transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); min-width: 0; }
-    .sidebar.collapsed + .main-content { margin-left: var(--sidebar-collapsed-width); }
+    .main-content { flex: 1; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); min-width: 0; }
 
     .top-header { height: 70px; background: rgba(13, 15, 30, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; position: sticky; top: 0; z-index: 900; }
     
@@ -41,10 +36,18 @@
 
     .week-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 4px; }
     .week-btn { padding: 14px 8px; border-radius: 12px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.02); cursor: pointer; font-weight: 700; font-size: 0.85rem; text-align: center; transition: all 0.2s; position: relative; color: var(--text-secondary); }
-    .week-btn.submitted { background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+    .week-btn.submitted { background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); color: var(--success-color); cursor: default; }
     .week-btn.submitted::after { content: '✓'; position: absolute; top: 4px; right: 6px; font-size: 0.7rem; color: var(--success-color); }
     .week-btn.selected { background: var(--accent-color); border-color: var(--accent-color); color: #fff; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); }
-    .week-btn:hover:not(.submitted):not(.selected) { border-color: var(--accent-color); color: var(--text-primary); background: rgba(255,255,255,0.05); }
+    .week-btn:hover:not(.submitted):not(.selected):not(.locked) { border-color: var(--accent-color); color: var(--text-primary); background: rgba(255,255,255,0.05); }
+    .week-btn.locked { opacity: 0.35; cursor: not-allowed; background: rgba(255,255,255,0.01); }
+    .week-btn.locked::after { content: '🔒'; position: absolute; top: 4px; right: 6px; font-size: 0.6rem; }
+    .week-btn.rejected { background: rgba(239, 68, 68, 0.06); border-color: rgba(239, 68, 68, 0.25); color: var(--danger-color); }
+    .week-btn.rejected::after { content: '↻'; position: absolute; top: 4px; right: 6px; font-size: 0.75rem; color: var(--danger-color); font-weight: 900; }
+    .week-btn.pending-review { background: rgba(245, 158, 11, 0.06); border-color: rgba(245, 158, 11, 0.25); color: var(--warning-color); cursor: default; }
+    .week-btn.pending-review::after { content: '⏳'; position: absolute; top: 4px; right: 6px; font-size: 0.6rem; }
+    .week-btn.next-available { border-color: var(--accent-color); box-shadow: 0 0 0 1px rgba(124,58,237,0.15); animation: pulseGlow 2s ease-in-out infinite; }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 1px rgba(124,58,237,0.15); } 50% { box-shadow: 0 0 8px rgba(124,58,237,0.3); } }
     
     .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
     .form-control { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 18px; color: var(--text-primary); font-size: 0.95rem; transition: all 0.2s; box-sizing: border-box; }
@@ -61,36 +64,12 @@
     .btn-full { width: 100%; border-radius: 14px; font-weight: 700; letter-spacing: 0.02em; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4); }
 
-    /* Reuse Sidebar and Header Styles from Dashboard */
-    .sidebar-header { padding: 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; height: 70px; box-sizing: border-box; }
-    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
-    .brand-icon { width: 36px; height: 36px; background: var(--accent-color); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; }
-    .brand-text h3 { margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
-    .brand-text p { margin: 0; font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-    .sidebar.collapsed .brand-text { display: none; }
-    
-    .sidebar-nav { padding: 20px 12px; flex: 1; overflow-y: auto; }
-    .nav-label { font-size: 0.7rem; font-weight: 800; color: var(--text-secondary); padding: 10px 16px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; }
-    .sidebar.collapsed .nav-label { text-align: center; padding: 10px 0; font-size: 0.6rem; }
-    
-    .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: var(--text-secondary); text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; transition: all 0.2s; }
-    .sidebar-nav a:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
-    .sidebar-nav a.active { background: rgba(124, 58, 237, 0.1); color: var(--accent-color); }
-    .nav-icon { width: 24px; display: flex; justify-content: center; font-size: 1.1rem; }
-    .sidebar.collapsed .sidebar-nav a { padding: 12px 0; justify-content: center; }
-    .sidebar.collapsed .sidebar-nav a span:not(.nav-icon) { display: none; }
-    
-    .sidebar-footer { padding: 20px; border-top: 1px solid var(--border-color); }
-    .sidebar-user { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 12px; background: rgba(255,255,255,0.03); }
-    .sidebar.collapsed .sidebar-user { justify-content: center; padding: 8px 0; }
-    .user-avatar { width: 36px; height: 36px; background: var(--accent-color); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; flex-shrink: 0; }
-    .user-info { min-width: 0; }
-    .user-info h4 { margin: 0; font-size: 0.85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary); }
-    .user-info p { margin: 2px 0 0; font-size: 0.75rem; color: var(--text-secondary); }
-    .sidebar.collapsed .user-info { display: none; }
-
-    .sidebar-toggle { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-    .sidebar-toggle:hover { background: var(--border-color); color: var(--text-primary); }
+    .sidebar-toggle {
+      background: none; border: none; color: var(--text-secondary);
+      cursor: pointer; font-size: 1.1rem; padding: 8px; border-radius: 8px;
+      transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+    }
+    .sidebar-toggle:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
 
     /* Top Header Styles */
     .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
@@ -119,6 +98,59 @@
     .submission-item:last-child { border-bottom: none; }
     .submission-item:hover { background: rgba(255,255,255,0.03); }
     .week-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(124, 58, 237, 0.1); color: var(--accent-color); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
+
+    /* ── Report Type Toggle ──────────────────────────────────── */
+    .report-type-toggle {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .type-option {
+      position: relative; cursor: pointer;
+      padding: 18px 16px; border-radius: 14px;
+      border: 2px solid var(--border-color);
+      background: rgba(255,255,255,0.02);
+      transition: all 0.25s ease; text-align: center;
+    }
+    .type-option:hover:not(.active) { border-color: rgba(124,58,237,0.3); background: rgba(255,255,255,0.04); }
+    .type-option.active {
+      border-color: var(--accent-color);
+      background: rgba(124,58,237,0.08);
+      box-shadow: 0 0 0 1px rgba(124,58,237,0.15), 0 4px 12px rgba(124,58,237,0.15);
+    }
+    .type-option .type-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin: 0 auto 10px;
+      transition: all 0.25s;
+    }
+    .type-option:not(.active) .type-icon { background: rgba(255,255,255,0.05); color: var(--text-secondary); }
+    .type-option.active .type-icon { background: rgba(124,58,237,0.15); color: #a78bfa; }
+    .type-option .type-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 4px; }
+    .type-option .type-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; }
+    .type-option .type-check {
+      position: absolute; top: 10px; right: 10px;
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--border-color); background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.25s; font-size: 0.7rem; color: transparent;
+    }
+    .type-option.active .type-check {
+      border-color: var(--accent-color); background: var(--accent-color); color: #fff;
+    }
+    .group-members-banner {
+      margin-top: 14px; padding: 14px 16px; border-radius: 12px;
+      background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15);
+      font-size: 0.85rem; color: var(--text-secondary); display: none;
+      animation: slideIn 0.3s ease;
+    }
+    .group-members-banner.show { display: block; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .member-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 6px;
+      background: rgba(255,255,255,0.06); font-size: 0.78rem;
+      font-weight: 600; color: var(--text-primary); margin: 4px 4px 0 0;
+    }
+    .member-chip .role-tag { font-size: 0.65rem; color: var(--accent-color); font-weight: 700; }
   </style>
 </head>
 <body>
@@ -136,15 +168,16 @@
         <a href="/student/dashboard"><span class="nav-icon"><i class="fas fa-home"></i></span> <span>Dashboard</span></a>
         <a href="/student/submit-report" class="active"><span class="nav-icon"><i class="fas fa-upload"></i></span> <span>Submit Report</span></a>
         <a href="/student/reports"><span class="nav-icon"><i class="fas fa-file-alt"></i></span> <span>My Reports</span></a>
+        <a href="/student/tasks"><span class="nav-icon"><i class="fas fa-tasks"></i></span> <span>My Tasks</span></a>
         
-        <div class="nav-label" style="margin-top:20px;">CHATS</div>
+        <div class="nav-label" style="margin-top:8px;">CHATS</div>
         <a href="/student/my-group-chat"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> <span>Students Group</span></a>
         <a href="/student/supervisor-group-chat"><span class="nav-icon"><i class="fas fa-users"></i></span> <span>Group with Supervisor</span></a>
         <a href="/student/teacher-group-chat"><span class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></span> <span>Group with Course Teacher</span></a>
         <a href="/student/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> <span>DM Supervisor</span></a>
         <a href="/student/teacher-chat"><span class="nav-icon"><i class="fas fa-comment-dots"></i></span> <span>DM Course Teacher</span></a>
         
-        <div class="nav-label" style="margin-top:20px;">ACCOUNT</div>
+        <div class="nav-label" style="margin-top:8px;">ACCOUNT</div>
         <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> <span>My Profile</span></a>
         <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> <span>Notifications</span></a>
       </nav>
@@ -195,18 +228,57 @@
             <div class="card">
               <div class="card-header"><h3><i class="fas fa-calendar-week" style="color:var(--accent-color);"></i> 1. Select Week</h3></div>
               <div class="card-body">
-                <p style="font-size:0.88rem;color:var(--text-secondary);margin:0 0 20px;">Green buttons indicate already submitted reports. Click an available week to report progress.</p>
+                <p style="font-size:0.88rem;color:var(--text-secondary);margin:0 0 16px;">Reports must be submitted in order. Each week must be <strong style="color:var(--success-color);">approved</strong> before the next week unlocks.</p>
+                <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;font-size:0.72rem;color:var(--text-secondary);">
+                  <span><span style="color:var(--success-color);">✓</span> Approved</span>
+                  <span><span style="color:var(--warning-color);">⏳</span> Pending</span>
+                  <span><span style="color:var(--danger-color);">↻</span> Rejected (resubmit)</span>
+                  <span>🔒 Locked</span>
+                </div>
                 <div class="week-grid" id="weekGrid">
                   <!-- Filled by JS -->
                 </div>
                 <input type="hidden" id="selectedWeek" value="">
                 <div id="weekWarning" style="display:none;color:var(--danger-color);font-size:0.88rem;margin-top:12px;font-weight:600;display:flex;align-items:center;gap:8px;"><i class="fas fa-exclamation-triangle"></i> Please select a week first.</div>
+                <div id="weekInfo" style="display:none;font-size:0.85rem;margin-top:12px;padding:12px 16px;border-radius:10px;font-weight:600;"></div>
+              </div>
+            </div>
+
+            <!-- Report Type Selection -->
+            <div class="card">
+              <div class="card-header"><h3><i class="fas fa-users-cog" style="color:var(--accent-color);"></i> 2. Report Type</h3></div>
+              <div class="card-body">
+                <p style="font-size:0.88rem;color:var(--text-secondary);margin:0 0 14px;">Choose whether this is a <strong style="color:#a78bfa;">personal</strong> or <strong style="color:var(--success-color);">group</strong> submission.</p>
+                <div class="report-type-toggle">
+                  <div class="type-option active" id="typePersonal" onclick="selectReportType('personal')">
+                    <div class="type-check"><i class="fas fa-check"></i></div>
+                    <div class="type-icon"><i class="fas fa-user"></i></div>
+                    <div class="type-name">Personal Report</div>
+                    <div class="type-desc">Submit for yourself only</div>
+                  </div>
+                  <div class="type-option" id="typeGroup" onclick="selectReportType('group')">
+                    <div class="type-check"><i class="fas fa-check"></i></div>
+                    <div class="type-icon"><i class="fas fa-users"></i></div>
+                    <div class="type-name">Group Report</div>
+                    <div class="type-desc">Submit on behalf of your entire group</div>
+                  </div>
+                </div>
+                <div class="group-members-banner" id="groupMembersBanner">
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-weight:700;color:var(--success-color);">
+                    <i class="fas fa-check-circle"></i> This report will cover all group members:
+                  </div>
+                  <div id="groupMembersList"></div>
+                  <div style="margin-top:8px;font-size:0.8rem;color:var(--warning-color);">
+                    <i class="fas fa-info-circle"></i> Other members won't need to submit for this week.
+                  </div>
+                </div>
+                <input type="hidden" id="isGroupReport" value="0">
               </div>
             </div>
 
             <!-- Report Content -->
             <div class="card">
-              <div class="card-header"><h3><i class="fas fa-edit" style="color:var(--accent-color);"></i> 2. Report Details</h3></div>
+              <div class="card-header"><h3><i class="fas fa-edit" style="color:var(--accent-color);"></i> 3. Report Details</h3></div>
               <div class="card-body" style="display:flex;flex-direction:column;gap:20px;">
                 <div class="form-group">
                   <label for="reportTitle">Report Title *</label>
@@ -235,7 +307,7 @@
 
             <!-- PDF Upload -->
             <div class="card">
-              <div class="card-header"><h3><i class="fas fa-file-upload" style="color:var(--accent-color);"></i> 3. Attach Report PDF</h3></div>
+              <div class="card-header"><h3><i class="fas fa-file-upload" style="color:var(--accent-color);"></i> 4. Attach Report PDF</h3></div>
               <div class="card-body">
                 <div class="drop-zone" id="dropZone" onclick="document.getElementById('pdfFile').click()">
                   <div class="icon"><i class="fas fa-file-pdf" id="dropIcon"></i></div>
@@ -264,7 +336,7 @@
                 <div style="display:flex;gap:12px;margin-bottom:12px;"><i class="fas fa-check-circle" style="color:var(--success-color);margin-top:4px;"></i> <span>Ensure PDF reflects the latest work.</span></div>
                 
                 <div style="margin-top:20px;padding:16px;background:rgba(245, 158, 11, 0.05);border-radius:12px;color:var(--warning-color);border:1px solid rgba(245, 158, 11, 0.1);font-weight:600;font-size:0.85rem;">
-                  <i class="fas fa-exclamation-triangle"></i> Note: You can only submit one report per week. Review before sending!
+                  <i class="fas fa-exclamation-triangle"></i> Reports must be submitted in sequential order. You cannot skip weeks. Each week must be approved by your supervisor before the next week unlocks.
                 </div>
               </div>
             </div>
@@ -286,6 +358,10 @@
   <script src="/js/main.js"></script>
   <script>
     let submittedWeeks = [];
+    let weekStatus = {};
+    let nextAvailableWeek = null;
+    let groupMembers = [];
+    let selectedReportType = 'personal';
 
     document.addEventListener('DOMContentLoaded', async () => {
       const user = await getCurrentUser();
@@ -387,8 +463,13 @@
       try {
         const data = await apiFetch('/api/student/reports');
         submittedWeeks = data.reports.map(r => r.week_no);
+        weekStatus = data.week_status || {};
+        nextAvailableWeek = data.next_available_week;
+        groupMembers = data.group_members || [];
         renderWeekGrid();
         renderRecentSubmissions(data.reports.slice(0, 5));
+        showWeekInfo();
+        renderGroupMembers();
       } catch (err) {
         renderWeekGrid();
       }
@@ -398,18 +479,118 @@
       const grid = document.getElementById('weekGrid');
       let html = '';
       for (let w = 1; w <= 12; w++) {
-        const submitted = submittedWeeks.includes(w);
-        html += `<div class="week-btn ${submitted ? 'submitted' : ''}" id="wb-${w}" onclick="${submitted ? '' : `selectWeek(${w})`}">Week ${w}</div>`;
+        const status = weekStatus[w]; // 'APPROVED' | 'PENDING' | 'REJECTED' | undefined
+        let cls = '';
+        let clickAction = '';
+
+        if (status === 'APPROVED') {
+          cls = 'submitted'; // Green with checkmark
+        } else if (status === 'PENDING') {
+          cls = 'pending-review'; // Yellow with hourglass
+        } else if (status === 'REJECTED') {
+          cls = 'rejected'; // Red with resubmit icon — clickable
+          clickAction = `selectWeek(${w})`;
+        } else if (w === nextAvailableWeek) {
+          cls = 'next-available'; // Pulsing border — clickable
+          clickAction = `selectWeek(${w})`;
+        } else {
+          cls = 'locked'; // Grey with lock — not clickable
+        }
+
+        html += `<div class="week-btn ${cls}" id="wb-${w}" onclick="${clickAction}">Week ${w}</div>`;
       }
       grid.innerHTML = html;
     }
 
+    function showWeekInfo() {
+      const info = document.getElementById('weekInfo');
+      if (!info) return;
+
+      if (nextAvailableWeek === null) {
+        // Either all done or waiting for review
+        const hasPending = Object.values(weekStatus).includes('PENDING');
+        if (hasPending) {
+          const pendingWeek = Object.entries(weekStatus).find(([k,v]) => v === 'PENDING');
+          info.style.display = 'flex';
+          info.style.background = 'rgba(245, 158, 11, 0.06)';
+          info.style.color = 'var(--warning-color)';
+          info.style.border = '1px solid rgba(245, 158, 11, 0.15)';
+          info.innerHTML = `<i class="fas fa-clock" style="margin-right:8px;"></i> Week ${pendingWeek[0]} report is awaiting supervisor review. You'll be notified once it's approved.`;
+        } else {
+          info.style.display = 'flex';
+          info.style.background = 'rgba(16, 185, 129, 0.06)';
+          info.style.color = 'var(--success-color)';
+          info.style.border = '1px solid rgba(16, 185, 129, 0.15)';
+          info.innerHTML = '<i class="fas fa-check-circle" style="margin-right:8px;"></i> All 12 weekly reports have been approved! Great work! 🎉';
+        }
+      } else {
+        const rejectedWeek = Object.entries(weekStatus).find(([k,v]) => v === 'REJECTED');
+        if (rejectedWeek) {
+          info.style.display = 'flex';
+          info.style.background = 'rgba(239, 68, 68, 0.06)';
+          info.style.color = 'var(--danger-color)';
+          info.style.border = '1px solid rgba(239, 68, 68, 0.15)';
+          info.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right:8px;"></i> Week ${rejectedWeek[0]} was rejected. Please resubmit it to continue.`;
+        } else {
+          info.style.display = 'flex';
+          info.style.background = 'rgba(124, 58, 237, 0.06)';
+          info.style.color = 'var(--accent-color)';
+          info.style.border = '1px solid rgba(124, 58, 237, 0.15)';
+          info.innerHTML = `<i class="fas fa-arrow-right" style="margin-right:8px;"></i> Ready to submit <strong>Week ${nextAvailableWeek}</strong> report.`;
+        }
+      }
+    }
+
     function selectWeek(w) {
       document.querySelectorAll('.week-btn').forEach(b => b.classList.remove('selected'));
-      document.getElementById(`wb-${w}`).classList.add('selected');
+      const btn = document.getElementById(`wb-${w}`);
+      btn.classList.add('selected');
       document.getElementById('selectedWeek').value = w;
       document.getElementById('weekWarning').style.display = 'none';
-      document.getElementById('reportTitle').placeholder = `e.g. Week ${w} Progress: What I accomplished this week`;
+
+      const isResubmit = weekStatus[w] === 'REJECTED';
+      document.getElementById('reportTitle').placeholder = isResubmit
+        ? `Resubmission: Week ${w} Progress (corrected)`
+        : `e.g. Week ${w} Progress: What I accomplished this week`;
+
+      updateSubmitButtonText();
+    }
+
+    function updateSubmitButtonText() {
+      const week = document.getElementById('selectedWeek').value;
+      const submitBtn = document.getElementById('submitBtn');
+      if (!week) return;
+      const isResubmit = weekStatus[week] === 'REJECTED';
+      const isGroup = selectedReportType === 'group';
+      if (isResubmit) {
+        submitBtn.innerHTML = `<i class="fas fa-redo" style="margin-right:10px;"></i> RESUBMIT WEEK ${week} ${isGroup ? 'GROUP ' : ''}REPORT`;
+      } else {
+        submitBtn.innerHTML = `<i class="fas fa-paper-plane" style="margin-right:10px;"></i> SUBMIT ${isGroup ? 'GROUP ' : 'WEEKLY '}REPORT`;
+      }
+    }
+
+    function selectReportType(type) {
+      selectedReportType = type;
+      document.getElementById('isGroupReport').value = type === 'group' ? '1' : '0';
+
+      document.getElementById('typePersonal').classList.toggle('active', type === 'personal');
+      document.getElementById('typeGroup').classList.toggle('active', type === 'group');
+      document.getElementById('groupMembersBanner').classList.toggle('show', type === 'group');
+
+      updateSubmitButtonText();
+    }
+
+    function renderGroupMembers() {
+      const container = document.getElementById('groupMembersList');
+      if (!container || !groupMembers.length) return;
+      container.innerHTML = groupMembers.map(m => {
+        const role = m.member_role.replace(/_/g, ' ');
+        return `<span class="member-chip">
+          <i class="fas fa-user" style="font-size:0.65rem;color:var(--text-secondary);"></i>
+          ${escapeHtml(m.full_name)}
+          <span class="role-tag">${role}</span>
+        </span>`;
+      }).join('');
     }
 
     function renderRecentSubmissions(reports) {
@@ -418,13 +599,14 @@
       el.innerHTML = reports.map(r => {
         const status = r.supervisor_status.toUpperCase();
         const color = status === 'APPROVED' ? 'var(--success-color)' : status === 'REJECTED' ? 'var(--danger-color)' : 'var(--warning-color)';
+        const label = status === 'REJECTED' ? 'REJECTED — RESUBMIT' : status;
         return `<div class="submission-item">
-          <div class="week-icon">W${r.week_no}</div>
+          <div class="week-icon" style="${status === 'REJECTED' ? 'background:rgba(239,68,68,0.1);color:var(--danger-color);' : ''}">W${r.week_no}</div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:0.88rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary);">${escapeHtml(r.report_title || 'Report')}</div>
             <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">${formatDateTime(r.submitted_at)}</div>
           </div>
-          <div style="font-size:0.65rem;font-weight:800;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,0.05);color:${color};border:1px solid ${color}33;">${status}</div>
+          <div style="font-size:0.65rem;font-weight:800;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,0.05);color:${color};border:1px solid ${color}33;">${label}</div>
         </div>`;
       }).join('');
     }
@@ -461,6 +643,7 @@
         formData.append('report_title', title);
         formData.append('progress_summary', summary);
         formData.append('report_content', content);
+        formData.append('is_group_report', document.getElementById('isGroupReport').value);
         if (blockers) formData.append('blockers', blockers);
         const pdfInput = document.getElementById('pdfFile');
         if (pdfInput.files[0]) formData.append('report_file', pdfInput.files[0]);

@@ -10,9 +10,12 @@
     /* Page-specific overrides */
     .sup-panel-grid {
       display: grid;
-      grid-template-columns: 300px 1fr;
-      gap: 16px;
+      grid-template-columns: 240px 1fr;
+      gap: 12px;
       align-items: start;
+    }
+    .adm-table th, .adm-table td {
+      padding: 10px 8px;
     }
     .sup-list-item {
       display: flex; align-items: center; gap: 10px;
@@ -44,8 +47,8 @@
     .assign-select {
       background: var(--bg2); border: 1px solid var(--border);
       color: var(--text); border-radius: 8px;
-      padding: 6px 10px; font-size: 0.78rem;
-      cursor: pointer; transition: border-color 0.15s; min-width: 180px;
+      padding: 6px 8px; font-size: 0.78rem;
+      cursor: pointer; transition: border-color 0.15s; width: 100%; min-width: 130px; max-width: 170px;
     }
     .assign-select:focus { outline: none; border-color: #10b981; }
     .assign-btn {

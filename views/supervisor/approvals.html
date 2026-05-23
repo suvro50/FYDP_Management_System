@@ -92,6 +92,7 @@
     .pdf-viewer { width:90%;height:92%;background:#1e1e1e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column; box-shadow:0 20px 50px rgba(0,0,0,0.5); border: 1px solid #30363d; }
     .pdf-viewer.fullscreen { width:100%; height:100%; border-radius:0; border: none; }
     .pdf-viewer-header { padding:14px 24px;background:#0d1117;color:#fff;display:flex;align-items:center;justify-content:space-between; border-bottom:1px solid #30363d; }
+    .pdf-viewer iframe { flex:1; border:none; width:100%; }
     
     .modal { background: var(--card-bg) !important; border: 1px solid var(--border-color) !important; color: var(--text-primary) !important; border-radius: 20px !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5) !important; }
     .modal-header { border-bottom: 1px solid var(--border-color) !important; padding: 20px 24px !important; }
@@ -313,13 +314,17 @@
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:40px;">🎉 No reports found</td></tr>';
         return;
       }
-      tbody.innerHTML = reports.map(r => `
+      tbody.innerHTML = reports.map(r => {
+        const groupTag = r.is_group_report
+          ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.2);margin-left:6px;"><i class="fas fa-users"></i> Group</span>`
+          : '';
+        return `
         <tr>
           <td><strong>${escapeHtml(r.student_name)}</strong><br><span class="text-sm text-muted">${escapeHtml(r.student_uid)}</span></td>
           <td><span class="badge badge-blue">${escapeHtml(r.group_code)}</span></td>
           <td><span class="badge badge-purple">${escapeHtml(r.stage_name)}</span></td>
-          <td><strong>Week ${r.week_no}</strong></td>
-          <td style="max-width:200px;font-size:0.85rem;">${escapeHtml(r.progress_summary || '—').substring(0,80)}${(r.progress_summary||'').length>80?'...':''}</td>
+          <td><strong>Week ${r.week_no}</strong>${groupTag}</td>
+          <td style="max-width:200px;font-size:0.85rem;">${escapeHtml(r.progress_summary || '\u2014').substring(0,80)}${(r.progress_summary||'').length>80?'...':''}</td>
           <td>${getStatusBadge(r.supervisor_status)}</td>
           <td style="font-size:0.8rem;">${formatDate(r.submitted_at)}</td>
           <td>
@@ -327,10 +332,10 @@
             ${r.supervisor_status === 'PENDING' ? `
               <button class="btn btn-primary btn-sm" onclick='openReview(${JSON.stringify(r)})'>
                 <i class="fas fa-gavel"></i> Review
-              </button>` : `<span class="text-sm text-muted">${r.supervisor_feedback ? '💬' : '—'}</span>`}
+              </button>` : `<span class="text-sm text-muted">${r.supervisor_feedback ? '\ud83d\udcac' : '\u2014'}</span>`}
           </td>
         </tr>
-      `).join('');
+      `}).join('');
     }
 
     function openReview(report) {
@@ -341,6 +346,14 @@
       document.getElementById('rejectBtn').onclick = showRejectForm;
       document.getElementById('reportDetail').innerHTML = `
         <div style="background:#0d0f1e; border:1px solid #2d3354; border-radius:8px; padding:16px; color:#e2e8f0;">
+          ${report.is_group_report ? `
+          <div style="margin-bottom:14px;padding:12px 16px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;font-size:1rem;color:#10b981;flex-shrink:0;"><i class="fas fa-users"></i></div>
+            <div>
+              <div style="font-weight:700;font-size:0.85rem;color:#10b981;margin-bottom:2px;">👥 Group Report</div>
+              <div style="font-size:0.78rem;color:#94a3b8;">Approving this will mark <strong style="color:#e2e8f0;">all ${report.group_member_count || ''} group members'</strong> Week ${report.week_no} as approved.</div>
+            </div>
+          </div>` : ''}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
             <div><span style="color:#64748b; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Student:</span><br><strong>${escapeHtml(report.student_name)}</strong></div>
             <div><span style="color:#64748b; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Group:</span><br><strong>${escapeHtml(report.group_code)}</strong></div>

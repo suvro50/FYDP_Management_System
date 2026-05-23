@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
+
 <body>
   <div class="app-layout">
     <!-- Sidebar -->
@@ -14,21 +16,38 @@
       <div class="sidebar-header">
         <div class="brand">
           <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
-          <div class="brand-text"><h3>FYDP System</h3><p>Admin Panel</p></div>
+          <div class="brand-text">
+            <h3>FYDP System</h3>
+            <p>Admin Panel</p>
+          </div>
         </div>
       </div>
       <nav class="sidebar-nav">
-        <div class="nav-label">Main</div>
-        <a href="/admin/dashboard"><span class="nav-icon">📊</span> Dashboard</a>
-        <a href="/admin/users" class="active"><span class="nav-icon">👥</span> Manage Users</a>
-        <a href="/admin/groups"><span class="nav-icon">📁</span> Manage Groups</a>
-        <div class="nav-label">Operations</div>
-        <a href="/admin/import"><span class="nav-icon">📥</span> Bulk Import</a>
+        <div class="nav-label">Overview</div>
+        <a href="/admin/dashboard"><i class="fas fa-th-large" style="width:20px;text-align:center;"></i> Dashboard</a>
+
+        <div class="nav-label">Assignments</div>
+        <a href="/admin/assign-supervisor"><i class="fas fa-user-tie" style="width:20px;text-align:center;"></i>
+          Supervisor Assign</a>
+        <a href="/admin/assign-groups"><i class="fas fa-layer-group" style="width:20px;text-align:center;"></i> FYDP
+          Group Assign</a>
+        <a href="/admin/assign-teacher"><i class="fas fa-chalkboard-teacher" style="width:20px;text-align:center;"></i>
+          Course Teacher Assign</a>
+
+        <div class="nav-label">Management</div>
+        <a href="/admin/users" class="active"><i class="fas fa-users" style="width:20px;text-align:center;"></i> Manage
+          Users</a>
+        <a href="/admin/groups"><i class="fas fa-folder-open" style="width:20px;text-align:center;"></i> Manage
+          Groups</a>
+        <a href="/admin/import"><i class="fas fa-file-import" style="width:20px;text-align:center;"></i> Bulk Import</a>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-user">
           <div class="user-avatar" id="userAvatar">AD</div>
-          <div class="user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
+          <div class="user-info">
+            <h4 id="userName">Admin</h4>
+            <p>Administrator</p>
+          </div>
         </div>
       </div>
     </aside>
@@ -38,7 +57,8 @@
       <header class="top-header">
         <div class="breadcrumb"><i class="fas fa-home"></i> Admin / <span>Manage Users</span></div>
         <div class="header-actions">
-          <button class="notification-bell"><i class="fas fa-bell"></i><span class="badge" style="display:none">0</span></button>
+          <button class="notification-bell"><i class="fas fa-bell"></i><span class="badge"
+              style="display:none">0</span></button>
           <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
         </div>
       </header>
@@ -58,7 +78,8 @@
         <div class="card" style="margin-bottom:20px;">
           <div class="card-body" style="padding:16px 24px;">
             <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-              <input type="text" class="form-control" id="searchInput" placeholder="🔍 Search by name, ID, or email..." style="max-width:280px;" oninput="debounceSearch()">
+              <input type="text" class="form-control" id="searchInput" placeholder="🔍 Search by name, ID, or email..."
+                style="max-width:280px;" oninput="debounceSearch()">
               <select class="form-control" id="filterRole" style="max-width:160px;" onchange="loadUsers()">
                 <option value="">All Roles</option>
                 <option value="STUDENT">Student</option>
@@ -94,7 +115,9 @@
                   </tr>
                 </thead>
                 <tbody id="usersTableBody">
-                  <tr><td colspan="7" style="text-align:center;color:#999;padding:40px;">Loading users...</td></tr>
+                  <tr>
+                    <td colspan="7" style="text-align:center;color:#999;padding:40px;">Loading users...</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -206,7 +229,7 @@
         const search = document.getElementById('searchInput').value;
         const role = document.getElementById('filterRole').value;
         const status = document.getElementById('filterStatus').value;
-        
+
         let url = `/api/admin/users?page=${currentPage}&limit=10`;
         if (search) url += `&search=${encodeURIComponent(search)}`;
         if (role) url += `&role=${role}`;
@@ -251,11 +274,11 @@
     function renderPagination(p) {
       const el = document.getElementById('pagination');
       if (p.totalPages <= 1) { el.innerHTML = ''; return; }
-      let html = `<button ${p.page <= 1 ? 'disabled' : ''} onclick="goToPage(${p.page-1})">« Prev</button>`;
+      let html = `<button ${p.page <= 1 ? 'disabled' : ''} onclick="goToPage(${p.page - 1})">« Prev</button>`;
       for (let i = 1; i <= p.totalPages; i++) {
         html += `<button class="${i === p.page ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
       }
-      html += `<button ${p.page >= p.totalPages ? 'disabled' : ''} onclick="goToPage(${p.page+1})">Next »</button>`;
+      html += `<button ${p.page >= p.totalPages ? 'disabled' : ''} onclick="goToPage(${p.page + 1})">Next »</button>`;
       el.innerHTML = html;
     }
 
@@ -347,4 +370,5 @@
     }
   </script>
 </body>
+
 </html>
