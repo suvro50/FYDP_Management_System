@@ -468,7 +468,7 @@ function renderGroups(groups) {
 
     let actionBtn;
     if (isMyGroup && isLead) {
-      actionBtn = `<button class="pf-join-btn" style="background:var(--pf-success);color:#fff;cursor:default" disabled><i class="fas fa-crown"></i> Your Team (Lead)</button>`;
+      actionBtn = `<div style="display:flex;gap:6px;width:100%"><button class="pf-join-btn" style="background:var(--pf-success);color:#fff;flex:1;cursor:default" disabled><i class="fas fa-crown"></i> Your Team (Lead)</button><button class="pf-join-btn" style="background:#ef4444;color:#fff;flex:1" onclick="event.stopPropagation();dropTeam(${g.group_id},'${g.group_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash-alt"></i> Drop Team</button></div>`;
     } else if (isMyGroup && !isLead) {
       actionBtn = `<button class="pf-join-btn" style="background:#ef4444;color:#fff" onclick="sendLeaveRequest(${g.group_id})"><i class="fas fa-sign-out-alt"></i> Request to Leave</button>`;
     } else if (_userIsInTeam) {
@@ -523,6 +523,15 @@ async function sendLeaveRequest(groupId) {
   try {
     await apiFetch('/api/pre-fydp/leave-request', { method:'POST', body:{ group_id: groupId }});
     toast('Leave request sent to the group leader!', 'success');
+    loadGroups(); loadStats();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function dropTeam(groupId, groupName) {
+  if (!confirm(`⚠️ Are you sure you want to DROP the team "${groupName}"?\n\nThis will:\n• Remove ALL members from the group\n• Delete the group permanently\n• Notify all members\n\nThis action cannot be undone!`)) return;
+  try {
+    const res = await apiFetch('/api/pre-fydp/drop-team', { method:'POST', body:{ group_id: groupId }});
+    toast(res.message || 'Team dropped successfully!', 'success');
     loadGroups(); loadStats();
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -612,10 +621,10 @@ function openGroupDetail(groupId) {
   const amLead = myRole && myRole.member_role === 'Lead';
 
   if (isMyGroup && amLead) {
-    joinBtn.disabled = true;
-    joinBtn.innerHTML = '<i class="fas fa-crown"></i> You are the Team Leader';
-    joinBtn.style.background = 'var(--pf-success)';
-    joinBtn.onclick = null;
+    joinBtn.disabled = false;
+    joinBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Drop Team';
+    joinBtn.style.background = '#ef4444';
+    joinBtn.onclick = () => { dropTeam(g.group_id, g.group_name); closeGroupDetail(); };
   } else if (isMyGroup && !amLead) {
     joinBtn.disabled = false;
     joinBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Request to Leave';

@@ -208,7 +208,7 @@ function renderMates(students) {
           ${s.github_url ? `<a href="${s.github_url}" target="_blank" class="pf-mate-link"><i class="fab fa-github"></i></a>` : ''}
           ${s.linkedin_url ? `<a href="${s.linkedin_url}" target="_blank" class="pf-mate-link"><i class="fab fa-linkedin-in"></i></a>` : ''}
         </div>
-        <button class="pf-invite-btn" onclick="toast('Invite feature coming soon!','info')">
+        <button class="pf-invite-btn" onclick="window.location.href='/profile?id=${s.user_id}'">
           <i class="fas fa-user-plus"></i> View Profile
         </button>
       </div>`;

@@ -249,7 +249,8 @@ if (!sessionStorage.getItem('tab_initialized')) {
   };
 }
 
-// DARK MODE — Re-enabled with local storage to allow professional dark theme toggling.
+// DARK MODE — Scoped to Pre-FYDP pages only (pages with #darkModeToggle button).
+// Other dashboards are dark-only and should never get light-mode applied.
 function initDarkMode() {
   const isLoginPage = document.body.classList.contains('login-page') ||
                       window.location.pathname === '/login' ||
@@ -258,8 +259,27 @@ function initDarkMode() {
     document.body.classList.remove('dark-mode', 'light-mode');
     return;
   }
+
+  // Only apply light/dark toggle on pages that actually have the toggle button
+  const toggleBtn = document.querySelector('#darkModeToggle');
+  if (!toggleBtn) {
+    // No toggle button = this page does NOT support light mode.
+    // Ensure dark-mode is on and light-mode is off, regardless of stored pref.
+    document.body.classList.remove('light-mode');
+    document.body.classList.add('dark-mode');
+    return;
+  }
+
+  // Migrate old global 'theme' key to scoped 'pf_theme' key (one-time)
+  const oldTheme = localStorage.getItem('theme');
+  if (oldTheme && !localStorage.getItem('pf_theme')) {
+    localStorage.setItem('pf_theme', oldTheme);
+    localStorage.removeItem('theme');
+  } else if (oldTheme) {
+    localStorage.removeItem('theme');
+  }
   
-  const savedTheme = localStorage.getItem('theme');
+  const savedTheme = localStorage.getItem('pf_theme');
   if (savedTheme === 'light') {
     document.body.classList.remove('dark-mode');
     document.body.classList.add('light-mode');
@@ -268,8 +288,8 @@ function initDarkMode() {
     document.body.classList.remove('light-mode');
   }
   
-  // Update toggle icon if present
-  const icon = document.querySelector('#darkModeToggle i');
+  // Update toggle icon
+  const icon = toggleBtn.querySelector('i');
   if (icon) {
     icon.className = document.body.classList.contains('dark-mode') ? 'fas fa-sun' : 'fas fa-moon';
   }
@@ -282,7 +302,8 @@ function toggleDarkMode() {
   } else {
     document.body.classList.add('light-mode');
   }
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  // Save under scoped key so other dashboards are not affected
+  localStorage.setItem('pf_theme', isDark ? 'dark' : 'light');
   
   const icon = document.querySelector('#darkModeToggle i');
   if (icon) {

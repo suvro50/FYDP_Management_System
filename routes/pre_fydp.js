@@ -836,4 +836,80 @@ router.patch('/leave-request/:id', async (req, res) => {
   }
 });
 
+// ── Drop Team (Leader Only) ────────────────────────────────────────────────
+router.post('/drop-team', async (req, res) => {
+  try {
+    const userId = req.session.user.user_id;
+    const { group_id } = req.body;
+
+    if (!group_id) return res.status(400).json({ error: 'group_id is required' });
+
+    // Verify user is the leader (created_by) of this group
+    const [[group]] = await db.query(
+      `SELECT g.group_id, g.group_name, g.created_by
+       FROM pre_fydp_groups g
+       WHERE g.group_id = ? AND g.created_by = ?`,
+      [group_id, userId]
+    );
+    if (!group) {
+      return res.status(403).json({ error: 'Only the team leader can drop this group' });
+    }
+
+    // Get all members (to notify them and reset availability)
+    const [members] = await db.query(
+      `SELECT gm.user_id, u.full_name FROM pre_fydp_group_members gm
+       JOIN users u ON u.user_id = gm.user_id
+       WHERE gm.group_id = ?`,
+      [group_id]
+    );
+
+    const leaderName = req.session.user.full_name;
+
+    // Notify all members except the leader
+    for (const m of members) {
+      if (m.user_id === userId) continue; // skip leader
+      await db.query(
+        `INSERT INTO notifications (user_id, notification_type, title, message, is_read)
+         VALUES (?, 'SYSTEM_ALERT', ?, ?, 0)`,
+        [
+          m.user_id,
+          `🚫 Team Dropped — ${group.group_name}`,
+          `Team leader ${leaderName} has dropped the group "${group.group_name}". All members have been removed. You are now free to join or create another team.`
+        ]
+      );
+    }
+
+    // Reset all members' availability to AVAILABLE
+    const memberIds = members.map(m => m.user_id);
+    if (memberIds.length > 0) {
+      await db.query(
+        `UPDATE pre_fydp_profiles SET availability_status = 'AVAILABLE'
+         WHERE user_id IN (${memberIds.map(() => '?').join(',')})`,
+        memberIds
+      );
+    }
+
+    // Remove all members from the group
+    await db.query('DELETE FROM pre_fydp_group_members WHERE group_id = ?', [group_id]);
+
+    // Cancel all pending requests for this group
+    await db.query(
+      `UPDATE pre_fydp_join_requests SET request_status = 'CANCELLED', responded_at = NOW()
+       WHERE group_id = ? AND request_status = 'PENDING'`,
+      [group_id]
+    );
+
+    // Delete required skills for this group
+    await db.query('DELETE FROM pre_fydp_group_required_skills WHERE group_id = ?', [group_id]);
+
+    // Delete the group itself
+    await db.query('DELETE FROM pre_fydp_groups WHERE group_id = ?', [group_id]);
+
+    res.json({ success: true, message: `Group "${group.group_name}" has been dropped successfully.` });
+  } catch (err) {
+    console.error('Pre-FYDP drop team error:', err);
+    res.status(500).json({ error: 'Failed to drop team' });
+  }
+});
+
 module.exports = router;

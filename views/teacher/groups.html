@@ -781,8 +781,9 @@
           const total = res.total_members || 4;
           if (w) {
             const allApproved = w.approved_count >= total;
+            const hasAnyApproved = w.approved_count > 0;
             const cardClass = allApproved ? 'all-approved' : '';
-            const dotClass = allApproved ? 'green' : 'gray';
+            const dotClass = hasAnyApproved ? 'green' : 'gray';
             const numClass = allApproved ? 'all-approved' : '';
             html += `<div class="week-card ${cardClass}" onclick="openWeekDetail(${NAV.group.group_id}, ${i})">
               <div class="wk-label">WEEK</div>

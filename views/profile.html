@@ -154,7 +154,44 @@
         <!-- Bio Section -->
         <div class="info-card" style="margin-top:20px;" id="bioCard">
           <h3><i class="fas fa-quote-left"></i> About</h3>
-          <p id="bioText" style="line-height:1.8;color:#555;">No bio added yet.</p>
+          <p id="bioText" style="line-height:1.8;color:#94a3b8;">No bio added yet.</p>
+        </div>
+
+        <!-- Pre-FYDP Extra Info (shown only for PRE_FYDP_STUDENT profiles) -->
+        <div id="preFydpSection" style="display:none;margin-top:20px;">
+          <!-- CGPA + Role + Strength -->
+          <div class="profile-grid" style="margin-bottom:20px;">
+            <div class="info-card">
+              <h3><i class="fas fa-graduation-cap"></i> Academic Info</h3>
+              <div class="info-row"><span class="info-label">CGPA</span><span class="info-value" id="pfCgpa">—</span></div>
+              <div class="info-row"><span class="info-label">Preferred Role</span><span class="info-value" id="pfRole">—</span></div>
+              <div class="info-row"><span class="info-label">Availability</span><span class="info-value" id="pfAvailability">—</span></div>
+              <div class="info-row"><span class="info-label">Profile Strength</span>
+                <span class="info-value">
+                  <span id="pfStrength">—</span>
+                  <div style="margin-top:4px;height:6px;background:#1e2240;border-radius:3px;width:120px;overflow:hidden;">
+                    <div id="pfStrengthBar" style="height:100%;background:linear-gradient(90deg,#7c3aed,#a78bfa);border-radius:3px;width:0%;"></div>
+                  </div>
+                </span>
+              </div>
+            </div>
+            <div class="info-card">
+              <h3><i class="fas fa-link"></i> Links</h3>
+              <div class="info-row"><span class="info-label"><i class="fab fa-github"></i> GitHub</span><span class="info-value" id="pfGithubWrap">—</span></div>
+              <div class="info-row"><span class="info-label"><i class="fab fa-linkedin"></i> LinkedIn</span><span class="info-value" id="pfLinkedinWrap">—</span></div>
+              <div class="info-row"><span class="info-label"><i class="fas fa-globe"></i> Portfolio</span><span class="info-value" id="pfPortfolioWrap">—</span></div>
+            </div>
+          </div>
+          <!-- Skills -->
+          <div class="info-card" style="margin-bottom:20px;">
+            <h3><i class="fas fa-code"></i> Skills</h3>
+            <div id="pfSkills" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
+          </div>
+          <!-- Domain Interests -->
+          <div class="info-card">
+            <h3><i class="fas fa-lightbulb"></i> Domain Interests</h3>
+            <div id="pfDomains" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -218,6 +255,12 @@
           <a href="/student/teacher-chat"><span class="nav-icon"><i class="fas fa-comment-dots"></i></span> DM Course Teacher</a>
           <div class="nav-label" style="margin-top:12px;">ACCOUNT</div>
           <a href="/profile" class="active"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+          <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`,
+        'PRE_FYDP_STUDENT': `<div class="nav-label">MAIN</div>
+          <a href="/pre-fydp/dashboard"><span class="nav-icon"><i class="fas fa-th-large"></i></span> Dashboard</a>
+          <a href="/pre-fydp/find-teammates"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> Find Teammates</a>
+          <a href="/pre-fydp/my-requests"><span class="nav-icon"><i class="fas fa-envelope"></i></span> My Requests</a>
+          <a href="/pre-fydp/profile-settings"><span class="nav-icon"><i class="fas fa-cog"></i></span> Profile Settings</a>
           <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>`
       };
       document.getElementById('sidebarNav').innerHTML = navMap[currentUser.role] || '';
@@ -253,6 +296,46 @@
 
         // Bio
         document.getElementById('bioText').textContent = u.bio || 'No bio added yet.';
+
+        // Pre-FYDP extra info — show when viewing a PRE_FYDP_STUDENT profile
+        if (u.role === 'PRE_FYDP_STUDENT') {
+          document.getElementById('preFydpSection').style.display = 'block';
+
+          // Academic info
+          document.getElementById('pfCgpa').textContent = u.cgpa ? u.cgpa : '—';
+          const roleDisplay = (u.preferred_role || '').replace(/_/g,' ');
+          document.getElementById('pfRole').textContent = roleDisplay || '—';
+          const avail = (u.availability_status || '').replace(/_/g,' ');
+          document.getElementById('pfAvailability').textContent = avail || '—';
+          const str = u.profile_strength || 0;
+          document.getElementById('pfStrength').textContent = str + '%';
+          document.getElementById('pfStrengthBar').style.width = str + '%';
+
+          // Links
+          const gh = u.github_url;
+          document.getElementById('pfGithubWrap').innerHTML = gh
+            ? `<a href="${gh}" target="_blank" style="color:#a78bfa;text-decoration:none;word-break:break-all;">${gh}</a>` : '—';
+          const li = u.linkedin_url;
+          document.getElementById('pfLinkedinWrap').innerHTML = li
+            ? `<a href="${li}" target="_blank" style="color:#a78bfa;text-decoration:none;word-break:break-all;">${li}</a>` : '—';
+          const po = u.portfolio_url;
+          document.getElementById('pfPortfolioWrap').innerHTML = po
+            ? `<a href="${po}" target="_blank" style="color:#a78bfa;text-decoration:none;word-break:break-all;">${po}</a>` : '—';
+
+          // Skills
+          const skillsEl = document.getElementById('pfSkills');
+          const skills = Array.isArray(u.skills) ? u.skills : [];
+          skillsEl.innerHTML = skills.length
+            ? skills.map(s => `<span style="padding:4px 12px;background:#1e2240;border:1px solid #2d3354;border-radius:20px;font-size:0.78rem;color:#a78bfa;">${s}</span>`).join('')
+            : '<span style="color:#64748b;font-size:0.85rem;">No skills added yet.</span>';
+
+          // Domains
+          const domainsEl = document.getElementById('pfDomains');
+          const domains = Array.isArray(u.domain_interests) ? u.domain_interests : [];
+          domainsEl.innerHTML = domains.length
+            ? domains.map(d => `<span style="padding:4px 12px;background:rgba(108,92,231,0.15);border:1px solid rgba(108,92,231,0.3);border-radius:20px;font-size:0.78rem;color:#c4b5fd;">${d}</span>`).join('')
+            : '<span style="color:#64748b;font-size:0.85rem;">No domain interests added yet.</span>';
+        }
 
         // Edit section — only for own profile
         if (isOwnProfile) {
