@@ -122,6 +122,20 @@ router.get('/messages/:userId', async (req, res) => {
       if (io) io.to(`user_${otherId}`).emit('messages_read', { by: myId, sender: otherId });
     }
 
+    // Clear DM notifications from other user
+    const [[partnerInfo]] = await db.query('SELECT full_name FROM users WHERE user_id = ?', [otherId]);
+    if (partnerInfo) {
+      await db.query(
+        `UPDATE notifications 
+         SET is_read = 1 
+         WHERE user_id = ? 
+           AND (notification_type = 'NEW_DIRECT_MESSAGE' OR notification_type = 'SYSTEM_ALERT') 
+           AND (title LIKE ? OR message LIKE ?) 
+           AND is_read = 0`,
+        [myId, `%${partnerInfo.full_name}%`, `%${partnerInfo.full_name}%`]
+      );
+    }
+
     res.json({ messages });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load messages' });
@@ -155,12 +169,19 @@ router.post('/direct/send', uploadSingle('attachment'), async (req, res) => {
     // Persistent notification for receiver
     const senderName = req.session.user.full_name;
     const preview = (message_text || '').substring(0, 60) || (attachmentName ? `📎 ${attachmentName}` : 'Sent a file');
+    let senderRoleLabel = 'User';
+    if (req.session.user.role === 'STUDENT') senderRoleLabel = 'Student';
+    else if (req.session.user.role === 'SUPERVISOR') senderRoleLabel = 'Supervisor';
+    else if (req.session.user.role === 'COURSE_TEACHER') senderRoleLabel = 'Course Teacher';
+
+    const notifTitle = `💬 DM from ${senderRoleLabel}: ${senderName}`;
+
     await db.query(
-      `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
-      [receiver_id, `💬 New Message from ${senderName}`, preview]
+      `INSERT INTO notifications (user_id, notification_type, title, message, reference_entity_id, reference_entity_type) VALUES (?, 'NEW_DIRECT_MESSAGE', ?, ?, ?, 'direct_messages')`,
+      [receiver_id, notifTitle, preview, result.insertId]
     );
     if (io) {
-      io.to(`user_${receiver_id}`).emit('notification', { title: `New message from ${senderName}`, message: preview });
+      io.to(`user_${receiver_id}`).emit('notification', { title: notifTitle, message: preview });
     }
 
     res.json({ 
@@ -198,10 +219,19 @@ router.post('/messages', uploadSingle('attachment'), async (req, res) => {
     );
 
     // Create notification for receiver
+    const senderName = req.session.user.full_name;
+    const preview = (message_text || '').substring(0, 60) || (attachmentName ? `📎 ${attachmentName}` : 'Sent a file');
+    let senderRoleLabel = 'User';
+    if (req.session.user.role === 'STUDENT') senderRoleLabel = 'Student';
+    else if (req.session.user.role === 'SUPERVISOR') senderRoleLabel = 'Supervisor';
+    else if (req.session.user.role === 'COURSE_TEACHER') senderRoleLabel = 'Course Teacher';
+
+    const notifTitle = `💬 DM from ${senderRoleLabel}: ${senderName}`;
+
     await db.query(
-      `INSERT INTO notifications (user_id, notification_type, message) 
-       VALUES (?, 'SYSTEM_ALERT', ?)`,
-      [receiver_id, `You have a new message from ${req.session.user.full_name}`]
+      `INSERT INTO notifications (user_id, notification_type, title, message, reference_entity_id, reference_entity_type) 
+       VALUES (?, 'NEW_DIRECT_MESSAGE', ?, ?, ?, 'direct_messages')`,
+      [receiver_id, notifTitle, preview, result.insertId]
     );
 
     // Socket emission
@@ -219,7 +249,7 @@ router.post('/messages', uploadSingle('attachment'), async (req, res) => {
         created_at: new Date().toISOString()
       };
       io.to(room).emit('new_message', messageData);
-      io.to(`user_${receiver_id}`).emit('notification', { message: `New message from ${req.session.user.full_name}` });
+      io.to(`user_${receiver_id}`).emit('notification', { title: notifTitle, message: preview });
     }
 
     // Email notification
@@ -424,6 +454,20 @@ router.get('/supervisor/student-messages/:studentId', async (req, res) => {
       if (io) io.to(`user_${otherId}`).emit('messages_read', { by: myId, sender: otherId });
     }
 
+    // Clear DM notifications from student
+    const [[studentInfo]] = await db.query('SELECT full_name FROM users WHERE user_id = ?', [otherId]);
+    if (studentInfo) {
+      await db.query(
+        `UPDATE notifications 
+         SET is_read = 1 
+         WHERE user_id = ? 
+           AND (notification_type = 'NEW_DIRECT_MESSAGE' OR notification_type = 'SYSTEM_ALERT') 
+           AND (title LIKE ? OR message LIKE ?) 
+           AND is_read = 0`,
+        [myId, `%${studentInfo.full_name}%`, `%${studentInfo.full_name}%`]
+      );
+    }
+
     res.json({ messages });
   } catch (err) {
     console.error('Student messages error:', err.message);
@@ -463,7 +507,11 @@ router.get('/group/:groupId/messages', async (req, res) => {
 
     // Clear group chat notifications for this user
     await db.query(
-      "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND message LIKE 'New group message%' AND is_read = 0",
+      `UPDATE notifications 
+       SET is_read = 1 
+       WHERE user_id = ? 
+         AND (notification_type = 'NEW_GROUP_MESSAGE' OR title LIKE '%Group Message%' OR message LIKE '%group message%' OR message LIKE 'New group message%') 
+         AND is_read = 0`,
       [req.session.user.user_id]
     );
 
@@ -543,13 +591,20 @@ router.post('/group/:groupId/messages', uploadSingle('attachment'), async (req, 
 
     const senderName = req.session.user.full_name;
     const msgPreview = (message_text || '').substring(0, 60) || (attachmentName ? `📎 ${attachmentName}` : 'Sent a file');
+    
+    let channelLabel = 'Members';
+    if (type === 'WITH_SUPERVISOR') channelLabel = 'Supervisor';
+    else if (type === 'WITH_TEACHER') channelLabel = 'Teacher';
+
+    const notifTitle = `💬 Group Message (${channelLabel}): ${senderName}`;
+
     for (const uid of notifyUsers) {
       await db.query(
-        `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
-        [uid, `💬 Group Message from ${senderName}`, msgPreview]
+        `INSERT INTO notifications (user_id, notification_type, title, message, reference_entity_id, reference_entity_type) VALUES (?, 'NEW_GROUP_MESSAGE', ?, ?, ?, 'group_chat_messages')`,
+        [uid, notifTitle, msgPreview, result.insertId]
       );
       if (io) {
-        io.to(`user_${uid}`).emit('notification', { title: `Group message from ${senderName}`, message: msgPreview });
+        io.to(`user_${uid}`).emit('notification', { title: notifTitle, message: msgPreview });
       }
     }
 
@@ -692,6 +747,20 @@ router.get('/teacher/student-messages/:studentId', async (req, res) => {
     if (updated.affectedRows > 0) {
       const io = req.app.get('io');
       if (io) io.to(`user_${otherId}`).emit('messages_read', { by: myId, sender: otherId });
+    }
+
+    // Clear DM notifications from student
+    const [[studentInfo]] = await db.query('SELECT full_name FROM users WHERE user_id = ?', [otherId]);
+    if (studentInfo) {
+      await db.query(
+        `UPDATE notifications 
+         SET is_read = 1 
+         WHERE user_id = ? 
+           AND (notification_type = 'NEW_DIRECT_MESSAGE' OR notification_type = 'SYSTEM_ALERT') 
+           AND (title LIKE ? OR message LIKE ?) 
+           AND is_read = 0`,
+        [myId, `%${studentInfo.full_name}%`, `%${studentInfo.full_name}%`]
+      );
     }
 
     res.json({ messages });

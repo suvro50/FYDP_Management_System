@@ -134,6 +134,25 @@ router.get('/groups', async (req, res) => {
 router.get('/inbox', async (req, res) => {
   try {
     const teacherId = req.session.user.user_id;
+
+    // Clear report and package alert notifications for this teacher
+    await db.query(
+      `UPDATE notifications 
+       SET is_read = 1 
+       WHERE user_id = ? 
+         AND (
+           title LIKE '%Report Submitted%' 
+           OR title LIKE '%Report Approved%' 
+           OR title LIKE '%Report Rejected%' 
+           OR title LIKE '%Package%' 
+           OR title LIKE '%Escalation%' 
+           OR message LIKE '%report submitted%'
+           OR message LIKE '%package%'
+         ) 
+         AND is_read = 0`,
+      [teacherId]
+    );
+
     const statusFilter = req.query.status || '';
 
     let where = `WHERE cts.course_teacher_id = ?`;
@@ -185,6 +204,25 @@ router.get('/inbox/:id/reports', async (req, res) => {
       [inboxId, teacherId]
     );
     if (!inbox) return res.status(403).json({ error: 'Not authorized' });
+
+    // Clear report and package alert notifications for this teacher for this group/week
+    await db.query(
+      `UPDATE notifications 
+       SET is_read = 1 
+       WHERE user_id = ? 
+         AND (
+           title LIKE '%Report Submitted%' 
+           OR title LIKE '%Report Approved%' 
+           OR title LIKE '%Report Rejected%' 
+           OR title LIKE '%Package%' 
+           OR title LIKE '%Escalation%' 
+           OR message LIKE '%report submitted%'
+           OR message LIKE '%package%'
+         ) 
+         AND (message LIKE ? OR message LIKE ?)
+         AND is_read = 0`,
+      [teacherId, `%${inbox.group_code}%`, `%Week ${inbox.week_no}%`]
+    );
 
     const [reports] = await db.query(
       `SELECT wpr.*, u.full_name as student_name, u.university_id as student_uid,

@@ -18,7 +18,7 @@ function enrichNotification(n, role) {
     SYSTEM_ALERT:         '🔔 Alert',
   };
 
-  n.title = titleMap[n.notification_type] || '🔔 Notification';
+  n.title = n.title || titleMap[n.notification_type] || '🔔 Notification';
 
   // Role-based dashboard prefixes
   const isSupervisor    = role === 'SUPERVISOR';
@@ -29,6 +29,7 @@ function enrichNotification(n, role) {
   let link = '/notifications';
   const t = n.notification_type;
   const msg = (n.message || '').toLowerCase();
+  const title = (n.title || '').toLowerCase();
 
   if (t === 'INVITATION_RECEIVED' || t === 'INVITATION_ACCEPTED' || t === 'INVITATION_REJECTED') {
     // Only students receive team invitations
@@ -52,41 +53,64 @@ function enrichNotification(n, role) {
     else link = '/student/dashboard';
 
   } else if (t === 'NEW_GROUP_MESSAGE') {
-    // [v3.1] New group chat message notification
-    if (isSupervisor) link = '/supervisor/groups';
-    else if (isTeacher) link = '/teacher/groups';
-    else link = '/student/my-group-chat';
+    if (isSupervisor) {
+      link = '/supervisor/groups';
+    } else if (isTeacher) {
+      if (title.includes('supervisor')) link = '/teacher/supervising_groups';
+      else link = '/teacher/groups';
+    } else {
+      // Student
+      if (title.includes('members')) link = '/student/my-group-chat';
+      else if (title.includes('supervisor')) link = '/student/supervisor-group-chat';
+      else if (title.includes('teacher')) link = '/student/teacher-group-chat';
+      else link = '/student/my-group-chat';
+    }
 
   } else if (t === 'NEW_DIRECT_MESSAGE') {
-    // [v3.1] New direct message notification
-    if (isSupervisor) link = '/supervisor/student-inbox';
-    else if (isTeacher) link = '/teacher/student-inbox';
-    else link = '/student/supervisor-chat';
+    if (isSupervisor) {
+      if (title.includes('teacher') || title.includes('course')) link = '/supervisor/chat';
+      else link = '/supervisor/student-inbox';
+    } else if (isTeacher) {
+      if (title.includes('supervisor')) link = '/teacher/supervisor-chat';
+      else link = '/teacher/student-inbox';
+    } else {
+      // Student
+      if (title.includes('teacher') || title.includes('course')) link = '/student/teacher-chat';
+      else link = '/student/supervisor-chat';
+    }
 
   } else if (t === 'SYSTEM_ALERT') {
-    if (msg.includes('group message') || msg.includes('new message in')) {
-      if (isSupervisor) link = '/supervisor/groups';
-      else if (isTeacher) link = '/teacher/groups';
-      else link = '/student/my-group-chat';
-    } else if (msg.includes('message from') && msg.includes('supervisor')) {
-      if (isTeacher) link = '/teacher/supervisor-chat';
-      else link = '/student/supervisor-chat';
-    } else if (msg.includes('message from') && (msg.includes('teacher') || msg.includes('course'))) {
-      link = '/student/teacher-chat';
-    } else if (msg.includes('message from') && msg.includes('student')) {
-      if (isSupervisor) link = '/supervisor/student-inbox';
-      else if (isTeacher) link = '/teacher/student-inbox';
-      else link = '/notifications';
-    } else if (msg.includes('message from')) {
-      // Fallback: DM received
-      if (isSupervisor) link = '/supervisor/student-inbox';
-      else if (isTeacher) link = '/teacher/student-inbox';
-      else link = '/student/supervisor-chat';
-    } else if (msg.includes('pending') || msg.includes('report')) {
+    if (title.includes('message') || msg.includes('message') || title.includes('dm') || msg.includes('dm')) {
+      if (title.includes('group') || msg.includes('group')) {
+        if (isSupervisor) {
+          link = '/supervisor/groups';
+        } else if (isTeacher) {
+          if (title.includes('supervisor')) link = '/teacher/supervising_groups';
+          else link = '/teacher/groups';
+        } else {
+          if (title.includes('members')) link = '/student/my-group-chat';
+          else if (title.includes('supervisor')) link = '/student/supervisor-group-chat';
+          else if (title.includes('teacher')) link = '/student/teacher-group-chat';
+          else link = '/student/my-group-chat';
+        }
+      } else {
+        // DM fallback
+        if (isSupervisor) {
+          if (title.includes('teacher') || title.includes('course')) link = '/supervisor/chat';
+          else link = '/supervisor/student-inbox';
+        } else if (isTeacher) {
+          if (title.includes('supervisor')) link = '/teacher/supervisor-chat';
+          else link = '/teacher/student-inbox';
+        } else {
+          if (title.includes('teacher') || title.includes('course')) link = '/student/teacher-chat';
+          else link = '/student/supervisor-chat';
+        }
+      }
+    } else if (msg.includes('pending') || msg.includes('report') || title.includes('report')) {
       if (isSupervisor) link = '/supervisor/approvals';
       else if (isTeacher) link = '/teacher/inbox';
       else link = '/student/reports';
-    } else if (msg.includes('escalat')) {
+    } else if (msg.includes('escalat') || title.includes('escalat')) {
       if (isTeacher) link = '/teacher/inbox';
       else if (isSupervisor) link = '/supervisor/approvals';
     }

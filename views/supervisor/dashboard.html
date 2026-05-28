@@ -549,10 +549,22 @@
         const reportBg    = status === 'pending' ? '#2a1500' : (status === 'overdue' ? '#2a0a0a' : '#0f2e1a');
         const reportColor = status === 'pending' ? '#fbbf24' : (status === 'overdue' ? '#ef4444' : '#10b981');
         const sc = stageColors[g.stage_name] || '#94a3b8';
-        const memberCount = g.member_count || 4;
-        const avatars = Array.from({length:Math.min(memberCount,4)}).map((_,i) =>
-          `<span style="width:24px;height:24px;border-radius:50%;background:hsl(${i*60+200},60%,45%);display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;border:2px solid #161929;margin-left:${i?-6:0}px;">${String.fromCharCode(65+i)}</span>`
-        ).join('');
+        const memberCount = g.members ? g.members.length : (g.member_count || 4);
+        const showCount = Math.min(memberCount, 4);
+        const membersToShow = (g.members || []).slice(0, showCount);
+        let avatars = '';
+        if (membersToShow.length > 0) {
+          avatars = membersToShow.map((m, i) => {
+            const initial = m.full_name ? m.full_name.charAt(0).toUpperCase() : String.fromCharCode(65+i);
+            const role = m.member_role ? m.member_role.charAt(0).toUpperCase() + m.member_role.slice(1).toLowerCase() : 'Student';
+            const title = m.full_name ? `${m.full_name} - ${role}` : `Student ${String.fromCharCode(65+i)}`;
+            return `<span style="width:24px;height:24px;border-radius:50%;background:hsl(${i*60+200},60%,45%);display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;border:2px solid #161929;margin-left:${i?-6:0}px;" title="${escapeHtml(title)}">${escapeHtml(initial)}</span>`;
+          }).join('');
+        } else {
+          avatars = Array.from({length:showCount}).map((_,i) =>
+            `<span style="width:24px;height:24px;border-radius:50%;background:hsl(${i*60+200},60%,45%);display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;border:2px solid #161929;margin-left:${i?-6:0}px;" title="Student ${String.fromCharCode(65+i)}">${String.fromCharCode(65+i)}</span>`
+          ).join('');
+        }
         const grpCode = g.group_code || g.group_name || ('GRP-' + (g.group_id?g.group_id.toString().padStart(3,'0'):'001'));
         const domName = g.domain_name || g.domain || ['Web Dev','Machine Learning','IoT','App Dev'][(g.group_id||0)%4];
         const secName = g.section || ['CSE-A','CSE-B','CSE-C','EEE-A'][(g.group_id||0)%4];

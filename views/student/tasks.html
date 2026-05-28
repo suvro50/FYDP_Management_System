@@ -127,6 +127,122 @@
     .task-card:nth-child(4) { animation-delay: 0.15s; }
     .task-card:nth-child(5) { animation-delay: 0.2s; }
 
+    /* ── Submit Button ──────────────────────────────────────── */
+    .btn-submit-task {
+      display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px;
+      border-radius: 10px; background: linear-gradient(135deg, #6c5ce7, #7c3aed);
+      border: none; color: #fff; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .btn-submit-task:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 15px rgba(124,58,237,0.4); }
+    .btn-submit-task:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-submit-task i { font-size: 0.75rem; }
+
+    .submitted-badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+      border-radius: 10px; font-size: 0.8rem; font-weight: 700;
+      background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25);
+    }
+    .submitted-badge i { font-size: 0.75rem; }
+
+    .reviewed-badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+      border-radius: 10px; font-size: 0.8rem; font-weight: 700;
+      background: rgba(139,92,246,0.12); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.25);
+    }
+    .reviewed-badge i { font-size: 0.75rem; }
+
+    .accepted-badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+      border-radius: 10px; font-size: 0.8rem; font-weight: 700;
+      background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25);
+    }
+    .accepted-badge i { font-size: 0.75rem; }
+
+    .rejected-badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+      border-radius: 10px; font-size: 0.8rem; font-weight: 700;
+      background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.25);
+    }
+    .rejected-badge i { font-size: 0.75rem; }
+
+    .grade-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 10px; font-size: 0.95rem; font-weight: 800;
+      background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3);
+    }
+
+    /* ── Submit Modal ───────────────────────────────────────── */
+    .tsm-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(5,7,18,0.88); z-index: 1500;
+      display: none; align-items: center; justify-content: center;
+    }
+    .tsm-overlay.active { display: flex; }
+    .tsm-modal {
+      background: #161929; border: 1px solid #2d3354; border-radius: 16px;
+      width: 90%; max-width: 520px; overflow: hidden;
+    }
+    .tsm-header {
+      padding: 20px 24px; border-bottom: 1px solid #1e2240;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .tsm-header h3 { font-size: 1.1rem; font-weight: 700; color: #e2e8f0; margin: 0; }
+    .tsm-close { background: none; border: none; color: #64748b; font-size: 1.4rem; cursor: pointer; line-height: 1; }
+    .tsm-close:hover { color: #fff; }
+    .tsm-body { padding: 20px 24px; }
+    .tsm-task-info {
+      padding: 14px 16px; background: #0d0f1e; border: 1px solid #1e2240;
+      border-radius: 10px; margin-bottom: 18px;
+    }
+    .tsm-task-title { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+    .tsm-task-meta { font-size: 0.78rem; color: #64748b; }
+    .tsm-field { margin-bottom: 16px; }
+    .tsm-label { display: block; font-size: 0.78rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tsm-textarea {
+      width: 100%; padding: 12px 16px; background: #0d0f1e; border: 1px solid #2d3354;
+      border-radius: 10px; color: #e2e8f0; font-size: 0.88rem; font-family: inherit;
+      outline: none; resize: vertical; min-height: 90px; box-sizing: border-box;
+    }
+    .tsm-textarea:focus { border-color: #6c5ce7; }
+    .tsm-textarea::placeholder { color: #2d3354; }
+    .tsm-file-area {
+      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+      background: #0d0f1e; border: 1px solid #2d3354; border-radius: 10px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .tsm-file-area:hover { border-color: #6c5ce7; }
+    .tsm-file-area i { color: #6c5ce7; font-size: 1.1rem; }
+    .tsm-file-area span { color: #94a3b8; font-size: 0.85rem; }
+    .tsm-file-name { color: #e2e8f0 !important; font-weight: 600; }
+    .tsm-footer {
+      padding: 16px 24px; border-top: 1px solid #1e2240;
+      display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+    }
+    .tsm-btn-cancel {
+      padding: 10px 20px; border-radius: 10px; background: transparent;
+      border: 1px solid #2d3354; color: #94a3b8; font-size: 0.88rem;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .tsm-btn-cancel:hover { border-color: #64748b; color: #e2e8f0; }
+    .tsm-btn-submit {
+      padding: 10px 24px; border-radius: 10px;
+      background: linear-gradient(135deg, #6c5ce7, #7c3aed);
+      border: none; color: #fff; font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .tsm-btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+    .tsm-btn-submit:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* feedback info on card */
+    .task-feedback {
+      margin-top: 12px; padding: 12px 16px; background: rgba(139,92,246,0.06);
+      border: 1px solid rgba(139,92,246,0.15); border-radius: 10px;
+    }
+    .task-feedback-label { font-size: 0.7rem; color: #8b5cf6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .task-feedback-text { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+
     /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 768px) {
       .task-stats { grid-template-columns: repeat(2, 1fr); }
@@ -245,6 +361,41 @@
     </main>
   </div>
 
+  <!-- ══ TASK SUBMIT MODAL ══ -->
+  <div class="tsm-overlay" id="tsmOverlay">
+    <div class="tsm-modal">
+      <div class="tsm-header">
+        <h3><i class="fas fa-paper-plane" style="color:#6c5ce7;margin-right:8px;"></i> Submit Task</h3>
+        <button class="tsm-close" onclick="closeTsm()">&times;</button>
+      </div>
+      <div class="tsm-body">
+        <div class="tsm-task-info">
+          <div class="tsm-task-title" id="tsmTaskTitle"></div>
+          <div class="tsm-task-meta" id="tsmTaskMeta"></div>
+        </div>
+        <input type="hidden" id="tsmTaskId">
+        <div class="tsm-field">
+          <label class="tsm-label">Notes / Comments (optional)</label>
+          <textarea class="tsm-textarea" id="tsmNotes" placeholder="Describe what you've done, any challenges, or additional notes..."></textarea>
+        </div>
+        <div class="tsm-field">
+          <label class="tsm-label">Attach File (optional)</label>
+          <div class="tsm-file-area" onclick="document.getElementById('tsmFile').click()">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <span id="tsmFileName">Click to upload PDF, Doc, ZIP, or image (max 80MB)</span>
+          </div>
+          <input type="file" id="tsmFile" style="display:none" accept=".pdf,.doc,.docx,.zip,.rar,.png,.jpg,.jpeg" onchange="tsmUpdateFile(this)">
+        </div>
+      </div>
+      <div class="tsm-footer">
+        <button class="tsm-btn-cancel" onclick="closeTsm()">Cancel</button>
+        <button class="tsm-btn-submit" id="tsmSubmitBtn" onclick="submitTask()">
+          <i class="fas fa-paper-plane"></i> Submit Task
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/main.js"></script>
   <script>
@@ -341,6 +492,8 @@
     }
 
     // ── Load Tasks ─────────────────────────────────────────────────
+    let taskSubmissionsMap = {}; // taskId -> submission data
+
     async function loadTasks() {
       try {
         const data = await apiFetch('/api/student/tasks');
@@ -357,6 +510,9 @@
         document.getElementById('pageSubTitle').textContent = `${group.group_code} · ${group.domain_name || ''} · Section ${group.section_code}`;
         document.getElementById('groupPill').innerHTML = `<span style="padding:6px 18px;border-radius:10px;font-weight:700;font-size:0.8rem;border:1px solid var(--border-color);background:rgba(59,130,246,0.1);color:#60a5fa;">${escapeHtml(group.stage_name)}</span>`;
 
+        // Load submission status for all tasks
+        await loadMySubmissions();
+
         updateStats();
         renderTasks();
 
@@ -366,6 +522,14 @@
       } catch (err) {
         document.getElementById('loadingState').innerHTML = '<div style="color:#ef4444;font-size:1.1rem;"><i class="fas fa-exclamation-circle"></i> Failed to load tasks. <button onclick="loadTasks()" class="btn btn-outline btn-sm" style="margin-left:10px;">Retry</button></div>';
       }
+    }
+
+    async function loadMySubmissions() {
+      try {
+        const data = await apiFetch('/api/student/my-task-submissions');
+        taskSubmissionsMap = {};
+        (data.submissions || []).forEach(s => { taskSubmissionsMap[s.task_id] = s; });
+      } catch(e) { taskSubmissionsMap = {}; }
     }
 
     function updateStats() {
@@ -468,11 +632,87 @@
             ? `<a href="${escapeHtml(t.file_path)}" target="_blank" class="file-link"><i class="fas fa-paperclip"></i> ${escapeHtml(t.file_name || 'Download')}</a>`
             : '';
 
+          // Submission status
+          const sub = taskSubmissionsMap[t.task_id];
+          let submitHtml = '';
+          let feedbackHtml = '';
+          let submissionDetailHtml = '';
+
+          if (sub) {
+            // Build a gorgeous presentation of the student's submission
+            const submissionFileHtml = sub.file_path
+              ? `<a href="${escapeHtml(sub.file_path)}" target="_blank" class="file-link" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); color: #34d399;"><i class="fas fa-file-pdf"></i> ${escapeHtml(sub.file_name || 'Download Submitted File')}</a>`
+              : '<span style="font-size: 0.82rem; color: var(--text-secondary); font-style: italic;"><i class="fas fa-info-circle" style="margin-right:4px;"></i>No file attached</span>';
+            
+            const submissionNotesHtml = sub.notes
+              ? `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px; padding: 10px 14px; background: rgba(255,255,255,0.015); border-left: 3px solid var(--accent-color); border-radius: 4px; white-space: pre-wrap; font-style: italic;">"${escapeHtml(sub.notes)}"</div>`
+              : '';
+
+            submissionDetailHtml = `
+              <div class="task-submission-detail" style="margin-top: 16px; padding: 16px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+                  <span style="font-size: 0.75rem; color: #a78bfa; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fas fa-paper-plane" style="margin-right: 4px;"></i> Your Submission</span>
+                  <span style="font-size: 0.72rem; color: var(--text-secondary); opacity: 0.8;"><i class="fas fa-clock" style="margin-right:3px;"></i>Submitted ${formatTimeAgo(sub.submitted_at)}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 0.82rem; color: var(--text-secondary);">File:</span>
+                    ${submissionFileHtml}
+                  </div>
+                  ${submissionNotesHtml}
+                </div>
+              </div>
+            `;
+          }
+
+          if (sub && sub.status === 'ACCEPTED') {
+            submitHtml = `<div style="display:flex;align-items:center;gap:10px;">`;
+            if (sub.grade) submitHtml += `<span class="grade-badge">${escapeHtml(sub.grade)}</span>`;
+            submitHtml += `<span class="accepted-badge"><i class="fas fa-check-circle"></i> Accepted</span></div>`;
+            if (sub.feedback) {
+              feedbackHtml = `
+                <div class="task-feedback">
+                  <div class="task-feedback-label"><i class="fas fa-comment-dots"></i> Supervisor Feedback</div>
+                  <div class="task-feedback-text">${escapeHtml(sub.feedback)}</div>
+                </div>`;
+            }
+          } else if (sub && sub.status === 'REJECTED') {
+            submitHtml = `<span class="rejected-badge"><i class="fas fa-times-circle"></i> Rejected</span>`;
+            feedbackHtml = `
+              <div class="task-feedback" style="border-color:rgba(239,68,68,0.25);background:rgba(239,68,68,0.06);">
+                <div class="task-feedback-label" style="color:#ef4444;"><i class="fas fa-exclamation-circle"></i> Rejection Reason</div>
+                <div class="task-feedback-text" style="color:#fca5a5;">${escapeHtml(sub.rejection_reason || 'No reason provided')}</div>
+                <div style="margin-top:10px;">
+                  <button class="btn-submit-task" onclick="openTsm(${t.task_id})" style="font-size:0.78rem;padding:6px 14px;">
+                    <i class="fas fa-redo"></i> Resubmit
+                  </button>
+                </div>
+              </div>`;
+          } else if (sub && sub.status === 'REVIEWED') {
+            submitHtml = `<div style="display:flex;align-items:center;gap:10px;">`;
+            if (sub.grade) submitHtml += `<span class="grade-badge">${escapeHtml(sub.grade)}</span>`;
+            submitHtml += `<span class="reviewed-badge"><i class="fas fa-check-double"></i> Reviewed</span></div>`;
+            if (sub.feedback) {
+              feedbackHtml = `
+                <div class="task-feedback">
+                  <div class="task-feedback-label"><i class="fas fa-comment-dots"></i> Supervisor Feedback</div>
+                  <div class="task-feedback-text">${escapeHtml(sub.feedback)}</div>
+                </div>`;
+            }
+          } else if (sub) {
+            submitHtml = `<span class="submitted-badge"><i class="fas fa-check"></i> Submitted</span>`;
+          } else {
+            submitHtml = `<button class="btn-submit-task" onclick="openTsm(${t.task_id})"><i class="fas fa-paper-plane"></i> Submit Task</button>`;
+          }
+
           html += `
             <div class="task-card ${sourceClass}" style="animation-delay:${idx * 0.05}s;">
               <div class="task-header">
                 <div class="task-title">${escapeHtml(t.title)}</div>
-                ${fileHtml}
+                <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                  ${fileHtml}
+                  ${submitHtml}
+                </div>
               </div>
               <div class="task-meta">
                 <span class="meta-chip ${sourceChipClass}"><i class="fas ${sourceIcon}"></i> ${escapeHtml(t.creator_name)} · ${sourceLabel}</span>
@@ -481,6 +721,8 @@
                 ${assignChip}
               </div>
               ${t.description ? `<div class="task-description">${escapeHtml(t.description)}</div>` : ''}
+              ${submissionDetailHtml}
+              ${feedbackHtml}
               <div class="task-footer">
                 <div class="task-time"><i class="fas fa-clock" style="margin-right:4px;"></i> Assigned ${formatTimeAgo(t.created_at)}</div>
               </div>
@@ -489,6 +731,73 @@
       });
 
       container.innerHTML = html;
+    }
+
+    // ── SUBMIT TASK MODAL ──────────────────────────────────────────
+    function openTsm(taskId) {
+      const task = allTasks.find(t => t.task_id === taskId);
+      if (!task) return;
+      document.getElementById('tsmTaskId').value = taskId;
+      document.getElementById('tsmTaskTitle').textContent = task.title;
+      document.getElementById('tsmTaskMeta').textContent = `Week ${task.week_no} · ${task.creator_name}`;
+      document.getElementById('tsmNotes').value = '';
+      document.getElementById('tsmFile').value = '';
+      document.getElementById('tsmFileName').textContent = 'Click to upload PDF, Doc, ZIP, or image (max 80MB)';
+      document.getElementById('tsmFileName').classList.remove('tsm-file-name');
+      document.getElementById('tsmSubmitBtn').disabled = false;
+      document.getElementById('tsmOverlay').classList.add('active');
+    }
+
+    function closeTsm() { document.getElementById('tsmOverlay').classList.remove('active'); }
+
+    // Close on overlay click
+    document.getElementById('tsmOverlay')?.addEventListener('click', (e) => {
+      if (e.target === document.getElementById('tsmOverlay')) closeTsm();
+    });
+
+    function tsmUpdateFile(input) {
+      const nameEl = document.getElementById('tsmFileName');
+      if (input.files[0]) {
+        nameEl.textContent = input.files[0].name;
+        nameEl.classList.add('tsm-file-name');
+      } else {
+        nameEl.textContent = 'Click to upload PDF, Doc, ZIP, or image (max 80MB)';
+        nameEl.classList.remove('tsm-file-name');
+      }
+    }
+
+    async function submitTask() {
+      const taskId = document.getElementById('tsmTaskId').value;
+      const notes = document.getElementById('tsmNotes').value.trim();
+      const file = document.getElementById('tsmFile').files[0];
+      const btn = document.getElementById('tsmSubmitBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+      try {
+        const fd = new FormData();
+        if (notes) fd.append('notes', notes);
+        if (file) fd.append('submission_file', file);
+
+        const res = await fetch(`/api/student/tasks/${taskId}/submit`, {
+          method: 'POST',
+          credentials: 'include',
+          body: fd
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to submit');
+
+        showToast(json.message || 'Task submitted successfully!', 'success');
+        closeTsm();
+        // Reload to update status
+        await loadMySubmissions();
+        renderTasks();
+      } catch(e) {
+        showToast(e.message || 'Failed to submit task', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Task';
+      }
     }
   </script>
 </body>

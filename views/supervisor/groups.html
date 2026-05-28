@@ -400,6 +400,145 @@
     .form-control { background:#0d0f1e !important; border-color:#2d3354 !important; color:#e2e8f0 !important; }
     .form-control:focus { border-color:#6c5ce7 !important; }
     .form-control::placeholder { color:#2d3354 !important; }
+
+    /* ═══ TASK SUB-TABS ═══ */
+    .task-subtabs { display:flex; align-items:center; gap:6px; border-bottom:1px solid #1e2240; margin-bottom:20px; padding-bottom:0; }
+    .task-subtab { display:flex; align-items:center; gap:8px; padding:12px 20px; font-size:0.88rem; font-weight:600; color:#64748b; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s; white-space:nowrap; position:relative; }
+    .task-subtab:hover { color:#a78bfa; }
+    .task-subtab.active { color:#a78bfa; border-bottom-color:#6c5ce7; }
+    .task-subtab .subtab-badge { min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:#ef4444; color:#fff; font-size:0.65rem; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+    .task-subpanel { display:none; }
+    .task-subpanel.active { display:block; }
+
+    /* ═══ TASK HISTORY CARDS ═══ */
+    .th-filters { display:flex; align-items:center; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+    .th-filter-pill { padding:6px 14px; border-radius:20px; font-size:0.78rem; font-weight:600; cursor:pointer; border:1px solid #2d3354; background:transparent; color:#94a3b8; transition:all 0.2s; }
+    .th-filter-pill:hover { border-color:#6c5ce7; color:#a78bfa; }
+    .th-filter-pill.active { background:#6c5ce7; border-color:#6c5ce7; color:#fff; }
+
+    .th-card { background:#0d0f1e; border:1px solid #1e2240; border-radius:12px; padding:18px 20px; margin-bottom:12px; transition:all 0.2s; }
+    .th-card:hover { border-color:rgba(108,92,231,0.4); }
+    .th-card-header { display:flex; align-items:start; justify-content:space-between; margin-bottom:10px; }
+    .th-card-title { font-size:1rem; font-weight:700; color:#e2e8f0; margin-bottom:2px; }
+    .th-card-meta { font-size:0.75rem; color:#64748b; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .th-card-badges { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+    .th-status { padding:4px 12px; border-radius:20px; font-size:0.72rem; font-weight:700; }
+    .th-status.pending { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); }
+    .th-status.partial { background:rgba(59,130,246,0.15); color:#3b82f6; border:1px solid rgba(59,130,246,0.3); }
+    .th-status.submitted { background:rgba(139,92,246,0.15); color:#8b5cf6; border:1px solid rgba(139,92,246,0.3); }
+    .th-status.reviewed { background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); }
+    .th-new-badge { padding:3px 10px; border-radius:20px; font-size:0.68rem; font-weight:700; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); }
+
+    .th-card-bottom { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+    .th-avatars { display:flex; align-items:center; gap:0; }
+    .th-av { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.6rem; font-weight:700; color:#fff; margin-left:-6px; border:2px solid #0d0f1e; }
+    .th-av:first-child { margin-left:0; }
+    .th-progress-wrap { display:flex; align-items:center; gap:10px; flex:1; margin:0 16px; }
+    .th-progress-bar { flex:1; height:6px; background:#1e2240; border-radius:3px; overflow:hidden; }
+    .th-progress-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#6c5ce7,#a78bfa); transition:width 0.5s ease; }
+    .th-progress-text { font-size:0.78rem; color:#94a3b8; font-weight:600; white-space:nowrap; }
+    .th-view-link { display:flex; align-items:center; gap:6px; font-size:0.82rem; color:#6c5ce7; font-weight:600; cursor:pointer; transition:all 0.15s; flex-shrink:0; }
+    .th-view-link:hover { color:#a78bfa; }
+
+    /* ═══ SUBMISSIONS LIST ═══ */
+    .ts-banner { display:flex; align-items:center; gap:10px; padding:12px 18px; background:rgba(108,92,231,0.08); border:1px solid rgba(108,92,231,0.25); border-radius:10px; margin-bottom:16px; font-size:0.88rem; color:#a78bfa; font-weight:600; }
+    .ts-banner i { font-size:1.1rem; }
+
+    .ts-card { background:#0d0f1e; border:1px solid #1e2240; border-radius:12px; margin-bottom:10px; overflow:hidden; transition:all 0.2s; }
+    .ts-card:hover { border-color:rgba(108,92,231,0.4); }
+    .ts-card-header { display:flex; align-items:center; gap:12px; padding:16px 20px; cursor:pointer; }
+    .ts-card-avatar { width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:#fff; flex-shrink:0; }
+    .ts-card-info { flex:1; min-width:0; }
+    .ts-card-name { font-size:0.92rem; font-weight:700; color:#e2e8f0; }
+    .ts-card-uid { font-size:0.72rem; color:#64748b; display:inline; margin-left:6px; }
+    .ts-card-task { font-size:0.82rem; color:#94a3b8; margin-top:2px; }
+    .ts-card-date { font-size:0.72rem; color:#475569; margin-top:1px; }
+    .ts-card-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+    .ts-grade-badge { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.85rem; font-weight:800; }
+    .ts-grade-badge.has-grade { background:rgba(16,185,129,0.2); color:#10b981; border:1px solid rgba(16,185,129,0.3); }
+    .ts-status-badge { padding:4px 12px; border-radius:20px; font-size:0.72rem; font-weight:700; }
+    .ts-status-badge.new { background:rgba(59,130,246,0.15); color:#3b82f6; border:1px solid rgba(59,130,246,0.3); }
+    .ts-status-badge.reviewed { background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); }
+    .ts-status-badge.accepted { background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); }
+    .ts-status-badge.rejected { background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); }
+    .ts-expand-icon { color:#475569; font-size:0.8rem; transition:transform 0.2s; cursor:pointer; }
+    .ts-card.expanded .ts-expand-icon { transform:rotate(180deg); }
+
+    .ts-card-detail { display:none; padding:0 20px 20px; }
+    .ts-card.expanded .ts-card-detail { display:block; }
+    .ts-detail-section { margin-bottom:14px; }
+    .ts-detail-label { font-size:0.68rem; font-weight:700; letter-spacing:1px; color:#475569; text-transform:uppercase; margin-bottom:6px; display:block; }
+    .ts-detail-notes { background:#161929; border:1px solid #1e2240; border-radius:8px; padding:12px 16px; font-size:0.85rem; color:#94a3b8; line-height:1.6; }
+    .ts-file-link { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; background:rgba(108,92,231,0.1); border:1px solid rgba(108,92,231,0.25); border-radius:8px; font-size:0.82rem; color:#a78bfa; font-weight:600; text-decoration:none; transition:all 0.2s; }
+    .ts-file-link:hover { background:rgba(108,92,231,0.2); }
+    .ts-grade-row { display:flex; align-items:flex-start; gap:16px; }
+    .ts-grade-select { width:100px; padding:10px 12px; background:#161929; border:1px solid #2d3354; border-radius:8px; color:#e2e8f0; font-size:0.85rem; cursor:pointer; outline:none; }
+    .ts-grade-select:focus { border-color:#6c5ce7; }
+    .ts-feedback-input { flex:1; padding:10px 14px; background:#161929; border:1px solid #2d3354; border-radius:8px; color:#e2e8f0; font-size:0.85rem; font-family:inherit; outline:none; resize:none; min-height:42px; }
+    .ts-feedback-input:focus { border-color:#6c5ce7; }
+    .ts-feedback-input::placeholder { color:#2d3354; }
+    .ts-save-btn { display:flex; align-items:center; gap:8px; padding:10px 20px; background:linear-gradient(135deg,#6c5ce7,#7c3aed); border:none; border-radius:8px; color:#fff; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s; margin-top:12px; margin-left:auto; }
+    .ts-save-btn:hover { opacity:0.9; transform:translateY(-1px); }
+
+    /* ═══ ACCEPT / REJECT ACTION BUTTONS ═══ */
+    .ts-action-row { display:flex; align-items:center; gap:10px; margin-top:14px; }
+    .ts-btn-accept { display:flex; align-items:center; gap:8px; padding:10px 22px; background:linear-gradient(135deg,#059669,#10b981); border:none; border-radius:8px; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; transition:all 0.2s; }
+    .ts-btn-accept:hover { opacity:0.9; transform:translateY(-1px); box-shadow:0 4px 14px rgba(16,185,129,0.4); }
+    .ts-btn-reject { display:flex; align-items:center; gap:8px; padding:10px 22px; background:linear-gradient(135deg,#dc2626,#ef4444); border:none; border-radius:8px; color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; transition:all 0.2s; }
+    .ts-btn-reject:hover { opacity:0.9; transform:translateY(-1px); box-shadow:0 4px 14px rgba(239,68,68,0.4); }
+    .ts-reject-panel { margin-top:12px; display:none; animation:fadeInUp 0.2s ease; }
+    .ts-reject-panel.open { display:block; }
+    .ts-reject-reason { width:100%; padding:12px 14px; background:#161929; border:1px solid #ef4444; border-radius:8px; color:#e2e8f0; font-size:0.85rem; font-family:inherit; outline:none; resize:vertical; min-height:72px; box-sizing:border-box; }
+    .ts-reject-reason::placeholder { color:#475569; }
+    .ts-reject-confirm { display:flex; align-items:center; gap:8px; padding:9px 18px; background:#ef4444; border:none; border-radius:8px; color:#fff; font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s; margin-top:8px; }
+    .ts-reject-confirm:hover { background:#dc2626; }
+
+    /* Inline image preview */
+    .ts-img-preview { max-width:100%; max-height:320px; border-radius:10px; border:1px solid #2d3354; cursor:pointer; transition:transform 0.2s; margin-top:6px; display:block; }
+    .ts-img-preview:hover { transform:scale(1.02); }
+
+    /* Already-reviewed result block */
+    .ts-result-block { margin-top:12px; padding:12px 16px; border-radius:10px; border:1px solid; }
+    .ts-result-block.accepted { background:rgba(16,185,129,0.07); border-color:rgba(16,185,129,0.25); }
+    .ts-result-block.rejected { background:rgba(239,68,68,0.07); border-color:rgba(239,68,68,0.25); }
+    .ts-result-block.reviewed { background:rgba(139,92,246,0.07); border-color:rgba(139,92,246,0.25); }
+
+    /* ═══ TASK DETAIL MODAL ═══ */
+    .tdm-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(5,7,18,0.88); z-index:1500; display:none; align-items:center; justify-content:center; }
+    .tdm-overlay.active { display:flex; }
+    .tdm-modal { background:#161929; border:1px solid #2d3354; border-radius:16px; width:90%; max-width:640px; max-height:85vh; display:flex; flex-direction:column; overflow:hidden; }
+    .tdm-header { padding:20px 24px; border-bottom:1px solid #1e2240; }
+    .tdm-title { font-size:1.15rem; font-weight:800; color:#e2e8f0; margin-bottom:4px; }
+    .tdm-meta { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:0.78rem; }
+    .tdm-close { position:absolute; top:16px; right:20px; background:none; border:none; color:#64748b; font-size:1.5rem; cursor:pointer; line-height:1; }
+    .tdm-close:hover { color:#fff; }
+    .tdm-tabs { display:flex; border-bottom:1px solid #1e2240; }
+    .tdm-tab { flex:1; padding:12px; text-align:center; font-size:0.85rem; font-weight:600; color:#64748b; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s; }
+    .tdm-tab:hover { color:#a78bfa; }
+    .tdm-tab.active { color:#a78bfa; border-bottom-color:#6c5ce7; }
+    .tdm-body { flex:1; overflow-y:auto; padding:20px 24px; }
+    .tdm-body::-webkit-scrollbar { width:4px; }
+    .tdm-body::-webkit-scrollbar-thumb { background:#2d3354; border-radius:2px; }
+    .tdm-panel { display:none; }
+    .tdm-panel.active { display:block; }
+    .tdm-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px; }
+    .tdm-stat { background:#0d0f1e; border:1px solid #1e2240; border-radius:10px; padding:16px; text-align:center; }
+    .tdm-stat-val { font-size:1.6rem; font-weight:800; display:block; }
+    .tdm-stat-val.blue { color:#3b82f6; }
+    .tdm-stat-val.green { color:#10b981; }
+    .tdm-stat-val.yellow { color:#f59e0b; }
+    .tdm-stat-lbl { font-size:0.72rem; color:#64748b; margin-top:4px; display:block; }
+    .tdm-desc-box { background:#0d0f1e; border:1px solid #1e2240; border-radius:10px; padding:14px 18px; font-size:0.88rem; color:#94a3b8; line-height:1.6; margin-bottom:20px; }
+    .tdm-members-title { font-size:0.7rem; font-weight:700; letter-spacing:1px; color:#475569; text-transform:uppercase; margin-bottom:10px; }
+    .tdm-member-row { display:flex; align-items:center; gap:12px; padding:12px 16px; background:#0d0f1e; border:1px solid #1e2240; border-radius:10px; margin-bottom:8px; }
+    .tdm-member-av { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:#fff; flex-shrink:0; }
+    .tdm-member-info { flex:1; }
+    .tdm-member-name { font-size:0.88rem; font-weight:600; color:#e2e8f0; }
+    .tdm-member-uid { font-size:0.72rem; color:#64748b; }
+    .tdm-member-status { padding:4px 12px; border-radius:20px; font-size:0.72rem; font-weight:700; display:flex; align-items:center; gap:5px; }
+    .tdm-member-status.submitted { background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); }
+    .tdm-member-status.pending { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); }
+    .tdm-member-status.reviewed { background:rgba(139,92,246,0.15); color:#8b5cf6; border:1px solid rgba(139,92,246,0.3); }
   </style>
 
 </head>
@@ -544,73 +683,112 @@
                 <div class="week-grid" id="weekGrid"></div>
               </div>
               <div class="gd-tab-panel" id="panel-tasks">
-                <div class="at-header">
-                  <div class="at-icon"><i class="fas fa-plus"></i></div>
-                  <div>
-                    <div class="at-title">Assign New Task</div>
-                    <div class="at-sub" id="atSub"></div>
+                <!-- ══ TASK SUB-TABS ══ -->
+                <div class="task-subtabs">
+                  <div class="task-subtab active" id="subtab-assign" onclick="switchTaskSubtab('assign')">
+                    <i class="fas fa-plus"></i> Assign Task
+                  </div>
+                  <div class="task-subtab" id="subtab-history" onclick="switchTaskSubtab('history')">
+                    <i class="fas fa-clipboard-list"></i> History <span id="historyCountLabel">(0)</span>
+                  </div>
+                  <div class="task-subtab" id="subtab-submissions" onclick="switchTaskSubtab('submissions')">
+                    <i class="fas fa-inbox"></i> Submissions <span id="submissionsBadge" class="subtab-badge" style="display:none">0</span>
                   </div>
                 </div>
-                <div class="at-field">
-                  <label class="at-label">Task Title *</label>
-                  <input class="at-input" id="taskTitle" placeholder="e.g. Complete Literature Review for Chapter 2">
-                </div>
-                <div class="at-field">
-                  <label class="at-label">Week Number *</label>
-                  <select class="at-input" id="taskWeekNo" style="cursor:pointer;">
-                    <option value="" disabled selected>— Select Week —</option>
-                    <option value="1">Week 1</option>
-                    <option value="2">Week 2</option>
-                    <option value="3">Week 3</option>
-                    <option value="4">Week 4</option>
-                    <option value="5">Week 5</option>
-                    <option value="6">Week 6</option>
-                    <option value="7">Week 7</option>
-                    <option value="8">Week 8</option>
-                    <option value="9">Week 9</option>
-                    <option value="10">Week 10</option>
-                    <option value="11">Week 11</option>
-                    <option value="12">Week 12</option>
-                  </select>
-                </div>
-                <div class="at-field">
-                  <label class="at-label">Assign To</label>
-                  <div class="at-assign-wrap" id="atAssignWrap">
-                    <div class="at-assign-select" id="atAssignSelect" onclick="toggleAssignDropdown()">
-                      <div class="at-assign-avatars" id="atAssignAvatars"></div>
-                      <span class="at-assign-text" id="atAssignText">All Members (0)</span>
-                      <i class="fas fa-chevron-down at-assign-chevron"></i>
+
+                <!-- ══ SUB-PANEL: ASSIGN TASK ══ -->
+                <div class="task-subpanel active" id="subpanel-assign">
+                  <div class="at-header">
+                    <div class="at-icon"><i class="fas fa-plus"></i></div>
+                    <div>
+                      <div class="at-title">Assign New Task</div>
+                      <div class="at-sub" id="atSub"></div>
                     </div>
-                    <div class="at-assign-dropdown" id="atAssignDropdown">
-                      <div class="at-assign-option all-row" onclick="toggleAssignAll()">
-                        <div class="at-assign-cb checked" id="atAssignAllCb"><i class="fas fa-check"></i></div>
-                        <div class="at-assign-option-avatar" style="background:linear-gradient(135deg,#6c5ce7,#7c3aed)"><i class="fas fa-users" style="font-size:0.85rem"></i></div>
-                        <div class="at-assign-option-info">
-                          <div class="at-assign-option-name">All Members</div>
-                          <div class="at-assign-option-detail" id="atAssignAllDetail">Send to all members</div>
+                  </div>
+                  <div class="at-field">
+                    <label class="at-label">Task Title *</label>
+                    <input class="at-input" id="taskTitle" placeholder="e.g. Complete Literature Review for Chapter 2">
+                  </div>
+                  <div class="at-field">
+                    <label class="at-label">Week Number *</label>
+                    <select class="at-input" id="taskWeekNo" style="cursor:pointer;">
+                      <option value="" disabled selected>— Select Week —</option>
+                      <option value="1">Week 1</option>
+                      <option value="2">Week 2</option>
+                      <option value="3">Week 3</option>
+                      <option value="4">Week 4</option>
+                      <option value="5">Week 5</option>
+                      <option value="6">Week 6</option>
+                      <option value="7">Week 7</option>
+                      <option value="8">Week 8</option>
+                      <option value="9">Week 9</option>
+                      <option value="10">Week 10</option>
+                      <option value="11">Week 11</option>
+                      <option value="12">Week 12</option>
+                    </select>
+                  </div>
+                  <div class="at-field">
+                    <label class="at-label">Assign To</label>
+                    <div class="at-assign-wrap" id="atAssignWrap">
+                      <div class="at-assign-select" id="atAssignSelect" onclick="toggleAssignDropdown()">
+                        <div class="at-assign-avatars" id="atAssignAvatars"></div>
+                        <span class="at-assign-text" id="atAssignText">All Members (0)</span>
+                        <i class="fas fa-chevron-down at-assign-chevron"></i>
+                      </div>
+                      <div class="at-assign-dropdown" id="atAssignDropdown">
+                        <div class="at-assign-option all-row" onclick="toggleAssignAll()">
+                          <div class="at-assign-cb checked" id="atAssignAllCb"><i class="fas fa-check"></i></div>
+                          <div class="at-assign-option-avatar" style="background:linear-gradient(135deg,#6c5ce7,#7c3aed)"><i class="fas fa-users" style="font-size:0.85rem"></i></div>
+                          <div class="at-assign-option-info">
+                            <div class="at-assign-option-name">All Members</div>
+                            <div class="at-assign-option-detail" id="atAssignAllDetail">Send to all members</div>
+                          </div>
+                          <span class="at-assign-option-badge">All</span>
                         </div>
-                        <span class="at-assign-option-badge">All</span>
-                      </div>
-                      <div id="atAssignMembersList"></div>
-                      <div class="at-assign-footer" id="atAssignFooter">
-                        <i class="fas fa-info-circle"></i>
-                        <span id="atAssignFooterText">All members selected</span>
+                        <div id="atAssignMembersList"></div>
+                        <div class="at-assign-footer" id="atAssignFooter">
+                          <i class="fas fa-info-circle"></i>
+                          <span id="atAssignFooterText">All members selected</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <div class="at-field">
+                    <label class="at-label">Description</label>
+                    <textarea class="at-input at-textarea" id="taskDesc" placeholder="Describe the task, deliverables, references, and any specific instructions for the group..."></textarea>
+                  </div>
+                  <div class="at-actions">
+                    <button class="btn-attach" onclick="document.getElementById('taskFile').click()">
+                      <i class="fas fa-paperclip"></i> Attach PDF / Doc
+                    </button>
+                    <input type="file" id="taskFile" accept=".pdf,.doc,.docx" style="display:none" onchange="updateAttachLabel(this)">
+                    <button class="btn-assign" onclick="submitNewTask()">
+                      <i class="fas fa-paper-plane"></i> Assign Task
+                    </button>
+                  </div>
                 </div>
-                <div class="at-field">
-                  <label class="at-label">Description</label>
-                  <textarea class="at-input at-textarea" id="taskDesc" placeholder="Describe the task, deliverables, references, and any specific instructions for the group..."></textarea>
+
+                <!-- ══ SUB-PANEL: TASK HISTORY ══ -->
+                <div class="task-subpanel" id="subpanel-history">
+                  <div class="th-filters" id="thFilters">
+                    <div class="th-filter-pill active" data-filter="all" onclick="filterTaskHistory('all')">All <span id="thCountAll">0</span></div>
+                    <div class="th-filter-pill" data-filter="Pending" onclick="filterTaskHistory('Pending')">Pending <span id="thCountPending">0</span></div>
+                    <div class="th-filter-pill" data-filter="Partial" onclick="filterTaskHistory('Partial')">Partial <span id="thCountPartial">0</span></div>
+                    <div class="th-filter-pill" data-filter="Submitted" onclick="filterTaskHistory('Submitted')">Submitted <span id="thCountSubmitted">0</span></div>
+                    <div class="th-filter-pill" data-filter="Reviewed" onclick="filterTaskHistory('Reviewed')">Reviewed <span id="thCountReviewed">0</span></div>
+                  </div>
+                  <div id="thCardsList"></div>
                 </div>
-                <div class="at-actions">
-                  <button class="btn-attach" onclick="document.getElementById('taskFile').click()">
-                    <i class="fas fa-paperclip"></i> Attach PDF / Doc
-                  </button>
-                  <input type="file" id="taskFile" accept=".pdf,.doc,.docx" style="display:none" onchange="updateAttachLabel(this)">
-                  <button class="btn-assign" onclick="submitNewTask()">
-                    <i class="fas fa-paper-plane"></i> Assign Task
-                  </button>
+
+                <!-- ══ SUB-PANEL: SUBMISSIONS ══ -->
+                <div class="task-subpanel" id="subpanel-submissions">
+                  <div id="tsBanner"></div>
+                  <div class="th-filters" id="tsFilters">
+                    <div class="th-filter-pill active" data-filter="all" onclick="filterTaskSubmissions('all')">All · <span id="tsCountAll">0</span></div>
+                    <div class="th-filter-pill" data-filter="NEW" onclick="filterTaskSubmissions('NEW')">New · <span id="tsCountNew">0</span></div>
+                    <div class="th-filter-pill" data-filter="REVIEWED" onclick="filterTaskSubmissions('REVIEWED')">Reviewed · <span id="tsCountReviewed">0</span></div>
+                  </div>
+                  <div id="tsCardsList"></div>
                 </div>
               </div>
               <!-- ══ CHAT PANEL ══ -->
@@ -705,6 +883,33 @@
         <button class="btn btn-success" onclick="submitReview('APPROVED')">
           <i class="fas fa-check"></i> Approve
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TASK DETAIL MODAL ══ -->
+  <div class="tdm-overlay" id="tdmOverlay">
+    <div class="tdm-modal" style="position:relative;">
+      <div class="tdm-header">
+        <div class="tdm-title" id="tdmTitle"></div>
+        <div class="tdm-meta" id="tdmMeta"></div>
+        <button class="tdm-close" onclick="closeTdm()">&times;</button>
+      </div>
+      <div class="tdm-tabs">
+        <div class="tdm-tab active" id="tdmTabOverview" onclick="switchTdmTab('overview')">Overview</div>
+        <div class="tdm-tab" id="tdmTabSubs" onclick="switchTdmTab('subs')">Submissions (<span id="tdmSubsCount">0</span>)</div>
+      </div>
+      <div class="tdm-body">
+        <div class="tdm-panel active" id="tdmPanelOverview">
+          <div class="tdm-stats" id="tdmStats"></div>
+          <div class="ts-detail-label">Task Description</div>
+          <div class="tdm-desc-box" id="tdmDesc">No description provided.</div>
+          <div class="tdm-members-title">Assigned Members</div>
+          <div id="tdmMembersList"></div>
+        </div>
+        <div class="tdm-panel" id="tdmPanelSubs">
+          <div id="tdmSubsList"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -953,6 +1158,21 @@
         document.getElementById(`panel-${t}`).classList.toggle('active', t===tab);
       });
       if (tab === 'chat' && currentGroup) gcLoadMessages(currentGroup.group_id);
+      if (tab === 'tasks' && currentGroup) {
+        // Preload submission badge count
+        apiFetch(`/api/supervisor/groups/${currentGroup.group_id}/task-submissions`).then(data => {
+          const counts = data.counts || {};
+          const badge = document.getElementById('submissionsBadge');
+          if (counts.new_count > 0) {
+            badge.textContent = counts.new_count;
+            badge.style.display = 'inline-flex';
+          } else {
+            badge.style.display = 'none';
+          }
+        }).catch(() => {});
+        // Reset to assign sub-tab
+        switchTaskSubtab('assign');
+      }
     }
 
     // ══════════════════════════════════════════
@@ -1334,6 +1554,429 @@
       const icon = document.querySelector('#pdfFullscreenBtn i');
       if (!document.fullscreenElement) icon.classList.replace('fa-compress','fa-expand');
     });
+
+    // ══════════════════════════════════════════
+    //  TASK SUB-TABS & HISTORY & SUBMISSIONS
+    // ══════════════════════════════════════════
+    let taskHistoryCache = [];
+    let taskSubmissionsCache = [];
+    let currentHistoryFilter = 'all';
+    let currentSubmissionsFilter = 'all';
+
+    function switchTaskSubtab(tab) {
+      ['assign','history','submissions'].forEach(t => {
+        document.getElementById(`subtab-${t}`).classList.toggle('active', t===tab);
+        document.getElementById(`subpanel-${t}`).classList.toggle('active', t===tab);
+      });
+      if (tab === 'history' && currentGroup) loadTaskHistory(currentGroup.group_id);
+      if (tab === 'submissions' && currentGroup) loadTaskSubmissions(currentGroup.group_id);
+    }
+
+    // ── TASK HISTORY ────────────────────────────────────────
+    async function loadTaskHistory(groupId) {
+      const container = document.getElementById('thCardsList');
+      container.innerHTML = '<div style="color:#475569;padding:30px;text-align:center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+      try {
+        const data = await apiFetch(`/api/supervisor/groups/${groupId}/task-history`);
+        taskHistoryCache = data.tasks || [];
+        document.getElementById('historyCountLabel').textContent = `(${taskHistoryCache.length})`;
+        updateHistoryFilterCounts();
+        renderTaskHistory();
+      } catch(e) {
+        container.innerHTML = '<div style="color:#ef4444;padding:20px">Failed to load task history</div>';
+      }
+    }
+
+    function updateHistoryFilterCounts() {
+      const all = taskHistoryCache.length;
+      const pending = taskHistoryCache.filter(t => t.task_status === 'Pending').length;
+      const partial = taskHistoryCache.filter(t => t.task_status === 'Partial').length;
+      const submitted = taskHistoryCache.filter(t => t.task_status === 'Submitted').length;
+      const reviewed = taskHistoryCache.filter(t => t.task_status === 'Reviewed').length;
+      document.getElementById('thCountAll').textContent = all;
+      document.getElementById('thCountPending').textContent = pending;
+      document.getElementById('thCountPartial').textContent = partial;
+      document.getElementById('thCountSubmitted').textContent = submitted;
+      document.getElementById('thCountReviewed').textContent = reviewed;
+    }
+
+    function filterTaskHistory(filter) {
+      currentHistoryFilter = filter;
+      document.querySelectorAll('#thFilters .th-filter-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.filter === filter);
+      });
+      renderTaskHistory();
+    }
+
+    function renderTaskHistory() {
+      const container = document.getElementById('thCardsList');
+      let tasks = taskHistoryCache;
+      if (currentHistoryFilter !== 'all') {
+        tasks = tasks.filter(t => t.task_status === currentHistoryFilter);
+      }
+      if (tasks.length === 0) {
+        container.innerHTML = '<div style="color:#475569;padding:40px;text-align:center"><i class="fas fa-clipboard-list" style="font-size:2rem;color:#2d3354;display:block;margin-bottom:10px"></i>No tasks found</div>';
+        return;
+      }
+      container.innerHTML = tasks.map(t => {
+        const statusCls = t.task_status.toLowerCase();
+        const assignedDate = new Date(t.created_at).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
+        const dueDate = t.due_date ? new Date(t.due_date).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'}) : null;
+        const pct = t.total_assigned > 0 ? Math.round((t.submitted_count / t.total_assigned) * 100) : 0;
+
+        // Avatars
+        const avatars = (t.assigned_members||[]).slice(0,4).map(m =>
+          `<div class="th-av" style="background:${avatarColor(m.full_name)}">${getInitials(m.full_name)}</div>`
+        ).join('');
+
+        return `
+          <div class="th-card" data-status="${t.task_status}">
+            <div class="th-card-header">
+              <div>
+                <div class="th-card-title">${escapeHtml(t.title)}</div>
+                <div class="th-card-meta">
+                  <span>Week ${t.week_no}</span>
+                  <span>·</span>
+                  <span>Assigned ${assignedDate}</span>
+                  ${dueDate ? `<span>·</span><span>Due ${dueDate}</span>` : ''}
+                </div>
+              </div>
+              <div class="th-card-badges">
+                ${t.new_count > 0 ? `<span class="th-new-badge">${t.new_count} new</span>` : ''}
+                <span class="th-status ${statusCls}">● ${t.task_status}</span>
+              </div>
+            </div>
+            <div class="th-card-bottom">
+              <div class="th-avatars">${avatars}</div>
+              <div class="th-progress-wrap">
+                <div class="th-progress-bar"><div class="th-progress-fill" style="width:${pct}%"></div></div>
+                <span class="th-progress-text">${t.submitted_count}/${t.total_assigned}</span>
+              </div>
+              <div class="th-view-link" onclick="openTaskDetailModal(${t.task_id})">View <i class="fas fa-arrow-right" style="font-size:0.7rem"></i></div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ── TASK DETAIL MODAL ───────────────────────────────────
+    function openTaskDetailModal(taskId) {
+      const task = taskHistoryCache.find(t => t.task_id === taskId);
+      if (!task) return;
+
+      document.getElementById('tdmTitle').textContent = task.title;
+      const statusCls = task.task_status.toLowerCase();
+      const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'}) : null;
+      document.getElementById('tdmMeta').innerHTML = `
+        <span class="th-status ${statusCls}">● ${task.task_status}</span>
+        <span style="color:#64748b">Week ${task.week_no}</span>
+        ${dueDate ? `<span style="color:#64748b">Due: ${dueDate}</span>` : ''}
+        ${task.new_count > 0 ? `<span style="color:#f59e0b"><i class="fas fa-bell"></i> ${task.new_count} new</span>` : ''}
+      `;
+
+      // Stats
+      document.getElementById('tdmStats').innerHTML = `
+        <div class="tdm-stat"><span class="tdm-stat-val blue">${task.total_assigned}</span><span class="tdm-stat-lbl">Assigned</span></div>
+        <div class="tdm-stat"><span class="tdm-stat-val green">${task.submitted_count}</span><span class="tdm-stat-lbl">Submitted</span></div>
+        <div class="tdm-stat"><span class="tdm-stat-val yellow">${task.total_assigned - task.submitted_count}</span><span class="tdm-stat-lbl">Pending</span></div>
+      `;
+
+      // Description
+      document.getElementById('tdmDesc').textContent = task.description || 'No description provided.';
+
+      // Members
+      document.getElementById('tdmMembersList').innerHTML = (task.assigned_members||[]).map(m => {
+        const sCls = m.submission_status === 'NEW' ? 'submitted' : m.submission_status === 'REVIEWED' ? 'reviewed' : 'pending';
+        const sIcon = m.submission_status === 'Pending' ? '<i class="fas fa-hourglass-half"></i>' : m.submission_status === 'REVIEWED' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-check"></i>';
+        const sLabel = m.submission_status === 'NEW' ? 'Submitted' : m.submission_status === 'REVIEWED' ? 'Reviewed' : 'Pending';
+        return `
+          <div class="tdm-member-row">
+            <div class="tdm-member-av" style="background:${avatarColor(m.full_name)}">${getInitials(m.full_name)}</div>
+            <div class="tdm-member-info">
+              <div class="tdm-member-name">${escapeHtml(m.full_name)}</div>
+              <div class="tdm-member-uid">${escapeHtml(m.university_id)}</div>
+            </div>
+            <span class="tdm-member-status ${sCls}">${sIcon} ${sLabel}</span>
+          </div>`;
+      }).join('');
+
+      // Submissions count
+      document.getElementById('tdmSubsCount').textContent = task.submitted_count;
+
+      // Submissions list
+      const subsList = document.getElementById('tdmSubsList');
+      const subs = task.submissions || [];
+      if (subs.length === 0) {
+        subsList.innerHTML = '<div style="color:#475569;padding:30px;text-align:center">No submissions yet</div>';
+      } else {
+        subsList.innerHTML = subs.map(s => `
+          <div class="tdm-member-row">
+            <div class="tdm-member-av" style="background:${avatarColor(s.full_name)}">${getInitials(s.full_name)}</div>
+            <div class="tdm-member-info">
+              <div class="tdm-member-name">${escapeHtml(s.full_name)}</div>
+              <div class="tdm-member-uid">${escapeHtml(s.university_id)} · ${new Date(s.submitted_at).toLocaleDateString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+            </div>
+            ${s.grade ? `<span class="ts-grade-badge has-grade">${escapeHtml(s.grade)}</span>` : ''}
+            <span class="tdm-member-status ${s.status === 'NEW' ? 'submitted' : 'reviewed'}">${s.status === 'NEW' ? '● New' : '● Reviewed'}</span>
+          </div>`).join('');
+      }
+
+      // Reset to overview tab
+      switchTdmTab('overview');
+      document.getElementById('tdmOverlay').classList.add('active');
+    }
+
+    function closeTdm() { document.getElementById('tdmOverlay').classList.remove('active'); }
+    function switchTdmTab(tab) {
+      document.getElementById('tdmTabOverview').classList.toggle('active', tab==='overview');
+      document.getElementById('tdmTabSubs').classList.toggle('active', tab==='subs');
+      document.getElementById('tdmPanelOverview').classList.toggle('active', tab==='overview');
+      document.getElementById('tdmPanelSubs').classList.toggle('active', tab==='subs');
+    }
+
+    // Close modal on overlay click
+    document.getElementById('tdmOverlay')?.addEventListener('click', (e) => {
+      if (e.target === document.getElementById('tdmOverlay')) closeTdm();
+    });
+
+    // ── TASK SUBMISSIONS ───────────────────────────────────
+    async function loadTaskSubmissions(groupId) {
+      const container = document.getElementById('tsCardsList');
+      container.innerHTML = '<div style="color:#475569;padding:30px;text-align:center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+      try {
+        const data = await apiFetch(`/api/supervisor/groups/${groupId}/task-submissions`);
+        taskSubmissionsCache = data.submissions || [];
+        const counts = data.counts || {};
+
+        // Update counts
+        document.getElementById('tsCountAll').textContent = counts.total || 0;
+        document.getElementById('tsCountNew').textContent = counts.new_count || 0;
+        document.getElementById('tsCountReviewed').textContent = counts.reviewed_count || 0;
+
+        // Badge
+        const badge = document.getElementById('submissionsBadge');
+        if (counts.new_count > 0) {
+          badge.textContent = counts.new_count;
+          badge.style.display = 'inline-flex';
+        } else {
+          badge.style.display = 'none';
+        }
+
+        // Banner
+        const banner = document.getElementById('tsBanner');
+        if (counts.new_count > 0) {
+          banner.innerHTML = `<div class="ts-banner"><i class="fas fa-inbox"></i> ${counts.new_count} new submission${counts.new_count > 1 ? 's' : ''} awaiting your review</div>`;
+        } else {
+          banner.innerHTML = '';
+        }
+
+        renderTaskSubmissions();
+      } catch(e) {
+        container.innerHTML = '<div style="color:#ef4444;padding:20px">Failed to load submissions</div>';
+      }
+    }
+
+    function filterTaskSubmissions(filter) {
+      currentSubmissionsFilter = filter;
+      document.querySelectorAll('#tsFilters .th-filter-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.filter === filter);
+      });
+      renderTaskSubmissions();
+    }
+
+    function renderTaskSubmissions() {
+      const container = document.getElementById('tsCardsList');
+      let subs = taskSubmissionsCache;
+      if (currentSubmissionsFilter !== 'all') {
+        subs = subs.filter(s => s.status === currentSubmissionsFilter);
+      }
+      if (subs.length === 0) {
+        container.innerHTML = '<div style="color:#475569;padding:40px;text-align:center"><i class="fas fa-inbox" style="font-size:2rem;color:#2d3354;display:block;margin-bottom:10px"></i>No submissions found</div>';
+        return;
+      }
+      container.innerHTML = subs.map(s => {
+        const subDate = new Date(s.submitted_at).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        const status = s.status || 'NEW';
+        const isNew = status === 'NEW';
+        const isAccepted = status === 'ACCEPTED';
+        const isRejected = status === 'REJECTED';
+        const isReviewed = status === 'REVIEWED';
+        const statusCls = isNew ? 'new' : isAccepted ? 'accepted' : isRejected ? 'rejected' : 'reviewed';
+        const statusLbl = isNew ? '● New' : isAccepted ? '✓ Accepted' : isRejected ? '✕ Rejected' : '● Reviewed';
+
+        // File preview: detect image vs other
+        let fileSection = '';
+        if (s.file_path) {
+          const ext = (s.file_name || s.file_path).split('.').pop().toLowerCase();
+          const isImg = ['png','jpg','jpeg','gif','webp'].includes(ext);
+          const isPdf = ext === 'pdf';
+          if (isImg) {
+            fileSection = `
+              <div class="ts-detail-section">
+                <span class="ts-detail-label">Attached File</span>
+                <img src="${s.file_path}" alt="submission" class="ts-img-preview" onclick="viewPdf('${s.file_path}','${escapeHtml(s.file_name||'Image')}')"/>
+                <div style="margin-top:8px;">
+                  <a href="${s.file_path}" download="${escapeHtml(s.file_name||'file')}" class="ts-file-link" style="font-size:0.78rem;">
+                    <i class="fas fa-download"></i> Download
+                  </a>
+                </div>
+              </div>`;
+          } else {
+            fileSection = `
+              <div class="ts-detail-section">
+                <span class="ts-detail-label">Attached File</span>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;">
+                  ${isPdf ? `<button class="ts-file-link" style="background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#f87171;cursor:pointer;" onclick="viewPdf('${s.file_path}','${escapeHtml(s.file_name||'Document')}')"><i class="fas fa-eye"></i> View PDF</button>` : ''}
+                  <a href="${s.file_path}" download="${escapeHtml(s.file_name||'file')}" class="ts-file-link"><i class="fas fa-file-alt"></i> ${escapeHtml(s.file_name||'Download File')}</a>
+                </div>
+              </div>`;
+          }
+        }
+
+        // Result block for already-reviewed submissions
+        let resultBlock = '';
+        if (isAccepted) {
+          resultBlock = `<div class="ts-result-block accepted">
+            <div style="font-size:0.72rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;"><i class="fas fa-check-circle"></i> Task Accepted</div>
+            ${s.grade ? `<div style="font-size:0.85rem;color:#e2e8f0;">Grade: <strong>${escapeHtml(s.grade)}</strong></div>` : ''}
+            ${s.feedback ? `<div style="font-size:0.82rem;color:#94a3b8;margin-top:4px;">Feedback: ${escapeHtml(s.feedback)}</div>` : ''}
+          </div>`;
+        } else if (isRejected) {
+          resultBlock = `<div class="ts-result-block rejected">
+            <div style="font-size:0.72rem;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;"><i class="fas fa-times-circle"></i> Task Rejected</div>
+            <div style="font-size:0.85rem;color:#fca5a5;">Reason: ${escapeHtml(s.rejection_reason||'No reason provided')}</div>
+          </div>`;
+        } else if (isReviewed) {
+          resultBlock = `<div class="ts-result-block reviewed">
+            <div style="font-size:0.72rem;font-weight:700;color:#8b5cf6;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;"><i class="fas fa-star"></i> Reviewed</div>
+            ${s.grade ? `<div style="font-size:0.85rem;color:#e2e8f0;">Grade: <strong>${escapeHtml(s.grade)}</strong></div>` : ''}
+            ${s.feedback ? `<div style="font-size:0.82rem;color:#94a3b8;margin-top:4px;">${escapeHtml(s.feedback)}</div>` : ''}
+          </div>`;
+        }
+
+        // Action buttons: only show for NEW submissions
+        const actionSection = isNew ? `
+          <div class="ts-detail-section" style="margin-top:16px;">
+            <span class="ts-detail-label">Grade (optional)</span>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+              <select class="ts-grade-select" id="tsGrade_${s.submission_id}">
+                <option value="">None</option>
+                <option value="A+">A+</option><option value="A">A</option><option value="A-">A-</option>
+                <option value="B+">B+</option><option value="B">B</option><option value="B-">B-</option>
+                <option value="C+">C+</option><option value="C">C</option>
+                <option value="D">D</option><option value="F">F</option>
+              </select>
+            </div>
+            <div class="ts-action-row">
+              <button class="ts-btn-accept" onclick="acceptSubmission(${s.submission_id})">
+                <i class="fas fa-check-circle"></i> Accept Task
+              </button>
+              <button class="ts-btn-reject" onclick="openRejectPanel(${s.submission_id})">
+                <i class="fas fa-times-circle"></i> Reject Task
+              </button>
+            </div>
+            <div class="ts-reject-panel" id="tsRejectPanel_${s.submission_id}">
+              <span class="ts-detail-label" style="color:#ef4444;">Rejection Reason (required)</span>
+              <textarea class="ts-reject-reason" id="tsRejectReason_${s.submission_id}" placeholder="Explain why this submission is being rejected and what needs to be corrected..."></textarea>
+              <button class="ts-reject-confirm" onclick="confirmReject(${s.submission_id})">
+                <i class="fas fa-paper-plane"></i> Confirm Rejection
+              </button>
+            </div>
+          </div>` : '';
+
+        return `
+          <div class="ts-card" id="tsCard_${s.submission_id}">
+            <div class="ts-card-header" onclick="toggleSubmissionCard(${s.submission_id})">
+              <div class="ts-card-avatar" style="background:${avatarColor(s.student_name)}">${getInitials(s.student_name)}</div>
+              <div class="ts-card-info">
+                <div class="ts-card-name">${escapeHtml(s.student_name)} <span class="ts-card-uid">${escapeHtml(s.student_uid)}</span></div>
+                <div class="ts-card-task">${escapeHtml(s.task_title)}</div>
+                <div class="ts-card-date">${subDate}</div>
+              </div>
+              <div class="ts-card-right">
+                ${s.grade ? `<div class="ts-grade-badge has-grade">${escapeHtml(s.grade)}</div>` : ''}
+                <span class="ts-status-badge ${statusCls}">${statusLbl}</span>
+                <i class="fas fa-chevron-down ts-expand-icon"></i>
+              </div>
+            </div>
+            <div class="ts-card-detail">
+              ${s.notes ? `
+                <div class="ts-detail-section">
+                  <span class="ts-detail-label">Student Notes</span>
+                  <div class="ts-detail-notes">${escapeHtml(s.notes)}</div>
+                </div>` : ''}
+              ${fileSection}
+              ${resultBlock}
+              ${actionSection}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function toggleSubmissionCard(subId) {
+      const card = document.getElementById(`tsCard_${subId}`);
+      if (card) card.classList.toggle('expanded');
+    }
+
+    function openRejectPanel(subId) {
+      const panel = document.getElementById(`tsRejectPanel_${subId}`);
+      if (panel) panel.classList.toggle('open');
+    }
+
+    async function acceptSubmission(subId) {
+      const grade = document.getElementById(`tsGrade_${subId}`)?.value || '';
+      try {
+        await apiFetch(`/api/supervisor/task-submissions/${subId}/review`, {
+          method: 'POST',
+          body: { status: 'ACCEPTED', grade, feedback: '' }
+        });
+        showToast('Task submission accepted!', 'success');
+        if (currentGroup) {
+          loadTaskSubmissions(currentGroup.group_id);
+          loadTaskHistory(currentGroup.group_id);
+        }
+      } catch(e) {
+        showToast(e.message || 'Failed to accept submission', 'error');
+      }
+    }
+
+    async function confirmReject(subId) {
+      const reason = document.getElementById(`tsRejectReason_${subId}`)?.value?.trim() || '';
+      if (!reason) { showToast('Please provide a rejection reason', 'warning'); return; }
+      try {
+        await apiFetch(`/api/supervisor/task-submissions/${subId}/review`, {
+          method: 'POST',
+          body: { status: 'REJECTED', rejection_reason: reason, grade: '', feedback: '' }
+        });
+        showToast('Task submission rejected.', 'success');
+        if (currentGroup) {
+          loadTaskSubmissions(currentGroup.group_id);
+          loadTaskHistory(currentGroup.group_id);
+        }
+      } catch(e) {
+        showToast(e.message || 'Failed to reject submission', 'error');
+      }
+    }
+
+    async function saveGradeAndFeedback(subId) {
+      const grade = document.getElementById(`tsGrade_${subId}`)?.value || '';
+      const feedback = document.getElementById(`tsFeedback_${subId}`)?.value || '';
+      try {
+        await apiFetch(`/api/supervisor/task-submissions/${subId}/review`, {
+          method: 'POST',
+          body: { grade, feedback }
+        });
+        showToast('Grade & feedback saved!', 'success');
+        if (currentGroup) {
+          loadTaskSubmissions(currentGroup.group_id);
+          loadTaskHistory(currentGroup.group_id);
+        }
+      } catch(e) {
+        showToast(e.message || 'Failed to save', 'error');
+      }
+    }
+
+    // ── Load task data when switching to tasks tab ──────────
+    const origSwitchTab = switchTab;
   </script>
 
   <script>

@@ -790,9 +790,9 @@ router.patch('/leave-request/:id', async (req, res) => {
         `UPDATE pre_fydp_join_requests SET request_status = 'ACCEPTED', responded_at = NOW() WHERE request_id = ?`, [id]
       );
 
-      // Reset their profile to AVAILABLE
+      // Reset their profile to LOOKING
       await db.query(
-        `UPDATE pre_fydp_profiles SET availability_status = 'AVAILABLE' WHERE user_id = ?`,
+        `UPDATE pre_fydp_profiles SET availability_status = 'LOOKING' WHERE user_id = ?`,
         [request.sender_id]
       ).catch(() => {});
 
@@ -879,11 +879,11 @@ router.post('/drop-team', async (req, res) => {
       );
     }
 
-    // Reset all members' availability to AVAILABLE
+    // Reset all members' availability to LOOKING
     const memberIds = members.map(m => m.user_id);
     if (memberIds.length > 0) {
       await db.query(
-        `UPDATE pre_fydp_profiles SET availability_status = 'AVAILABLE'
+        `UPDATE pre_fydp_profiles SET availability_status = 'LOOKING'
          WHERE user_id IN (${memberIds.map(() => '?').join(',')})`,
         memberIds
       );

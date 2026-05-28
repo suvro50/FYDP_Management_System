@@ -186,7 +186,7 @@ router.post("/signup", async (req, res) => {
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Insert user as inactive until OTP verified
-    await db.query(
+    const [insertResult] = await db.query(
       `INSERT INTO users
         (full_name, university_id, email, password_hash, role, department_id, batch,
          account_status, is_active, otp_code, otp_expires_at)
@@ -204,12 +204,26 @@ router.post("/signup", async (req, res) => {
       ],
     );
 
-    // Send OTP email
-    await sendEmail({
-      to: email,
-      subject: "Verify Your FYDP Account — OTP Code",
-      html: buildOtpEmail(full_name, otp, "signup"),
-    });
+    const newUserId = insertResult.insertId;
+
+    // Send OTP email — if it fails, roll back the user insertion
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Verify Your FYDP Account — OTP Code",
+        html: buildOtpEmail(full_name, otp, "signup"),
+      });
+    } catch (emailErr) {
+      // Roll back: delete the just-created user so they can retry
+      console.error("❌ OTP email failed, rolling back user:", newUserId);
+      await db.query("DELETE FROM users WHERE user_id = ?", [newUserId]);
+
+      // Return a clear, user-friendly error about the email issue
+      const userMsg = emailErr.message.includes("does not appear to accept")
+        ? emailErr.message
+        : `We could not deliver the verification code to "${email}". Please double-check the email address and try again.`;
+      return res.status(400).json({ error: userMsg });
+    }
 
     res.json({
       success: true,
@@ -258,11 +272,19 @@ router.post("/forgot-password", async (req, res) => {
       [otp, otpExpires, user.user_id],
     );
 
-    await sendEmail({
-      to: email,
-      subject: "FYDP Password Reset — OTP Code",
-      html: buildOtpEmail(user.full_name, otp, "reset"),
-    });
+    try {
+      await sendEmail({
+        to: email,
+        subject: "FYDP Password Reset — OTP Code",
+        html: buildOtpEmail(user.full_name, otp, "reset"),
+      });
+    } catch (emailErr) {
+      console.error("❌ Password reset OTP email failed:", emailErr.message);
+      const userMsg = emailErr.message.includes("does not appear to accept")
+        ? emailErr.message
+        : `We could not deliver the OTP to "${email}". Please verify the email address.`;
+      return res.status(400).json({ error: userMsg });
+    }
 
     res.json({ success: true, message: "OTP sent to your email." });
   } catch (err) {
@@ -350,11 +372,19 @@ router.post("/resend-otp", async (req, res) => {
       [otp, otpExpires, user.user_id],
     );
 
-    await sendEmail({
-      to: email,
-      subject: "Your New OTP Code — FYDP System",
-      html: buildOtpEmail(user.full_name, otp, "resend"),
-    });
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Your New OTP Code — FYDP System",
+        html: buildOtpEmail(user.full_name, otp, "resend"),
+      });
+    } catch (emailErr) {
+      console.error("❌ Resend OTP email failed:", emailErr.message);
+      const userMsg = emailErr.message.includes("does not appear to accept")
+        ? emailErr.message
+        : `We could not deliver the OTP to "${email}". Please verify the email address.`;
+      return res.status(400).json({ error: userMsg });
+    }
 
     res.json({ success: true, message: "New OTP sent." });
   } catch (err) {

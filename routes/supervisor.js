@@ -191,6 +191,16 @@ router.get('/groups/:id/reports', async (req, res) => {
     );
     if (!group) return res.status(403).json({ error: 'Not your group' });
 
+    // Clear report submission notifications for this supervisor
+    await db.query(
+      `UPDATE notifications 
+       SET is_read = 1 
+       WHERE user_id = ? 
+         AND (title LIKE '%Report Submitted%' OR message LIKE '%report submitted%' OR title LIKE '%Report Resubmitted%' OR message LIKE '%report resubmitted%') 
+         AND is_read = 0`,
+      [supId]
+    );
+
     const [reports] = await db.query(
       `SELECT wpr.*, u.full_name as student_name, u.university_id as student_uid
        FROM weekly_progress_reports wpr
@@ -212,6 +222,17 @@ router.get('/groups/:id/reports', async (req, res) => {
 router.get('/pending-reports', async (req, res) => {
   try {
     const supId = req.session.user.user_id;
+
+    // Clear report submission notifications for this supervisor
+    await db.query(
+      `UPDATE notifications 
+       SET is_read = 1 
+       WHERE user_id = ? 
+         AND (title LIKE '%Report Submitted%' OR message LIKE '%report submitted%' OR title LIKE '%Report Resubmitted%' OR message LIKE '%report resubmitted%') 
+         AND is_read = 0`,
+      [supId]
+    );
+
     const statusFilter = req.query.status || '';
 
     let where = 'WHERE pg.supervisor_id = ?';
@@ -354,6 +375,32 @@ router.post('/reports/:id/review', async (req, res) => {
         [report.student_id, notifType, notifTitle, notifMsg]
       );
 
+      // Notify course teacher
+      try {
+        const [[groupInfo]] = await db.query(
+          `SELECT cts.course_teacher_id
+           FROM project_groups pg
+           LEFT JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
+           WHERE pg.group_id = ?`,
+          [report.group_id]
+        );
+        if (groupInfo && groupInfo.course_teacher_id) {
+          const ctNotifTitle = status === 'APPROVED'
+            ? `✅ Week ${report.week_no} Report Approved`
+            : `❌ Week ${report.week_no} Report Rejected`;
+          const ctNotifMsg = `${supName} has ${status.toLowerCase()} the Week ${report.week_no} report for group ${report.group_code}.`;
+          
+          await db.query(
+            `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+            [groupInfo.course_teacher_id, ctNotifTitle, ctNotifMsg]
+          );
+          const io = req.app.get('io');
+          if (io) io.to(`user_${groupInfo.course_teacher_id}`).emit('notification', { title: ctNotifTitle, message: ctNotifMsg });
+        }
+      } catch (ctErr) {
+        console.error('Course teacher review notification error (non-fatal):', ctErr);
+      }
+
       // If group report rejected, also notify other group members
       if (report.is_group_report && status === 'REJECTED') {
         const [members] = await db.query(
@@ -463,6 +510,16 @@ router.get('/groups/:id/weekly-summary', async (req, res) => {
       [req.params.id, supId]
     );
     if (!group) return res.status(403).json({ error: 'Not your group' });
+
+    // Clear report submission notifications for this supervisor
+    await db.query(
+      `UPDATE notifications 
+       SET is_read = 1 
+       WHERE user_id = ? 
+         AND (title LIKE '%Report Submitted%' OR message LIKE '%report submitted%' OR title LIKE '%Report Resubmitted%' OR message LIKE '%report resubmitted%') 
+         AND is_read = 0`,
+      [supId]
+    );
 
     // Get all members
     const [members] = await db.query(
@@ -673,6 +730,226 @@ router.delete('/groups/:gid/tasks/:tid', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/supervisor/groups/:id/task-history — All tasks with submission progress
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/groups/:id/task-history', async (req, res) => {
+  try {
+    const supId = req.session.user.user_id;
+    const [[group]] = await db.query(
+      'SELECT group_id FROM project_groups WHERE group_id=? AND supervisor_id=?',
+      [req.params.id, supId]
+    );
+    if (!group) return res.status(403).json({ error: 'Not your group' });
+
+    // Get all tasks for this group
+    const [tasks] = await db.query(
+      `SELECT gt.*, u.full_name AS creator_name
+       FROM group_tasks gt
+       JOIN users u ON u.user_id = gt.supervisor_id
+       WHERE gt.group_id = ?
+       ORDER BY gt.week_no DESC, gt.created_at DESC`,
+      [req.params.id]
+    );
+
+    // Get all group members
+    const [members] = await db.query(
+      `SELECT gm.student_id, u.full_name, u.university_id
+       FROM group_members gm
+       JOIN users u ON u.user_id = gm.student_id
+       WHERE gm.group_id = ?`,
+      [req.params.id]
+    );
+
+    // For each task, compute submission progress
+    for (const task of tasks) {
+      // Determine who is assigned
+      let assignedIds;
+      if (!task.assigned_to) {
+        assignedIds = members.map(m => m.student_id);
+      } else {
+        const parsed = typeof task.assigned_to === 'string' ? JSON.parse(task.assigned_to) : task.assigned_to;
+        assignedIds = Array.isArray(parsed) ? parsed : members.map(m => m.student_id);
+      }
+      task.total_assigned = assignedIds.length;
+
+      // Get submissions for this task
+      const [submissions] = await db.query(
+        `SELECT ts.submission_id, ts.student_id, ts.status, ts.grade, ts.submitted_at,
+                u.full_name, u.university_id
+         FROM task_submissions ts
+         JOIN users u ON u.user_id = ts.student_id
+         WHERE ts.task_id = ?`,
+        [task.task_id]
+      );
+      task.submissions = submissions;
+      task.submitted_count = submissions.length;
+      task.reviewed_count = submissions.filter(s => s.status === 'REVIEWED').length;
+      task.new_count = submissions.filter(s => s.status === 'NEW').length;
+
+      // Compute overall task status
+      if (task.submitted_count === 0) {
+        task.task_status = 'Pending';
+      } else if (task.reviewed_count === task.total_assigned && task.total_assigned > 0) {
+        task.task_status = 'Reviewed';
+      } else if (task.submitted_count >= task.total_assigned) {
+        task.task_status = 'Submitted';
+      } else {
+        task.task_status = 'Partial';
+      }
+
+      // Assigned members with their submission status
+      task.assigned_members = assignedIds.map(sid => {
+        const member = members.find(m => m.student_id === sid);
+        const sub = submissions.find(s => s.student_id === sid);
+        return {
+          student_id: sid,
+          full_name: member?.full_name || 'Unknown',
+          university_id: member?.university_id || '',
+          submission_status: sub ? sub.status : 'Pending',
+          grade: sub?.grade || null,
+          submitted_at: sub?.submitted_at || null
+        };
+      });
+    }
+
+    res.json({ tasks, members });
+  } catch (err) {
+    console.error('Task history error:', err);
+    res.status(500).json({ error: 'Failed to load task history' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/supervisor/groups/:id/task-submissions — All submissions for a group
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/groups/:id/task-submissions', async (req, res) => {
+  try {
+    const supId = req.session.user.user_id;
+    const [[group]] = await db.query(
+      'SELECT group_id FROM project_groups WHERE group_id=? AND supervisor_id=?',
+      [req.params.id, supId]
+    );
+    if (!group) return res.status(403).json({ error: 'Not your group' });
+
+    const statusFilter = req.query.status || '';
+    let where = 'WHERE ts.group_id = ?';
+    const params = [req.params.id];
+
+    if (statusFilter) {
+      where += ' AND ts.status = ?';
+      params.push(statusFilter);
+    }
+
+    const [submissions] = await db.query(
+      `SELECT ts.*, gt.title AS task_title, gt.week_no, gt.due_date,
+              u.full_name AS student_name, u.university_id AS student_uid
+       FROM task_submissions ts
+       JOIN group_tasks gt ON gt.task_id = ts.task_id
+       JOIN users u ON u.user_id = ts.student_id
+       ${where}
+       ORDER BY
+         CASE ts.status WHEN 'NEW' THEN 0 ELSE 1 END,
+         ts.submitted_at DESC`,
+      params
+    );
+
+    // Count stats
+    const [[counts]] = await db.query(
+      `SELECT
+         COUNT(*) AS total,
+         SUM(ts.status = 'NEW') AS new_count,
+         SUM(ts.status IN ('REVIEWED','ACCEPTED','REJECTED')) AS reviewed_count
+       FROM task_submissions ts
+       WHERE ts.group_id = ?`,
+      [req.params.id]
+    );
+
+    res.json({
+      submissions,
+      counts: {
+        total: counts.total || 0,
+        new_count: counts.new_count || 0,
+        reviewed_count: counts.reviewed_count || 0
+      }
+    });
+  } catch (err) {
+    console.error('Task submissions error:', err);
+    res.status(500).json({ error: 'Failed to load task submissions' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// POST /api/supervisor/task-submissions/:id/review — Accept / Reject / Grade
+// ═══════════════════════════════════════════════════════════════════════════
+router.post('/task-submissions/:id/review', async (req, res) => {
+  try {
+    const supId = req.session.user.user_id;
+    const submissionId = req.params.id;
+    const { grade, feedback, status, rejection_reason } = req.body;
+
+    const finalStatus = status || 'REVIEWED';
+    if (!['REVIEWED', 'ACCEPTED', 'REJECTED'].includes(finalStatus)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+    if (finalStatus === 'REJECTED' && !rejection_reason) {
+      return res.status(400).json({ error: 'A rejection reason is required' });
+    }
+
+    // Verify this submission belongs to a group supervised by this user
+    const [[submission]] = await db.query(
+      `SELECT ts.*, pg.supervisor_id, pg.group_code, gt.title AS task_title, gt.week_no
+       FROM task_submissions ts
+       JOIN project_groups pg ON pg.group_id = ts.group_id
+       JOIN group_tasks gt ON gt.task_id = ts.task_id
+       WHERE ts.submission_id = ?`,
+      [submissionId]
+    );
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+    if (submission.supervisor_id !== supId) return res.status(403).json({ error: 'Not your group' });
+
+    await db.query(
+      `UPDATE task_submissions
+       SET grade = ?, feedback = ?, status = ?, rejection_reason = ?, reviewed_at = NOW()
+       WHERE submission_id = ?`,
+      [grade || null, feedback || null, finalStatus, rejection_reason || null, submissionId]
+    );
+
+    // Notify the student
+    const supName = req.session.user.full_name;
+    let notifTitle, notifMsg;
+
+    if (finalStatus === 'ACCEPTED') {
+      notifTitle = `✅ Task Accepted: ${submission.task_title}`;
+      notifMsg = `Your submission for "${submission.task_title}" (Week ${submission.week_no}) in ${submission.group_code} has been accepted by ${supName}.${grade ? ` Grade: ${grade}.` : ''}${feedback ? ` Feedback: ${feedback}` : ''}`;
+    } else if (finalStatus === 'REJECTED') {
+      notifTitle = `❌ Task Rejected: ${submission.task_title}`;
+      notifMsg = `Your submission for "${submission.task_title}" (Week ${submission.week_no}) in ${submission.group_code} was rejected by ${supName}. Reason: ${rejection_reason}. Please revise and resubmit.`;
+    } else {
+      notifTitle = `📝 Task Reviewed: ${submission.task_title}`;
+      notifMsg = `Your submission for "${submission.task_title}" (Week ${submission.week_no}) in ${submission.group_code} has been reviewed by ${supName}.${grade ? ` Grade: ${grade}.` : ''}${feedback ? ` Feedback: ${feedback}` : ''}`;
+    }
+
+    await db.query(
+      `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, ?, ?, ?)`,
+      [submission.student_id, 'SYSTEM_ALERT', notifTitle, notifMsg]
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${submission.student_id}`).emit('notification', {
+        title: notifTitle,
+        message: finalStatus === 'REJECTED' ? `Reason: ${rejection_reason}` : `Grade: ${grade || 'N/A'}`
+      });
+    }
+
+    res.json({ success: true, message: `Submission ${finalStatus.toLowerCase()} successfully` });
+  } catch (err) {
+    console.error('Review submission error:', err);
+    res.status(500).json({ error: 'Failed to review submission' });
   }
 });
 

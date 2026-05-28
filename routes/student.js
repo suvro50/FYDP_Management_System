@@ -139,6 +139,16 @@ router.get('/reports', checkGroupStatus, async (req, res) => {
     const groupId = req.activeGroup.group_id;
     const studentId = req.session.user.user_id;
 
+    // Clear weekly progress report notifications for this student
+    await db.query(
+      `UPDATE notifications 
+       SET is_read = 1 
+       WHERE user_id = ? 
+         AND (notification_type IN ('REPORT_APPROVED', 'REPORT_REJECTED') OR title LIKE '%Report Approved%' OR title LIKE '%Report Rejected%') 
+         AND is_read = 0`,
+      [studentId]
+    );
+
     // 1. Get this student's own reports
     const [myReports] = await db.query(
       `SELECT wpr.report_id, wpr.week_no, wpr.report_title, wpr.report_content, 
@@ -407,6 +417,24 @@ router.post('/submit-report', checkGroupStatus, uploadReport, async (req, res) =
           const io = req.app.get('io');
           if (io) io.to(`user_${groupInfo.course_teacher_id}`).emit('notification', { title: notifTitle, message: notifMsg });
         }
+        // Notify other group members
+        const [members] = await db.query(
+          `SELECT student_id FROM group_members WHERE group_id = ? AND student_id != ?`,
+          [groupId, studentId]
+        );
+        for (const m of members) {
+          const studentNotifTitle = myExistingStatus === 'REJECTED'
+            ? `🔄 Week ${weekNum} ${isGroupReport ? 'Group ' : ''}Report Resubmitted`
+            : `📄 New Week ${weekNum} ${isGroupReport ? 'Group ' : ''}Report Submitted`;
+          const studentNotifMsg = `${studentName} has ${actionMsg} a ${reportTypeLabel} Week ${weekNum} report for your group ${groupInfo.group_code}.`;
+          
+          await db.query(
+            `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, 'SYSTEM_ALERT', ?, ?)`,
+            [m.student_id, studentNotifTitle, studentNotifMsg]
+          );
+          const io = req.app.get('io');
+          if (io) io.to(`user_${m.student_id}`).emit('notification', { title: studentNotifTitle, message: studentNotifMsg });
+        }
       }
     } catch (notifErr) {
       console.error('Report notification error (non-fatal):', notifErr);
@@ -471,6 +499,21 @@ router.get('/supervisor-chat', checkGroupStatus, async (req, res) => {
       const io = req.app.get('io');
       if (io) io.to(`user_${supId}`).emit('messages_read', { by: myId, sender: supId });
     }
+
+    // Clear DM notifications from supervisor
+    const [[supInfo]] = await db.query('SELECT full_name FROM users WHERE user_id = ?', [supId]);
+    if (supInfo) {
+      await db.query(
+        `UPDATE notifications 
+         SET is_read = 1 
+         WHERE user_id = ? 
+           AND (notification_type = 'NEW_DIRECT_MESSAGE' OR notification_type = 'SYSTEM_ALERT')
+           AND (title LIKE ? OR message LIKE ?)
+           AND is_read = 0`,
+        [myId, `%${supInfo.full_name}%`, `%${supInfo.full_name}%`]
+      );
+    }
+
     res.json({ messages, supervisor_id: supId });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load supervisor chat' });
@@ -511,6 +554,29 @@ router.get('/teacher-chat', checkGroupStatus, async (req, res) => {
        ORDER BY dm.created_at ASC LIMIT 100`,
       [myId, teacherId, teacherId, myId]
     );
+
+    // Mark teacher's messages as read
+    const [updated] = await db.query(
+      'UPDATE direct_messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0',
+      [teacherId, myId]
+    );
+    // Notify teacher of double tick in real-time
+    if (updated.affectedRows > 0) {
+      const io = req.app.get('io');
+      if (io) io.to(`user_${teacherId}`).emit('messages_read', { by: myId, sender: teacherId });
+    }
+
+    // Clear DM notifications from teacher
+    await db.query(
+      `UPDATE notifications 
+       SET is_read = 1 
+       WHERE user_id = ? 
+         AND (notification_type = 'NEW_DIRECT_MESSAGE' OR notification_type = 'SYSTEM_ALERT')
+         AND (title LIKE ? OR message LIKE ?)
+         AND is_read = 0`,
+      [myId, `%${ctRows[0].full_name}%`, `%${ctRows[0].full_name}%`]
+    );
+
     res.json({ messages, teacher_id: teacherId, teacher: ctRows[0] });
   } catch (err) {
     console.error(err);
@@ -588,6 +654,134 @@ router.get('/tasks', checkGroupStatus, async (req, res) => {
   } catch (err) {
     console.error('Student tasks error:', err);
     res.status(500).json({ error: 'Failed to load tasks' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/student/my-task-submissions — Get my submissions for all tasks
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/my-task-submissions', checkGroupStatus, async (req, res) => {
+  try {
+    if (!req.activeGroup) return res.json({ submissions: [] });
+    const studentId = req.session.user.user_id;
+    const groupId = req.activeGroup.group_id;
+
+    const [submissions] = await db.query(
+      `SELECT ts.submission_id, ts.task_id, ts.status, ts.grade, ts.feedback, ts.rejection_reason,
+              ts.notes, ts.file_path, ts.file_name, ts.submitted_at, ts.reviewed_at
+       FROM task_submissions ts
+       WHERE ts.student_id = ? AND ts.group_id = ?
+       ORDER BY ts.submitted_at DESC`,
+      [studentId, groupId]
+    );
+
+    res.json({ submissions });
+  } catch (err) {
+    console.error('My task submissions error:', err);
+    res.status(500).json({ error: 'Failed to load submissions' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// POST /api/student/tasks/:taskId/submit — Submit a task
+// ═══════════════════════════════════════════════════════════════════════════
+const taskSubmitUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const dir = path.join(__dirname, '../public/uploads/task_submissions');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+      const unique = `tsub_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      cb(null, unique + path.extname(file.originalname));
+    }
+  }),
+  limits: { fileSize: 80 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.pdf', '.doc', '.docx', '.zip', '.rar', '.png', '.jpg', '.jpeg'];
+    if (allowed.includes(path.extname(file.originalname).toLowerCase())) cb(null, true);
+    else cb(new Error('File type not allowed'));
+  }
+});
+
+router.post('/tasks/:taskId/submit', checkGroupStatus, taskSubmitUpload.single('submission_file'), async (req, res) => {
+  try {
+    if (!req.activeGroup) return res.status(403).json({ error: 'You are not in a group' });
+    const studentId = req.session.user.user_id;
+    const groupId = req.activeGroup.group_id;
+    const taskId = req.params.taskId;
+    const { notes } = req.body;
+
+    // Verify the task exists and belongs to this group
+    const [[task]] = await db.query(
+      `SELECT gt.*, pg.supervisor_id, pg.group_code
+       FROM group_tasks gt
+       JOIN project_groups pg ON pg.group_id = gt.group_id
+       WHERE gt.task_id = ? AND gt.group_id = ?`,
+      [taskId, groupId]
+    );
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+
+    // Verify student is assigned to this task
+    if (task.assigned_to) {
+      const assigned = typeof task.assigned_to === 'string' ? JSON.parse(task.assigned_to) : task.assigned_to;
+      if (Array.isArray(assigned) && !assigned.includes(studentId)) {
+        return res.status(403).json({ error: 'You are not assigned to this task' });
+      }
+    }
+
+    // Check for duplicate submission
+    const [[existing]] = await db.query(
+      'SELECT submission_id, status, file_path FROM task_submissions WHERE task_id = ? AND student_id = ?',
+      [taskId, studentId]
+    );
+    if (existing) {
+      if (existing.status === 'NEW') {
+        return res.status(400).json({ error: 'You have already submitted this task. Please wait for the supervisor to review it.' });
+      }
+      if (existing.status === 'ACCEPTED') {
+        return res.status(400).json({ error: 'This task has already been accepted. You cannot resubmit.' });
+      }
+      // REJECTED — delete old submission (and file) so student can resubmit
+      if (existing.file_path) {
+        const oldPath = path.join(__dirname, '../public', existing.file_path);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      await db.query('DELETE FROM task_submissions WHERE submission_id = ?', [existing.submission_id]);
+    }
+
+    const filePath = req.file ? `/uploads/task_submissions/${req.file.filename}` : null;
+    const fileName = req.file ? req.file.originalname : null;
+
+    await db.query(
+      `INSERT INTO task_submissions (task_id, student_id, group_id, notes, file_path, file_name)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [taskId, studentId, groupId, notes || null, filePath, fileName]
+    );
+
+    // Notify supervisor
+    const studentName = req.session.user.full_name;
+    if (task.supervisor_id) {
+      await db.query(
+        `INSERT INTO notifications (user_id, notification_type, title, message) VALUES (?, ?, ?, ?)`,
+        [task.supervisor_id, 'SYSTEM_ALERT',
+         `📋 Task Submitted: ${task.title}`,
+         `${studentName} has submitted "${task.title}" (Week ${task.week_no}) in group ${task.group_code}.`]
+      );
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user_${task.supervisor_id}`).emit('notification', {
+          title: `📋 Task Submitted: ${task.title}`,
+          message: `${studentName} submitted a task.`
+        });
+      }
+    }
+
+    res.json({ success: true, message: 'Task submitted successfully!' });
+  } catch (err) {
+    console.error('Task submit error:', err);
+    res.status(500).json({ error: err.message || 'Failed to submit task' });
   }
 });
 
