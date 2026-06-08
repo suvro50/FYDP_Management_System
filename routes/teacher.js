@@ -58,6 +58,62 @@ router.get('/stats', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// GET /api/teacher/chart-data — Weekly report activity for teacher's sections
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/chart-data', async (req, res) => {
+  try {
+    const teacherId = req.session.user.user_id;
+    const [weeks] = await db.query(
+      `SELECT
+         wpr.week_no,
+         COUNT(*) AS submitted,
+         SUM(CASE WHEN wpr.supervisor_status = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
+         SUM(CASE WHEN wpr.supervisor_status = 'PENDING'  THEN 1 ELSE 0 END) AS pending,
+         SUM(CASE WHEN wpr.supervisor_status = 'REJECTED' THEN 1 ELSE 0 END) AS rejected
+       FROM weekly_progress_reports wpr
+       JOIN project_groups pg ON pg.group_id = wpr.group_id
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
+       WHERE cts.course_teacher_id = ?
+       GROUP BY wpr.week_no
+       ORDER BY wpr.week_no ASC
+       LIMIT 12`,
+      [teacherId]
+    );
+    const [stageData] = await db.query(
+      `SELECT fs.stage_name, COUNT(DISTINCT pg.group_id) as group_count,
+              COUNT(DISTINCT gm.student_id) as student_count
+       FROM course_teacher_sections cts
+       JOIN fydp_stages fs ON fs.stage_id = cts.assigned_stage_id
+       LEFT JOIN project_groups pg ON pg.section_id = cts.section_id AND pg.is_active = 1
+       LEFT JOIN group_members gm ON gm.group_id = pg.group_id
+       WHERE cts.course_teacher_id = ?
+       GROUP BY fs.stage_name, fs.stage_order
+       ORDER BY fs.stage_order`,
+      [teacherId]
+    );
+    const [inboxWeeks] = await db.query(
+      `SELECT cti.week_no,
+              COUNT(*) as total_packages,
+              SUM(CASE WHEN cti.escalation_status = 'REVIEWED' THEN 1 ELSE 0 END) as reviewed,
+              SUM(CASE WHEN cti.escalation_status = 'PENDING_REVIEW' THEN 1 ELSE 0 END) as pending,
+              SUM(CASE WHEN cti.escalation_status = 'FLAGGED' THEN 1 ELSE 0 END) as flagged
+       FROM course_teacher_inbox cti
+       JOIN project_groups pg ON pg.group_id = cti.group_id
+       JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
+       WHERE cts.course_teacher_id = ?
+       GROUP BY cti.week_no
+       ORDER BY cti.week_no ASC
+       LIMIT 12`,
+      [teacherId]
+    );
+    res.json({ weeks, stageData, inboxWeeks });
+  } catch (err) {
+    console.error('Teacher chart-data error:', err);
+    res.status(500).json({ error: 'Failed to load chart data' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // GET /api/teacher/sections — Sections assigned to this teacher
 // ═══════════════════════════════════════════════════════════════════════════
 router.get('/sections', async (req, res) => {
@@ -119,6 +175,25 @@ router.get('/groups', async (req, res) => {
         [g.group_id]
       );
       g.members = members;
+
+      // Compute color_status from latest reports
+      const [latestReports] = await db.query(
+        `SELECT week_no, supervisor_status, submitted_at FROM weekly_progress_reports
+         WHERE group_id = ? ORDER BY week_no DESC, submitted_at DESC LIMIT 10`,
+        [g.group_id]
+      );
+      if (latestReports.length === 0) {
+        g.color_status = 'red';
+      } else {
+        const latestWeek = latestReports[0].week_no;
+        const latest = latestReports.filter(r => r.week_no === latestWeek);
+        const allApproved = latest.every(r => r.supervisor_status === 'APPROVED');
+        const somePending = latest.some(r => r.supervisor_status === 'PENDING');
+        const daysSince = (Date.now() - new Date(latestReports[0].submitted_at)) / (1000 * 60 * 60 * 24);
+        if (daysSince > 7 && somePending) g.color_status = 'red';
+        else if (allApproved) g.color_status = 'green';
+        else g.color_status = 'yellow';
+      }
     }
 
     res.json({ groups });
@@ -165,8 +240,36 @@ router.get('/inbox', async (req, res) => {
     const [items] = await db.query(
       `SELECT cti.inbox_id, cti.group_id, cti.week_no, cti.escalated_at,
               cti.escalation_status, cti.reviewed_at, cti.reviewed_by, cti.notes,
-              cti.total_members, cti.approved_count, cti.is_fully_approved,
-              CONCAT(cti.approved_count, ' / ', cti.total_members) AS approval_progress,
+              (
+                SELECT COUNT(*) FROM group_members gm2
+                WHERE gm2.group_id = cti.group_id
+              ) AS total_members,
+              (
+                SELECT COUNT(DISTINCT wpr.student_id)
+                FROM weekly_progress_reports wpr
+                WHERE wpr.group_id = cti.group_id
+                  AND wpr.week_no = cti.week_no
+                  AND wpr.supervisor_status = 'APPROVED'
+              ) AS approved_count,
+              (
+                SELECT COUNT(*) = COUNT(DISTINCT gm3.student_id)
+                FROM weekly_progress_reports wpr2
+                JOIN group_members gm3 ON gm3.group_id = cti.group_id
+                WHERE wpr2.group_id = cti.group_id
+                  AND wpr2.week_no = cti.week_no
+                  AND wpr2.supervisor_status = 'APPROVED'
+              ) AS is_fully_approved,
+              CONCAT(
+                (
+                  SELECT COUNT(DISTINCT wpr3.student_id)
+                  FROM weekly_progress_reports wpr3
+                  WHERE wpr3.group_id = cti.group_id
+                    AND wpr3.week_no = cti.week_no
+                    AND wpr3.supervisor_status = 'APPROVED'
+                ),
+                ' / ',
+                (SELECT COUNT(*) FROM group_members gm4 WHERE gm4.group_id = cti.group_id)
+              ) AS approval_progress,
               pg.group_code, pg.project_title, s.section_code,
               fs.stage_name, sup.full_name as supervisor_name
        FROM course_teacher_inbox cti

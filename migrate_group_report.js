@@ -1,4 +1,4 @@
-/**
+/*
  * Migration: Add is_group_report column to weekly_progress_reports
  * Run: node migrate_group_report.js
  */

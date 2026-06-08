@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,98 +9,1047 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root {
-      --bg-dark: #0d0f1e;
-      --card-bg: #161929;
-      --sidebar-bg: #161929;
-      --border-color: #1e2240;
+      --bg-dark: #1a1625;
+      --card-bg: #231e2e;
+      --sidebar-bg: #1a1625;
+      --border-color: #2d2640;
       --text-primary: #e2e8f0;
       --text-secondary: #94a3b8;
       --accent-color: #7c3aed;
+      --accent-light: #a78bfa;
     }
 
-    body { background: var(--bg-dark) !important; color: var(--text-primary) !important; font-family: 'Inter', sans-serif; }
-    .main-content { background: var(--bg-dark) !important; min-height: 100vh; padding: 0; transition: all 0.3s; }
+    body {
+      background: var(--bg-dark) !important;
+      color: var(--text-primary) !important;
+      font-family: 'Inter', sans-serif;
+    }
 
-    .progress-bar-wrap { background: var(--border-color); border-radius: 50px; height: 10px; overflow: hidden; }
-    .progress-bar-fill { height: 100%; border-radius: 50px; background: linear-gradient(90deg, #7c3aed, #4f46e5); transition: width 0.8s ease; }
-    
-    .member-card { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--card-bg); border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--border-color); transition: all 0.2s; }
-    .member-card:hover { background: #1e2240; border-color: var(--accent-color); transform: translateY(-2px); }
-    .member-card h4 { color: var(--text-primary); font-size: 0.95rem; font-weight: 600; }
-    .member-card p { color: var(--text-secondary); font-size: 0.8rem; }
-    
-    .member-avatar { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
-    .member-avatar.team-lead { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; }
-    .member-avatar.other { background: var(--border-color); color: var(--text-secondary); }
-    
-    .role-tag { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 8px; }
-    .role-TEAM_LEAD { background: rgba(124, 58, 237, 0.1); color: #a78bfa; }
-    .role-DEVELOPER { background: rgba(16, 185, 129, 0.1); color: #6ee7b7; }
-    .role-DESIGNER { background: rgba(236, 72, 153, 0.1); color: #f9a8d4; }
-    .role-RESEARCHER { background: rgba(245, 158, 11, 0.1); color: #fcd34d; }
-    
-    .sup-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; position: relative; overflow: hidden; }
-    .sup-card::before { content: ""; position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, transparent 70%); }
-    
-    .stat-mini { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border-color); transition: all 0.2s; }
-    .stat-mini:hover { border-color: var(--accent-color); transform: translateY(-3px); }
-    .stat-mini h3 { color: var(--text-primary); margin-bottom: 4px; }
-    
-    .report-row { display: flex; align-items: center; gap: 12px; padding: 16px; border-bottom: 1px solid var(--border-color); transition: background 0.15s; }
-    .report-row:hover { background: rgba(255,255,255,0.02); }
-    
-    .week-circle { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; border: 1px solid var(--border-color); }
-    .week-circle.approved { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: #10b98144; }
-    .week-circle.pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: #f59e0b44; }
-    .week-circle.rejected { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef444444; }
-    
-    .stage-pill { padding: 6px 18px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; border: 1px solid var(--border-color); }
-    .stage-FYDP-1 { background: rgba(59, 130, 246, 0.1); color: #60a5fa; }
-    .stage-FYDP-2 { background: rgba(16, 185, 129, 0.1); color: #34d399; }
-    
-    .action-btn { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: all 0.2s; text-decoration: none; color: var(--text-primary); text-align: center; }
-    .action-btn:hover { background: #1e2240; border-color: var(--accent-color); transform: translateY(-3px); }
-    .action-btn i { font-size: 1.4rem; color: var(--accent-color); }
-    .action-btn span { font-size: 0.8rem; font-weight: 600; }
+    .main-content {
+      background: var(--bg-dark) !important;
+      min-height: 100vh;
+      padding: 0;
+      transition: all 0.3s;
+    }
+
+    /* ── Hero Banner ─────────────────────────────────────── */
+    .dash-hero {
+      background: linear-gradient(135deg, #1e1a2e 0%, #2a1f3d 40%, #1e2a3a 100%);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(124, 58, 237, 0.15);
+    }
+
+    .dash-hero::before {
+      content: "";
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .dash-hero::after {
+      content: "";
+      position: absolute;
+      bottom: -40px;
+      left: 30%;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .dash-hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      position: relative;
+      z-index: 1;
+    }
+
+    .dash-hero h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .dash-hero .hero-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+      margin-bottom: 14px;
+    }
+
+    .hero-badges {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .hero-badge.semester {
+      background: rgba(124, 58, 237, 0.2);
+      color: #a78bfa;
+      border: 1px solid rgba(124, 58, 237, 0.3);
+    }
+
+    .hero-badge.on-track {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .hero-badge.streak {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .project-id-box {
+      text-align: right;
+      position: relative;
+      z-index: 1;
+    }
+
+    .project-id-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .project-id-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* ── Stat Cards ──────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    /* Base card */
+    .stat-card {
+      border-radius: 16px;
+      padding: 22px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s, box-shadow 0.25s;
+      box-shadow: none !important;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+    }
+    /* Disable old glassy sheen */
+    .stat-card::after {
+      display: none;
+    }
+    /* Disable old orb glow */
+    .stat-card::before {
+      display: none;
+    }
+
+    /* ── Base Card Classes ── */
+    .stat-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    .stat-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+    }
+    .stat-trend {
+      font-size: 0.82rem;
+      background: transparent;
+      padding: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .stat-value {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #fff !important;
+      position: relative;
+      z-index: 1;
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.6) !important;
+      font-weight: 700;
+      margin-top: 5px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Blue/Indigo — Reports Submitted ── */
+    .stat-card.reports {
+      background: #1e1d35 !important;
+      border: 1px solid rgba(99, 102, 241, 0.25) !important;
+    }
+    .stat-card.reports .stat-icon {
+      background: rgba(99, 102, 241, 0.2) !important;
+      color: #818cf8 !important;
+    }
+    .stat-card.reports .stat-trend { color: #818cf8; }
+    .stat-card.reports .stat-value { color: #e2e8f0 !important; }
+    .stat-card.reports .stat-label { color: rgba(148,163,184,0.85) !important; }
+
+    /* ── Green — Approved ── */
+    .stat-card.approved {
+      background: #162620 !important;
+      border: 1px solid rgba(16, 185, 129, 0.25) !important;
+    }
+    .stat-card.approved .stat-icon {
+      background: rgba(16, 185, 129, 0.2) !important;
+      color: #34d399 !important;
+    }
+    .stat-card.approved .stat-trend { color: #34d399; }
+    .stat-card.approved .stat-value { color: #e2e8f0 !important; }
+    .stat-card.approved .stat-label { color: rgba(148,163,184,0.85) !important; }
+
+    /* ── Amber — Pending Review ── */
+    .stat-card.pending {
+      background: #27200f !important;
+      border: 1px solid rgba(245, 158, 11, 0.25) !important;
+    }
+    .stat-card.pending .stat-icon {
+      background: rgba(245, 158, 11, 0.2) !important;
+      color: #fbbf24 !important;
+    }
+    .stat-card.pending .stat-trend { color: #fbbf24; }
+    .stat-card.pending .stat-value { color: #e2e8f0 !important; }
+    .stat-card.pending .stat-label { color: rgba(148,163,184,0.85) !important; }
+
+    /* ── Purple — Completion ── */
+    .stat-card.completion {
+      background: #201525 !important;
+      border: 1px solid rgba(168, 85, 247, 0.25) !important;
+    }
+    .stat-card.completion .stat-icon {
+      background: rgba(168, 85, 247, 0.2) !important;
+      color: #c084fc !important;
+    }
+    .stat-card.completion .stat-trend { color: #c084fc; }
+    .stat-card.completion .stat-value { color: #e2e8f0 !important; }
+    .stat-card.completion .stat-label { color: rgba(148,163,184,0.85) !important; }
+
+    /* ── Weekly Progress Bar ─────────────────────────────── */
+    .progress-section {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border-color);
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .progress-title {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .progress-title-sub {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+    }
+
+    .progress-count {
+      font-size: 0.88rem;
+      color: var(--accent-light);
+      font-weight: 700;
+    }
+
+    .segmented-bar {
+      display: flex;
+      gap: 4px;
+      height: 14px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .seg {
+      flex: 1;
+      border-radius: 4px;
+      transition: all 0.3s;
+    }
+
+    .seg.approved {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .seg.rejected {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .seg.pending {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+
+    .seg.empty {
+      background: #2d2640;
+    }
+
+    .seg.submitted {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+
+    /* ── 3-Column Layout ─────────────────────────────────── */
+    .three-col {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    /* Group Members Card */
+    .gm-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .gm-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .gm-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .gm-header h3 i {
+      color: var(--accent-light);
+      font-size: 1rem;
+    }
+
+    .gm-code {
+      font-size: 0.72rem;
+      padding: 4px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+      font-weight: 600;
+    }
+
+    .gm-body {
+      padding: 12px 16px;
+    }
+
+    .member-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 8px;
+      border-radius: 10px;
+      transition: all 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .member-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .member-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .member-avatar.lead {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: #fff;
+    }
+
+    .member-avatar.dev {
+      background: linear-gradient(135deg, #ec4899, #db2777);
+      color: #fff;
+    }
+
+    .member-avatar.researcher {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+    }
+
+    .member-avatar.designer {
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      color: #fff;
+    }
+
+    .member-avatar.other {
+      background: #3d3550;
+      color: var(--text-secondary);
+    }
+
+    .member-info h4 {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    .member-info p {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .member-role {
+      margin-left: auto;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .member-role.TEAM_LEAD {
+      background: rgba(124, 58, 237, 0.15);
+      color: #a78bfa;
+    }
+
+    .member-role.DEVELOPER {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+    }
+
+    .member-role.DESIGNER {
+      background: rgba(6, 182, 212, 0.15);
+      color: #67e8f9;
+    }
+
+    .member-role.RESEARCHER {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+    }
+
+    .member-role.TESTER {
+      background: rgba(236, 72, 153, 0.15);
+      color: #f9a8d4;
+    }
+
+    .member-role.DATA_ENGINEER {
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+    }
+
+    /* Supervisor Card */
+    .sup-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .sup-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .sup-header i {
+      color: var(--accent-light);
+    }
+
+    .sup-body {
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    .sup-avatar-wrap {
+      margin: 0 auto 16px;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+      position: relative;
+    }
+
+    .sup-avatar-wrap::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid rgba(124, 58, 237, 0.3);
+    }
+
+    .sup-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .sup-dept {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .sup-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .sup-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .sup-btn.email-btn {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .sup-btn.email-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--accent-color);
+    }
+
+    .sup-btn.chat-btn {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: #fff;
+      border: none;
+    }
+
+    .sup-btn.chat-btn:hover {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      transform: translateY(-1px);
+    }
+
+    /* Quick Actions */
+    .qa-section h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .qa-section h3 i {
+      color: var(--accent-light);
+    }
+
+    .qa-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .qa-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: all 0.2s;
+    }
+
+    .qa-btn:hover {
+      background: #2d2640;
+      border-color: rgba(124, 58, 237, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .qa-btn .qa-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .qa-btn .qa-icon.submit {
+      background: rgba(124, 58, 237, 0.15);
+      color: #a78bfa;
+    }
+
+    .qa-btn .qa-icon.reports {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+    }
+
+    .qa-btn .qa-icon.tasks {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+    }
+
+    .qa-btn .qa-icon.chat {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+
+    .qa-btn .qa-icon.supervisor {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+    }
+
+    .qa-btn .qa-icon.teacher {
+      background: rgba(6, 182, 212, 0.15);
+      color: #67e8f9;
+    }
+
+    .qa-btn .qa-text {
+      font-size: 0.82rem;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .qa-btn .qa-arrow {
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      opacity: 0.5;
+      transition: all 0.2s;
+    }
+
+    .qa-btn:hover .qa-arrow {
+      opacity: 1;
+      transform: translateX(2px);
+      color: var(--accent-light);
+    }
+
+    /* ── Recent Reports ──────────────────────────────────── */
+    .reports-section {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .reports-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .reports-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .reports-header h3 i {
+      color: var(--accent-light);
+    }
+
+    .reports-header .view-all {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .reports-header .view-all:hover {
+      color: var(--accent-light);
+    }
+
+    .report-item {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-color);
+      transition: background 0.15s;
+    }
+
+    .report-item:last-child {
+      border-bottom: none;
+    }
+
+    .report-item:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .report-main {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .week-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.82rem;
+      flex-shrink: 0;
+      color: #fff;
+    }
+
+    .week-badge.w-green {
+      background: #10b981;
+    }
+
+    .week-badge.w-red {
+      background: #ef4444;
+    }
+
+    .week-badge.w-yellow {
+      background: #f59e0b;
+    }
+
+    .week-badge.w-blue {
+      background: #3b82f6;
+    }
+
+    .report-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .report-info h4 {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .report-info .report-date {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .report-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    .status-pill.approved {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+    }
+
+    .status-pill.rejected {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+    }
+
+    .status-pill.pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+    }
+
+    .status-pill .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .status-pill.approved .dot {
+      background: #34d399;
+    }
+
+    .status-pill.rejected .dot {
+      background: #f87171;
+    }
+
+    .status-pill.pending .dot {
+      background: #fbbf24;
+    }
+
+    .view-report-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .view-report-btn:hover {
+      background: rgba(124, 58, 237, 0.15);
+      color: var(--accent-light);
+      border-color: rgba(124, 58, 237, 0.3);
+    }
+
+    .report-feedback {
+      margin: 8px 0 0 56px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .report-feedback i {
+      color: var(--text-secondary);
+      margin-top: 2px;
+      opacity: 0.6;
+    }
+
+    /* ── Bottom CTA Banner ───────────────────────────────── */
+    .cta-banner {
+      background: linear-gradient(135deg, #2a1f3d, #1e2a3a);
+      border-radius: 16px;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .cta-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .cta-text {
+      flex: 1;
+    }
+
+    .cta-text h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .cta-text p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .cta-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+    }
+
+    /* ── Pro Tip ─────────────────────────────────────────── */
+    .pro-tip {
+      position: fixed;
+      bottom: 16px;
+      left: 232px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      z-index: 50;
+      max-width: 280px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .pro-tip strong {
+      color: var(--accent-light);
+      display: block;
+      margin-bottom: 2px;
+      font-size: 0.72rem;
+    }
+
+    /* ── Responsive ──────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .three-col {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .qa-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
+
 <body>
   <div class="app-layout">
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="brand">
           <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
-          <div class="brand-text"><h3>FYDP System</h3><p>Student Panel</p></div>
+          <div class="brand-text">
+            <h3>FYDP System</h3>
+            <p>Student Panel</p>
+          </div>
         </div>
         <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
       </div>
       <nav class="sidebar-nav">
         <div class="nav-label">MAIN</div>
-        <a href="/student/dashboard" class="active"><span class="nav-icon"><i class="fas fa-home"></i></span> Dashboard</a>
+        <a href="/student/dashboard" class="active"><span class="nav-icon"><i class="fas fa-home"></i></span> Dashboard
+          <span style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:#7c3aed;"></span></a>
         <a href="/student/submit-report"><span class="nav-icon"><i class="fas fa-upload"></i></span> Submit Report</a>
         <a href="/student/reports"><span class="nav-icon"><i class="fas fa-file-alt"></i></span> My Reports</a>
         <a href="/student/tasks"><span class="nav-icon"><i class="fas fa-tasks"></i></span> My Tasks</a>
         <div class="nav-label" style="margin-top:20px;">CHATS</div>
-        <a href="/student/my-group-chat"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> Students Group</a>
-        <a href="/student/supervisor-group-chat"><span class="nav-icon"><i class="fas fa-users"></i></span> Group with Supervisor</a>
-        <a href="/student/teacher-group-chat"><span class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></span> Group with Course Teacher</a>
-        <a href="/student/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> DM Supervisor</a>
-        <a href="/student/teacher-chat"><span class="nav-icon"><i class="fas fa-comment-dots"></i></span> DM Course Teacher</a>
+        <a href="/student/my-group-chat"><span class="nav-icon"><i class="fas fa-user-friends"></i></span> Students
+          Group</a>
+        <a href="/student/supervisor-group-chat"><span class="nav-icon"><i class="fas fa-users"></i></span> Group with
+          Supervisor</a>
+        <a href="/student/teacher-group-chat"><span class="nav-icon"><i class="fas fa-chalkboard-teacher"></i></span>
+          Group with Course Teacher</a>
+        <a href="/student/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> DM
+          Supervisor</a>
+        <a href="/student/teacher-chat"><span class="nav-icon"><i class="fas fa-comment-dots"></i></span> DM Course
+          Teacher</a>
         <div class="nav-label" style="margin-top:20px;">ACCOUNT</div>
         <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
-        <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications <span id="navNotifBadge" class="badge badge-red" style="display:none;font-size:0.65rem;padding:2px 6px;margin-left:auto;">0</span></a>
+        <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications <span
+            id="navNotifBadge" class="badge badge-red"
+            style="display:none;font-size:0.65rem;padding:2px 6px;margin-left:auto;">0</span></a>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-user">
           <div class="user-avatar" id="userAvatar">S</div>
-          <div class="user-info"><h4 id="userName">Student</h4><p id="userUid">—</p></div>
+          <div class="user-info">
+            <h4 id="userName">Student</h4>
+            <p id="userUid">—</p>
+          </div>
         </div>
       </div>
     </aside>
 
     <main class="main-content">
       <header class="top-header">
-        <div class="breadcrumb"><i class="fas fa-home"></i> Student / <span>Dashboard</span></div>
+        <div class="breadcrumb"><i class="fas fa-home"></i> Student &gt; <span>Dashboard</span></div>
         <div class="header-actions">
           <div style="position:relative;" id="studentNotifWrapper">
             <button class="notification-bell" id="studentNotifBell" onclick="toggleStudentNotif()">
@@ -109,7 +1059,8 @@
             <div class="notif-dropdown" id="studentNotifDropdown" style="display:none;">
               <div class="notif-dropdown-header">
                 <h4>🔔 Notifications</h4>
-                <button class="btn btn-sm btn-outline" onclick="studentMarkAllRead()" style="padding:4px 10px;font-size:0.7rem;">Mark All Read</button>
+                <button class="btn btn-sm btn-outline" onclick="studentMarkAllRead()"
+                  style="padding:4px 10px;font-size:0.7rem;">Mark All Read</button>
               </div>
               <div class="notif-dropdown-body" id="studentNotifBody">
                 <div style="padding:20px;text-align:center;color:#999;">Loading...</div>
@@ -126,102 +1077,182 @@
 
       <div class="page-content">
         <!-- Loading state -->
-        <div id="loadingState" style="text-align:center;padding:80px;"><i class="fas fa-spinner fa-spin fa-3x" style="color:#1565c0;opacity:0.4;"></i></div>
+        <div id="loadingState" style="text-align:center;padding:80px;"><i class="fas fa-spinner fa-spin fa-3x"
+            style="color:var(--accent-color);opacity:0.4;"></i></div>
 
         <!-- Main Dashboard Content -->
         <div id="dashContent" style="display:none;">
 
-          <!-- Title + Group Badge -->
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
-            <div>
-              <h1 style="font-size:1.7rem;margin-bottom:4px;">My FYDP Dashboard 🎓</h1>
-              <p style="color:#888;" id="groupSubTitle">Loading group info...</p>
+          <!-- Hero Banner -->
+          <div class="dash-hero">
+            <div class="dash-hero-top">
+              <div>
+                <h1>My FYDP Dashboard 🎓</h1>
+                <p class="hero-subtitle" id="groupSubTitle">Loading group info...</p>
+              </div>
+              <div class="project-id-box" id="stagePill">
+                <div class="project-id-label">PROJECT ID</div>
+                <div class="project-id-value" id="projectStage">—</div>
+              </div>
             </div>
-            <div id="stagePill"></div>
+            <div class="hero-badges">
+              <span class="hero-badge semester" id="semesterBadge"><i class="fas fa-calendar-alt"></i> Spring
+                2026</span>
+              <span class="hero-badge on-track" id="trackBadge"><i class="fas fa-check-circle"></i> On Track</span>
+              <span class="hero-badge streak" id="streakBadge"><i class="fas fa-fire"></i> <span
+                  id="streakCount">0</span> week streak</span>
+            </div>
           </div>
 
           <!-- Stats Row -->
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;">
-            <div class="stat-mini">
-              <div style="font-size:2rem;font-weight:800;color:var(--accent-color);" id="statTotal">0</div>
-              <div style="font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;font-weight:600;margin-top:4px;">Reports Submitted</div>
+          <div class="stats-grid">
+            <div class="stat-card reports">
+              <div class="stat-card-top">
+                <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                <div class="stat-trend"><i class="fas fa-arrow-trend-up"></i></div>
+              </div>
+              <div class="stat-value" id="statTotal">0</div>
+              <div class="stat-label">Reports Submitted</div>
             </div>
-            <div class="stat-mini">
-              <div style="font-size:2rem;font-weight:800;color:#10b981;" id="statApproved">0</div>
-              <div style="font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;font-weight:600;margin-top:4px;">Approved</div>
+            <div class="stat-card approved">
+              <div class="stat-card-top">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-trend"><i class="fas fa-arrow-trend-up"></i></div>
+              </div>
+              <div class="stat-value" id="statApproved">0</div>
+              <div class="stat-label">Approved</div>
             </div>
-            <div class="stat-mini">
-              <div style="font-size:2rem;font-weight:800;color:#f59e0b;" id="statPending">0</div>
-              <div style="font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;font-weight:600;margin-top:4px;">Pending Review</div>
+            <div class="stat-card pending">
+              <div class="stat-card-top">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-trend"><i class="fas fa-arrow-trend-up"></i></div>
+              </div>
+              <div class="stat-value" id="statPending">0</div>
+              <div class="stat-label">Pending Review</div>
             </div>
-            <div class="stat-mini">
-              <div style="font-size:2rem;font-weight:800;color:#3b82f6;" id="statProgress">0%</div>
-              <div style="font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;font-weight:600;margin-top:4px;">Completion</div>
+            <div class="stat-card completion">
+              <div class="stat-card-top">
+                <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-trend"><i class="fas fa-arrow-trend-up"></i></div>
+              </div>
+              <div class="stat-value" id="statProgress">0%</div>
+              <div class="stat-label">Completion</div>
             </div>
           </div>
 
-          <!-- Progress Bar -->
-          <div style="background:var(--card-bg);border-radius:16px;padding:24px;margin-bottom:28px;border:1px solid var(--border-color);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-              <span style="font-weight:600;font-size:0.95rem;">Weekly Progress (12 Weeks Total)</span>
-              <span id="progressLabel" style="font-size:0.85rem;color:var(--accent-color);font-weight:700;">0 / 12 weeks approved</span>
+          <!-- Weekly Progress -->
+          <div class="progress-section">
+            <div class="progress-header">
+              <div>
+                <div class="progress-title">Weekly Progress</div>
+                <div class="progress-title-sub" id="progressSubTitle">12 Weeks Total · Track your submissions to
+                  graduation</div>
+              </div>
+              <span class="progress-count" id="progressLabel">0 / 12 weeks approved</span>
             </div>
-            <div class="progress-bar-wrap">
-              <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+            <div class="segmented-bar" id="segmentedBar">
+              <!-- 12 segments injected by JS -->
             </div>
           </div>
 
           <!-- 3-column layout -->
-          <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:20px;margin-bottom:28px;">
+          <div class="three-col">
             <!-- Group Members -->
-            <div class="card">
-              <div class="card-header"><h3><i class="fas fa-users" style="color:var(--accent-color);margin-right:8px;"></i>Group Members</h3><span class="badge" style="background:rgba(255,255,255,0.05);color:var(--text-secondary);border:1px solid var(--border-color);" id="groupCodeBadge">—</span></div>
-              <div class="card-body" id="membersContainer" style="padding:16px;"></div>
+            <div class="gm-card">
+              <div class="gm-header">
+                <h3><i class="fas fa-users"></i> Group Members</h3>
+                <span class="gm-code" id="groupCodeBadge">—</span>
+              </div>
+              <div class="gm-body" id="membersContainer"></div>
             </div>
 
             <!-- Supervisor -->
-            <div style="display:flex;flex-direction:column;gap:16px;">
-              <div class="sup-card">
-                <div class="card-header" style="border:none;padding:0;margin-bottom:16px;"><h3><i class="fas fa-user-tie" style="color:var(--accent-color);margin-right:8px;"></i>Supervisor</h3></div>
-                <div style="text-align:center;">
-                  <a id="supProfileLink" href="#" style="text-decoration:none;color:inherit;">
-                    <div class="sup-avatar" id="supAvatarEl" style="margin:0 auto 12px;width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--accent-color),#4f46e5);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:#fff;">?</div>
-                  </a>
-                  <h3 id="supName" style="font-size:1.1rem;margin-bottom:4px;color:var(--text-primary);">—</h3>
-                  <p id="supDept" style="color:var(--text-secondary);font-size:0.82rem;margin-bottom:20px;">—</p>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <a id="supEmailLink" href="#" class="btn btn-outline btn-sm" style="border-radius:8px;"><i class="fas fa-envelope"></i> Email</a>
-                    <a href="/student/supervisor-chat" class="btn btn-primary btn-sm" style="border-radius:8px;background:var(--accent-color);"><i class="fas fa-comment"></i> Chat</a>
-                  </div>
+            <div class="sup-card">
+              <div class="sup-header"><i class="fas fa-user-tie"></i> Supervisor</div>
+              <div class="sup-body">
+                <a id="supProfileLink" href="#" style="text-decoration:none;color:inherit;">
+                  <div class="sup-avatar-wrap" id="supAvatarEl">?</div>
+                </a>
+                <div class="sup-name" id="supName">—</div>
+                <div class="sup-dept" id="supDept">—</div>
+                <div class="sup-actions">
+                  <a id="supEmailLink" href="#" class="sup-btn email-btn"><i class="fas fa-envelope"></i> Email</a>
+                  <a href="/student/supervisor-chat" class="sup-btn chat-btn"><i class="fas fa-comment"></i> Chat</a>
                 </div>
               </div>
             </div>
 
             <!-- Quick Actions -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start;">
-              <a href="/student/submit-report" class="action-btn"><i class="fas fa-upload"></i><span>Submit Report</span></a>
-              <a href="/student/reports" class="action-btn"><i class="fas fa-file-alt" style="color:#10b981;"></i><span>My Reports</span></a>
-              <a href="/student/tasks" class="action-btn"><i class="fas fa-tasks" style="color:#a78bfa;"></i><span>My Tasks</span></a>
-              <a href="/student/my-group-chat" class="action-btn"><i class="fas fa-users" style="color:#3b82f6;"></i><span>Group Chat</span></a>
-              <a href="/student/supervisor-chat" class="action-btn"><i class="fas fa-user-tie" style="color:#f59e0b;"></i><span>Ask Supervisor</span></a>
-              <a href="/student/teacher-chat" class="action-btn"><i class="fas fa-chalkboard-teacher" style="color:#06b6d4;"></i><span>Ask Teacher</span></a>
-              <a href="/profile" class="action-btn"><i class="fas fa-user-edit" style="color:#ec4899;"></i><span>Edit Profile</span></a>
+            <div class="qa-section">
+              <h3><i class="fas fa-cog"></i> Quick Actions</h3>
+              <div class="qa-grid">
+                <a href="/student/submit-report" class="qa-btn">
+                  <div class="qa-icon submit"><i class="fas fa-file-alt"></i></div>
+                  <span class="qa-text">Submit Report</span>
+                  <i class="fas fa-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/student/reports" class="qa-btn">
+                  <div class="qa-icon reports"><i class="fas fa-file"></i></div>
+                  <span class="qa-text">My Reports</span>
+                  <i class="fas fa-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/student/tasks" class="qa-btn">
+                  <div class="qa-icon tasks"><i class="fas fa-sliders-h"></i></div>
+                  <span class="qa-text">My Tasks</span>
+                  <i class="fas fa-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/student/my-group-chat" class="qa-btn">
+                  <div class="qa-icon chat"><i class="fas fa-people-group"></i></div>
+                  <span class="qa-text">Group Chat</span>
+                  <i class="fas fa-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/student/supervisor-chat" class="qa-btn">
+                  <div class="qa-icon supervisor"><i class="fas fa-question-circle"></i></div>
+                  <span class="qa-text">Ask Supervisor</span>
+                  <i class="fas fa-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/student/teacher-chat" class="qa-btn">
+                  <div class="qa-icon teacher"><i class="fas fa-comments"></i></div>
+                  <span class="qa-text">Ask Teacher</span>
+                  <i class="fas fa-chevron-right qa-arrow"></i>
+                </a>
+              </div>
             </div>
           </div>
 
-          <!-- Recent Reports Table -->
-          <div class="card">
-            <div class="card-header">
-              <h3><i class="fas fa-clock" style="color:var(--accent-color);margin-right:8px;"></i>Recent Reports</h3>
-              <a href="/student/reports" class="btn btn-outline btn-sm" style="border-radius:8px;">View All</a>
+          <!-- Recent Reports -->
+          <div class="reports-section">
+            <div class="reports-header">
+              <h3><i class="fas fa-file-alt"></i> Recent Reports</h3>
+              <a href="/student/reports" class="view-all">View All <i class="fas fa-chevron-right"
+                  style="font-size:0.7rem;"></i></a>
             </div>
-            <div id="recentReportsList" style="padding:0;">
-              <div style="text-align:center;padding:40px;color:var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i></div>
+            <div id="recentReportsList">
+              <div style="text-align:center;padding:40px;color:var(--text-secondary);"><i
+                  class="fas fa-spinner fa-spin"></i></div>
             </div>
           </div>
+
+          <!-- CTA Banner -->
+          <div class="cta-banner" id="ctaBanner">
+            <div class="cta-icon"><i class="fas fa-paper-plane"></i></div>
+            <div class="cta-text">
+              <h4 id="ctaTitle">Ready to submit this week's progress?</h4>
+              <p>Stay consistent — every submission counts toward your completion score.</p>
+            </div>
+            <a href="/student/submit-report" class="cta-btn" id="ctaBtn"><i class="fas fa-file-upload"></i> <span
+                id="ctaBtnText">Submit Report</span></a>
+          </div>
+
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Pro Tip -->
+  <div class="pro-tip" id="proTip">
+    <strong>💡 Pro tip</strong>
+    Submit reports weekly to keep your streak alive and boost your completion score.
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -271,14 +1302,14 @@
           apiFetch('/api/chat/unread-count'),
           apiFetch('/api/chat/group-unread-count')
         ]);
-        
+
         let notifs = (nd.status === 'fulfilled' && nd.value.notifications) ? nd.value.notifications : [];
-        
+
         if (dm.status === 'fulfilled' && dm.value.unread_count > 0) {
-           notifs.unshift({ notification_id: 'dm', is_read: 0, title: '💬 Direct Messages', message: `You have ${dm.value.unread_count} unread direct message(s).`, created_at: new Date().toISOString(), link: '/student/supervisor-chat' });
+          notifs.unshift({ notification_id: 'dm', is_read: 0, title: '💬 Direct Messages', message: `You have ${dm.value.unread_count} unread direct message(s).`, created_at: new Date().toISOString(), link: '/student/supervisor-chat' });
         }
         if (grp.status === 'fulfilled' && grp.value.unread_count > 0) {
-           notifs.unshift({ notification_id: 'grp', is_read: 0, title: '👥 Group Chats', message: `You have ${grp.value.unread_count} unread group message(s).`, created_at: new Date().toISOString(), link: '/student/my-group-chat' });
+          notifs.unshift({ notification_id: 'grp', is_read: 0, title: '👥 Group Chats', message: `You have ${grp.value.unread_count} unread group message(s).`, created_at: new Date().toISOString(), link: '/student/my-group-chat' });
         }
 
         const el = document.getElementById('studentNotifBody');
@@ -311,7 +1342,7 @@
 
     async function studentReadAndGo(id, link) {
       if (!isNaN(parseInt(id))) {
-        try { await apiFetch(`/api/notifications/${id}/read`, { method: 'PUT' }); } catch(e) {}
+        try { await apiFetch(`/api/notifications/${id}/read`, { method: 'PUT' }); } catch (e) { }
       }
       window.location.href = link;
     }
@@ -321,7 +1352,7 @@
         await apiFetch('/api/notifications/read-all', { method: 'PUT' });
         updateNotificationCount();
         loadStudentNotifDropdown();
-      } catch(e) {}
+      } catch (e) { }
     }
 
 
@@ -337,9 +1368,9 @@
         const g = dashData.group;
         const stats = dashData.stats;
 
-        // Group title & stage — show domain_name, not project_title
+        // Group title & stage
         document.getElementById('groupSubTitle').textContent = `${g.group_code} · Domain: ${g.domain_name || 'N/A'} · Section ${g.section_code}`;
-        document.getElementById('stagePill').innerHTML = `<span class="stage-pill stage-${escapeHtml(g.stage_name)}">${escapeHtml(g.stage_name)}</span>`;
+        document.getElementById('projectStage').textContent = g.stage_name || 'FYDP-1';
         document.getElementById('groupCodeBadge').textContent = g.group_code;
 
         // Stats
@@ -348,8 +1379,36 @@
         document.getElementById('statPending').textContent = stats.pendingCount;
         const pct = stats.totalWeeks > 0 ? Math.round((stats.approvedCount / stats.totalWeeks) * 100) : 0;
         document.getElementById('statProgress').textContent = pct + '%';
-        document.getElementById('progressFill').style.width = pct + '%';
         document.getElementById('progressLabel').textContent = `${stats.approvedCount} / ${stats.totalWeeks} weeks approved`;
+
+        // Streak calculation
+        let streak = 0;
+        const reports = dashData.recent_reports || [];
+        const allSorted = [...reports].sort((a, b) => b.week_no - a.week_no);
+        for (const r of allSorted) {
+          if (r.supervisor_status === 'APPROVED' || r.supervisor_status === 'PENDING') {
+            streak++;
+          } else {
+            break;
+          }
+        }
+        document.getElementById('streakCount').textContent = streak;
+
+        // Track status
+        const trackBadge = document.getElementById('trackBadge');
+        if (stats.pendingCount === 0 && stats.approvedCount > 0) {
+          trackBadge.innerHTML = '<i class="fas fa-check-circle"></i> On Track';
+          trackBadge.className = 'hero-badge on-track';
+        } else if (stats.totalReports === 0) {
+          trackBadge.innerHTML = '<i class="fas fa-minus-circle"></i> Not Started';
+          trackBadge.className = 'hero-badge semester';
+        } else {
+          trackBadge.innerHTML = '<i class="fas fa-check-circle"></i> On Track';
+          trackBadge.className = 'hero-badge on-track';
+        }
+
+        // Segmented progress bar
+        buildSegmentedBar(dashData.recent_reports, stats.totalWeeks);
 
         // Supervisor
         const sup = dashData.supervisor;
@@ -362,23 +1421,16 @@
         }
 
         // Members
-        const membersHtml = dashData.members.map(m => {
-          const isLead = m.member_role === 'TEAM_LEAD';
-          return `
-            <a href="/profile?id=${m.user_id}" class="member-card" style="text-decoration:none;color:inherit;display:flex;align-items:center;padding:10px;border-radius:12px;transition:background 0.2s;margin-bottom:8px;">
-              <div class="member-avatar ${isLead ? 'team-lead' : 'other'}" style="width:40px;height:40px;border-radius:10px;background:var(--border-color);display:flex;align-items:center;justify-content:center;font-weight:700;margin-right:12px;color:var(--text-primary);border:1px solid ${isLead ? 'var(--accent-color)' : 'transparent'}">${getInitials(m.full_name)}</div>
-              <div style="flex:1;min-width:0;text-align:left;">
-                <div style="font-weight:600;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary);">${escapeHtml(m.full_name)}</div>
-                <div style="font-size:0.78rem;color:var(--text-secondary);opacity:0.8;">${escapeHtml(m.university_id)}</div>
-              </div>
-              <span class="role-tag role-${m.member_role}" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,0.05);color:var(--text-secondary);border:1px solid var(--border-color);">${m.member_role.replace('_',' ')}</span>
-            </a>
-          `;
-        }).join('');
-        document.getElementById('membersContainer').innerHTML = membersHtml || '<div style="color:var(--text-secondary);text-align:center;padding:20px;">No members found</div>';
+        renderMembers(dashData.members);
 
         // Recent reports
         renderRecentReports(dashData.recent_reports);
+
+        // CTA
+        const nextWeek = stats.totalReports + 1;
+        if (nextWeek <= stats.totalWeeks) {
+          document.getElementById('ctaBtnText').textContent = `Submit Week ${nextWeek} Report`;
+        }
 
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('dashContent').style.display = 'block';
@@ -388,6 +1440,56 @@
       }
     }
 
+    function buildSegmentedBar(reports, totalWeeks) {
+      const bar = document.getElementById('segmentedBar');
+      const statusMap = {};
+      if (reports) {
+        reports.forEach(r => { statusMap[r.week_no] = r.supervisor_status; });
+      }
+
+      let html = '';
+      for (let w = 1; w <= totalWeeks; w++) {
+        const status = statusMap[w];
+        let cls = 'empty';
+        if (status === 'APPROVED') cls = 'approved';
+        else if (status === 'REJECTED') cls = 'rejected';
+        else if (status === 'PENDING') cls = 'pending';
+        html += `<div class="seg ${cls}" title="Week ${w}: ${status || 'Not submitted'}"></div>`;
+      }
+      bar.innerHTML = html;
+    }
+
+    function renderMembers(members) {
+      const container = document.getElementById('membersContainer');
+      if (!members || members.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-secondary);text-align:center;padding:20px;">No members found</div>';
+        return;
+      }
+
+      const roleAvatarClass = {
+        'TEAM_LEAD': 'lead',
+        'DEVELOPER': 'dev',
+        'RESEARCHER': 'researcher',
+        'DESIGNER': 'designer',
+        'TESTER': 'other',
+        'DATA_ENGINEER': 'other'
+      };
+
+      container.innerHTML = members.map(m => {
+        const avatarCls = roleAvatarClass[m.member_role] || 'other';
+        return `
+          <a href="/profile?id=${m.user_id}" class="member-row">
+            <div class="member-avatar ${avatarCls}">${getInitials(m.full_name)}</div>
+            <div class="member-info">
+              <h4>${escapeHtml(m.full_name)}</h4>
+              <p>${escapeHtml(m.university_id)}</p>
+            </div>
+            <span class="member-role ${m.member_role}">${m.member_role.replace('_', ' ')}</span>
+          </a>
+        `;
+      }).join('');
+    }
+
     function renderRecentReports(reports) {
       const container = document.getElementById('recentReportsList');
       if (!reports || reports.length === 0) {
@@ -395,37 +1497,45 @@
         return;
       }
 
-      container.innerHTML = reports.map(r => {
-        let wClass = 'none', statusBadge = '';
-        if (r.supervisor_status === 'APPROVED') { 
-          wClass = 'approved'; 
-          statusBadge = '<span style="font-size:0.75rem;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.2);font-weight:600;">Approved ✓</span>'; 
-        }
-        else if (r.supervisor_status === 'REJECTED') { 
-          wClass = 'rejected'; 
-          statusBadge = '<span style="font-size:0.75rem;padding:4px 10px;border-radius:20px;background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);font-weight:600;">Rejected ✗</span>'; 
-        }
-        else { 
-          wClass = 'pending'; 
-          statusBadge = '<span style="font-size:0.75rem;padding:4px 10px;border-radius:20px;background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);font-weight:600;">Pending ⏳</span>'; 
-        }
+      // Color rotation for week badges
+      const weekColors = ['w-green', 'w-red', 'w-yellow', 'w-blue'];
+
+      container.innerHTML = reports.map((r, idx) => {
+        let statusClass = 'pending';
+        let statusText = 'Pending';
+        if (r.supervisor_status === 'APPROVED') { statusClass = 'approved'; statusText = 'Approved'; }
+        else if (r.supervisor_status === 'REJECTED') { statusClass = 'rejected'; statusText = 'Rejected'; }
+
+        // Cycle week badge colors based on status
+        let badgeClass = 'w-yellow';
+        if (r.supervisor_status === 'APPROVED') badgeClass = 'w-green';
+        else if (r.supervisor_status === 'REJECTED') badgeClass = 'w-red';
+        else badgeClass = 'w-yellow';
 
         return `
-          <div class="report-row" style="display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border-color);gap:16px;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
-            <div class="week-circle ${wClass}" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">W${r.week_no}</div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-weight:600;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary);">${escapeHtml(r.report_title || 'Week ' + r.week_no + ' Report')}</div>
-              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;opacity:0.8;">${formatDateTime(r.submitted_at)}</div>
+          <div class="report-item">
+            <div class="report-main">
+              <div class="week-badge ${badgeClass}">W${r.week_no}</div>
+              <div class="report-info">
+                <h4>${escapeHtml(r.report_title || 'Week ' + r.week_no + ' Progress Report')}</h4>
+                <span class="report-date">${formatDateTime(r.submitted_at)}</span>
+              </div>
+              <div class="report-actions">
+                <span class="status-pill ${statusClass}"><span class="dot"></span> ${statusText}</span>
+                <a href="/student/reports#report-${r.report_id}" class="view-report-btn" title="View report"><i class="fas fa-eye"></i></a>
+              </div>
             </div>
-            <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
-              ${statusBadge}
-              <a href="/student/reports#report-${r.report_id}" class="btn btn-outline btn-sm" style="padding:4px 12px;border-radius:6px;font-size:0.8rem;border-color:var(--border-color);color:var(--text-secondary);" title="View report details"><i class="fas fa-eye"></i></a>
-            </div>
+            ${r.supervisor_feedback ? `
+              <div class="report-feedback">
+                <i class="fas fa-comment-alt"></i>
+                <span>${escapeHtml(r.supervisor_feedback)}</span>
+              </div>
+            ` : ''}
           </div>
-          ${r.supervisor_feedback ? `<div style="margin:-4px 16px 0 70px;padding:8px 12px;background:rgba(251,191,36,0.1);border-radius:0 0 8px 8px;font-size:0.8rem;color:var(--text-secondary);border-left:3px solid #f59e0b;margin-bottom:4px;"><i class="fas fa-comment-alt" style="margin-right:6px;"></i>${escapeHtml(r.supervisor_feedback)}</div>` : ''}
         `;
       }).join('');
     }
   </script>
 </body>
+
 </html>

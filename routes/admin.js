@@ -157,8 +157,18 @@ router.post("/users", async (req, res) => {
       });
     }
 
+    // Resolve department name/short_code to department_id
+    const [deptRows] = await db.query(
+      `SELECT department_id FROM departments WHERE department_name = ? OR short_code = ? LIMIT 1`,
+      [department, department]
+    );
+    if (deptRows.length === 0) {
+      return res.status(400).json({ error: "Invalid department specified" });
+    }
+    const departmentId = deptRows[0].department_id;
+
     const [result] = await db.query(
-      `INSERT INTO users (university_id, full_name, email, password_hash, role, department, batch, phone)
+      `INSERT INTO users (university_id, full_name, email, password_hash, role, department_id, batch, phone)
        VALUES (?, ?, ?, SHA2(?, 256), ?, ?, ?, ?)`,
       [
         university_id,
@@ -166,7 +176,7 @@ router.post("/users", async (req, res) => {
         email,
         password,
         role,
-        department,
+        departmentId,
         batch || null,
         phone || null,
       ],
@@ -204,14 +214,27 @@ router.put("/users/:id", async (req, res) => {
       req.body;
     const userId = req.params.id;
 
+    // Resolve department name/short_code to department_id
+    let departmentId = null;
+    if (department) {
+      const [deptRows] = await db.query(
+        `SELECT department_id FROM departments WHERE department_name = ? OR short_code = ? LIMIT 1`,
+        [department, department]
+      );
+      if (deptRows.length === 0) {
+        return res.status(400).json({ error: "Invalid department specified" });
+      }
+      departmentId = deptRows[0].department_id;
+    }
+
     await db.query(
-      `UPDATE users SET full_name=?, email=?, role=?, department=?, batch=?, phone=?, account_status=?
+      `UPDATE users SET full_name=?, email=?, role=?, department_id=COALESCE(?, department_id), batch=?, phone=?, account_status=?
        WHERE user_id=?`,
       [
         full_name,
         email,
         role,
-        department,
+        departmentId,
         batch || null,
         phone || null,
         account_status,

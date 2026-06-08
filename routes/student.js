@@ -669,7 +669,7 @@ router.get('/my-task-submissions', checkGroupStatus, async (req, res) => {
     const [submissions] = await db.query(
       `SELECT ts.submission_id, ts.task_id, ts.status, ts.grade, ts.feedback, ts.rejection_reason,
               ts.notes, ts.file_path, ts.file_name, ts.submitted_at, ts.reviewed_at
-       FROM task_submissions ts
+       FROM group_task_submissions ts
        WHERE ts.student_id = ? AND ts.group_id = ?
        ORDER BY ts.submitted_at DESC`,
       [studentId, groupId]
@@ -733,11 +733,11 @@ router.post('/tasks/:taskId/submit', checkGroupStatus, taskSubmitUpload.single('
 
     // Check for duplicate submission
     const [[existing]] = await db.query(
-      'SELECT submission_id, status, file_path FROM task_submissions WHERE task_id = ? AND student_id = ?',
+      'SELECT submission_id, status, file_path FROM group_task_submissions WHERE task_id = ? AND student_id = ?',
       [taskId, studentId]
     );
     if (existing) {
-      if (existing.status === 'NEW') {
+      if (existing.status === 'NEW' || existing.status === 'SUBMITTED') {
         return res.status(400).json({ error: 'You have already submitted this task. Please wait for the supervisor to review it.' });
       }
       if (existing.status === 'ACCEPTED') {
@@ -748,14 +748,14 @@ router.post('/tasks/:taskId/submit', checkGroupStatus, taskSubmitUpload.single('
         const oldPath = path.join(__dirname, '../public', existing.file_path);
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
-      await db.query('DELETE FROM task_submissions WHERE submission_id = ?', [existing.submission_id]);
+      await db.query('DELETE FROM group_task_submissions WHERE submission_id = ?', [existing.submission_id]);
     }
 
     const filePath = req.file ? `/uploads/task_submissions/${req.file.filename}` : null;
     const fileName = req.file ? req.file.originalname : null;
 
     await db.query(
-      `INSERT INTO task_submissions (task_id, student_id, group_id, notes, file_path, file_name)
+      `INSERT INTO group_task_submissions (task_id, student_id, group_id, notes, file_path, file_name)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [taskId, studentId, groupId, notes || null, filePath, fileName]
     );

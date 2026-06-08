@@ -1616,3 +1616,145 @@ td { border-bottom:1px solid #1e2240 !important; }
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STUDENT DASHBOARD — STAT CARD DARK THEMED COLOR OVERRIDES
+   Must be at the END of this file to beat: body.dark-mode [class*="card"]
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base reset — dark card style for these specific cards */
+body .stat-card.reports,
+body .stat-card.approved,
+body .stat-card.pending,
+body .stat-card.completion {
+  border-radius: 16px !important;
+  padding: 22px 20px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: transform 0.25s, box-shadow 0.25s !important;
+  box-shadow: none !important;
+}
+
+body .stat-card.reports:hover,
+body .stat-card.approved:hover,
+body .stat-card.pending:hover,
+body .stat-card.completion:hover {
+  transform: translateY(-4px) !important;
+}
+
+/* Disable glassy pseudo-elements */
+body .stat-card.reports::after,
+body .stat-card.approved::after,
+body .stat-card.pending::after,
+body .stat-card.completion::after,
+body .stat-card.reports::before,
+body .stat-card.approved::before,
+body .stat-card.pending::before,
+body .stat-card.completion::before {
+  display: none !important;
+}
+
+/* 🔵 Reports Submitted — Dark Indigo */
+body .stat-card.reports {
+  background: #1e1b35 !important;
+  border: 1px solid rgba(99, 102, 241, 0.25) !important;
+}
+body .stat-card.reports:hover {
+  border-color: rgba(99, 102, 241, 0.45) !important;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15) !important;
+}
+
+/* 🟢 Approved — Dark Emerald */
+body .stat-card.approved {
+  background: #142620 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+}
+body .stat-card.approved:hover {
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15) !important;
+}
+
+/* 🟡 Pending Review — Dark Amber */
+body .stat-card.pending {
+  background: #261f0f !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+}
+body .stat-card.pending:hover {
+  border-color: rgba(245, 158, 11, 0.45) !important;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15) !important;
+}
+
+/* 🟣 Completion — Dark Violet */
+body .stat-card.completion {
+  background: #1f1528 !important;
+  border: 1px solid rgba(168, 85, 247, 0.25) !important;
+}
+body .stat-card.completion:hover {
+  border-color: rgba(168, 85, 247, 0.45) !important;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.15) !important;
+}
+
+/* Card inner elements — stat values */
+body .stat-card.reports .stat-value,
+body .stat-card.approved .stat-value,
+body .stat-card.pending .stat-value,
+body .stat-card.completion .stat-value {
+  color: #e2e8f0 !important;
+  font-size: 2.4rem !important;
+  font-weight: 800 !important;
+  text-shadow: none !important;
+}
+
+/* Card inner elements — stat labels */
+body .stat-card.reports .stat-label,
+body .stat-card.approved .stat-label,
+body .stat-card.pending .stat-label,
+body .stat-card.completion .stat-label {
+  color: rgba(148,163,184,0.8) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.07em !important;
+}
+
+/* Card inner elements — stat icons (colored per card) */
+body .stat-card.reports .stat-icon {
+  background: rgba(99, 102, 241, 0.18) !important;
+  color: #818cf8 !important;
+  border: none !important;
+}
+body .stat-card.approved .stat-icon {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border: none !important;
+}
+body .stat-card.pending .stat-icon {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border: none !important;
+}
+body .stat-card.completion .stat-icon {
+  background: rgba(168, 85, 247, 0.18) !important;
+  color: #c084fc !important;
+  border: none !important;
+}
+
+/* Card inner elements — stat trend icons (colored per card) */
+body .stat-card.reports .stat-trend {
+  color: #818cf8 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+body .stat-card.approved .stat-trend {
+  color: #34d399 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+body .stat-card.pending .stat-trend {
+  color: #fbbf24 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+body .stat-card.completion .stat-trend {
+  color: #c084fc !important;
+  background: transparent !important;
+  padding: 0 !important;
+}

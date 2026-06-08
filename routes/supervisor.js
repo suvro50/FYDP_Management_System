@@ -68,6 +68,36 @@ router.get('/stats', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// GET /api/supervisor/chart-data — Weekly report chart data for dashboard
+//   Returns: { weeks: [ { week_no, submitted, approved, rejected, pending } ] }
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/chart-data', async (req, res) => {
+  try {
+    const supId = req.session.user.user_id;
+
+    const [rows] = await db.query(
+      `SELECT
+         wpr.week_no,
+         COUNT(*)                                                     AS submitted,
+         SUM(CASE WHEN wpr.supervisor_status = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
+         SUM(CASE WHEN wpr.supervisor_status = 'REJECTED' THEN 1 ELSE 0 END) AS rejected,
+         SUM(CASE WHEN wpr.supervisor_status = 'PENDING'  THEN 1 ELSE 0 END) AS pending
+       FROM weekly_progress_reports wpr
+       JOIN project_groups pg ON pg.group_id = wpr.group_id
+       WHERE pg.supervisor_id = ? AND pg.is_active = 1
+       GROUP BY wpr.week_no
+       ORDER BY wpr.week_no`,
+      [supId]
+    );
+
+    res.json({ weeks: rows });
+  } catch (err) {
+    console.error('Chart data error:', err);
+    res.status(500).json({ error: 'Failed to load chart data' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // GET /api/supervisor/groups — Groups organized by FYDP stage
 //   Returns: { stages: [ { stage_name, groups: [...] } ] }
 //   Each group has: members, progress bar data, color coding, report status
@@ -109,15 +139,20 @@ router.get('/groups', async (req, res) => {
       );
       g.members = members;
 
-      // Report stats: total approved weeks out of 12
-      const [[approvedWeeks]] = await db.query(
-        `SELECT COUNT(DISTINCT week_no) as count 
-         FROM weekly_progress_reports 
+      // Report stats: approved weeks + total submitted + total approved reports
+      const [[reportStats]] = await db.query(
+        `SELECT
+           COUNT(DISTINCT week_no)                                              AS approved_weeks,
+           (SELECT COUNT(*) FROM weekly_progress_reports WHERE group_id = ?)    AS submitted_count,
+           (SELECT COUNT(*) FROM weekly_progress_reports WHERE group_id = ? AND supervisor_status = 'APPROVED') AS approved_count
+         FROM weekly_progress_reports
          WHERE group_id = ? AND supervisor_status = 'APPROVED'`,
-        [g.group_id]
+        [g.group_id, g.group_id, g.group_id]
       );
-      g.approved_weeks = approvedWeeks.count;
-      g.total_weeks = 12;
+      g.approved_weeks  = reportStats.approved_weeks;
+      g.submitted_count = reportStats.submitted_count;
+      g.approved_count  = reportStats.approved_count;
+      g.total_weeks     = 12;
 
       // Latest week status for color coding
       const [latestReports] = await db.query(
@@ -125,17 +160,17 @@ router.get('/groups', async (req, res) => {
          FROM weekly_progress_reports wpr
          WHERE wpr.group_id = ?
          ORDER BY wpr.week_no DESC, wpr.submitted_at DESC
-         LIMIT 10`,
+         LIMIT 20`,
         [g.group_id]
       );
       g.latest_reports = latestReports;
 
       // Determine color status
-      // 🟢 Green = All members approved for latest week
-      // 🟡 Yellow = Some pending
-      // 🔴 Red = 7+ days since last submission (overdue)
+      // 🟢 Green = Latest week has ALL APPROVED and ZERO PENDING reports
+      // 🟡 Yellow = No reports yet OR some reports still pending
+      // 🔴 Red = 7+ days since last submission with unresolved pending
       if (latestReports.length === 0) {
-        g.color_status = 'red'; // No reports at all = overdue
+        g.color_status = 'yellow'; // No reports yet = pending (not overdue)
       } else {
         const latestWeek = latestReports[0].week_no;
         const reportsForLatest = latestReports.filter(r => r.week_no === latestWeek);
@@ -144,16 +179,19 @@ router.get('/groups', async (req, res) => {
         const lastSubmitDate = new Date(latestReports[0].submitted_at);
         const daysSince = (Date.now() - lastSubmitDate.getTime()) / (1000 * 60 * 60 * 24);
 
-        if (daysSince > 7 && somePending) {
+        if (somePending && daysSince > 7) {
+          // Pending report not actioned for 7+ days = Overdue
           g.color_status = 'red';
-        } else if (allApproved && reportsForLatest.length >= g.member_count) {
+        } else if (allApproved && !somePending) {
+          // All reports for the latest week are approved, none pending = Green
+          // Works correctly for both individual AND group reports
           g.color_status = 'green';
         } else {
           g.color_status = 'yellow';
         }
       }
 
-      // Pending count
+      // Pending count (for badge on cards)
       const [[pendingCount]] = await db.query(
         `SELECT COUNT(*) as count FROM weekly_progress_reports
          WHERE group_id = ? AND supervisor_status = 'PENDING'`,
@@ -780,7 +818,7 @@ router.get('/groups/:id/task-history', async (req, res) => {
       const [submissions] = await db.query(
         `SELECT ts.submission_id, ts.student_id, ts.status, ts.grade, ts.submitted_at,
                 u.full_name, u.university_id
-         FROM task_submissions ts
+         FROM group_task_submissions ts
          JOIN users u ON u.user_id = ts.student_id
          WHERE ts.task_id = ?`,
         [task.task_id]
@@ -847,12 +885,12 @@ router.get('/groups/:id/task-submissions', async (req, res) => {
     const [submissions] = await db.query(
       `SELECT ts.*, gt.title AS task_title, gt.week_no, gt.due_date,
               u.full_name AS student_name, u.university_id AS student_uid
-       FROM task_submissions ts
+       FROM group_task_submissions ts
        JOIN group_tasks gt ON gt.task_id = ts.task_id
        JOIN users u ON u.user_id = ts.student_id
        ${where}
        ORDER BY
-         CASE ts.status WHEN 'NEW' THEN 0 ELSE 1 END,
+         CASE ts.status WHEN 'NEW' THEN 0 WHEN 'SUBMITTED' THEN 0 ELSE 1 END,
          ts.submitted_at DESC`,
       params
     );
@@ -861,9 +899,9 @@ router.get('/groups/:id/task-submissions', async (req, res) => {
     const [[counts]] = await db.query(
       `SELECT
          COUNT(*) AS total,
-         SUM(ts.status = 'NEW') AS new_count,
-         SUM(ts.status IN ('REVIEWED','ACCEPTED','REJECTED')) AS reviewed_count
-       FROM task_submissions ts
+         SUM(ts.status IN ('NEW','SUBMITTED')) AS new_count,
+         SUM(ts.status IN ('REVIEWED','ACCEPTED','REJECTED','ACKNOWLEDGED')) AS reviewed_count
+       FROM group_task_submissions ts
        WHERE ts.group_id = ?`,
       [req.params.id]
     );
@@ -902,7 +940,7 @@ router.post('/task-submissions/:id/review', async (req, res) => {
     // Verify this submission belongs to a group supervised by this user
     const [[submission]] = await db.query(
       `SELECT ts.*, pg.supervisor_id, pg.group_code, gt.title AS task_title, gt.week_no
-       FROM task_submissions ts
+       FROM group_task_submissions ts
        JOIN project_groups pg ON pg.group_id = ts.group_id
        JOIN group_tasks gt ON gt.task_id = ts.task_id
        WHERE ts.submission_id = ?`,
@@ -912,7 +950,7 @@ router.post('/task-submissions/:id/review', async (req, res) => {
     if (submission.supervisor_id !== supId) return res.status(403).json({ error: 'Not your group' });
 
     await db.query(
-      `UPDATE task_submissions
+      `UPDATE group_task_submissions
        SET grade = ?, feedback = ?, status = ?, rejection_reason = ?, reviewed_at = NOW()
        WHERE submission_id = ?`,
       [grade || null, feedback || null, finalStatus, rejection_reason || null, submissionId]

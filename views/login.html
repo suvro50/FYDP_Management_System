@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login — FYDP Management System</title>
-  <meta name="description" content="FYDP Management & Matchmaking System - UIU">
+  <meta name="description" content="FYDP Management &amp; Matchmaking System - UIU">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -14,8 +14,8 @@
        CSS VARIABLES — Light & Dark Mode
     ════════════════════════════════════════ */
     :root {
-      --card-bg:              rgba(255,255,255,0.97);
-      --card-border:          rgba(255,255,255,0.6);
+      --card-bg:              rgba(255,255,255,0.78);
+      --card-border:          rgba(255,255,255,0.45);
       --primary:              #1a237e;
       --primary-light:        #1565c0;
       --primary-glow:         rgba(21,101,192,0.12);
@@ -37,8 +37,8 @@
       --btn-grad:             linear-gradient(135deg, #1a237e 0%, #1565c0 100%);
       --btn-shadow:           rgba(26,35,126,0.28);
       --btn-shadow-hover:     rgba(26,35,126,0.42);
-      --demo-bg:              #f8f9fc;
-      --demo-border:          #e4e7f5;
+      --demo-bg:              rgba(232,234,246,0.55);
+      --demo-border:          rgba(21,101,192,0.18);
       --demo-text:            #424242;
       --demo-hover-bg:        #e3f2fd;
       --demo-hover-border:    #1565c0;
@@ -55,8 +55,8 @@
       --select-arrow:         #9fa8da;
     }
     [data-theme="dark"] {
-      --card-bg:              rgba(8, 12, 42, 0.97);
-      --card-border:          rgba(255,255,255,0.07);
+      --card-bg:              rgba(8, 12, 42, 0.72);
+      --card-border:          rgba(255,255,255,0.10);
       --text-heading:         #90caf9;
       --text-main:            #e8eaf6;
       --text-sub:             #9fa8da;
@@ -100,40 +100,68 @@
     body {
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #0d1453 0%, #1a237e 35%, #1565c0 70%, #0d47a1 100%);
       position: relative; overflow: hidden; padding: 20px 16px;
+      background: #0a0e1a;
     }
 
-    /* Ambient orbs */
-    body::before {
-      content: ''; position: fixed;
-      width: 520px; height: 520px;
-      background: radial-gradient(circle, rgba(21,101,192,0.4) 0%, transparent 70%);
-      top: -200px; right: -160px; border-radius: 50%;
-      animation: orbPulse 4s ease-in-out infinite; pointer-events: none;
+    /* ════ KEN BURNS — cinematic slow zoom ════ */
+    .bg-layer {
+      position: fixed; inset: -30px; z-index: 0;
+      background: url('/images/uiu-campus.jpg') no-repeat center center;
+      background-size: cover;
+      animation: kenBurns 24s ease-in-out infinite alternate, bgFadeIn 1.2s ease-out;
+      will-change: transform;
     }
-    body::after {
-      content: ''; position: fixed;
-      width: 400px; height: 400px;
-      background: radial-gradient(circle, rgba(63,81,181,0.25) 0%, transparent 70%);
-      bottom: -120px; left: -90px; border-radius: 50%;
-      animation: orbPulse 5.5s ease-in-out infinite reverse; pointer-events: none;
+    @keyframes bgFadeIn {
+      from { opacity: 0; filter: blur(8px); }
+      to   { opacity: 1; filter: blur(0px); }
     }
+    @keyframes kenBurns {
+      0%   { transform: scale(1.00) translate(0px, 0px); }
+      25%  { transform: scale(1.06) translate(-12px, -6px); }
+      50%  { transform: scale(1.10) translate(8px, -10px); }
+      75%  { transform: scale(1.07) translate(-6px, 5px); }
+      100% { transform: scale(1.04) translate(10px, 8px); }
+    }
+
+    /* ════ OVERLAY — subtle tint ════ */
+    .bg-overlay {
+      position: fixed; inset: 0; z-index: 1;
+      background: rgba(0,0,0,0.22);
+      transition: background 0.4s ease;
+      pointer-events: none;
+    }
+    html[data-theme="dark"] .bg-overlay { background: rgba(0,0,0,0.52); }
+
+    /* ════ BOKEH ORBS ════ */
+    .bokeh-orb {
+      position: fixed; border-radius: 50%;
+      pointer-events: none; z-index: 2;
+      mix-blend-mode: screen;
+      filter: blur(40px);
+      opacity: 0;
+      animation: bokehFloat var(--dur) ease-in-out infinite var(--delay);
+    }
+    .bo-1 { --dur:14s; --delay:0s;   width:280px;height:280px; top:5%;  left:8%;  background:radial-gradient(circle, rgba(99,179,255,0.55), transparent 70%); }
+    .bo-2 { --dur:18s; --delay:-5s;  width:220px;height:220px; top:60%; left:2%;  background:radial-gradient(circle, rgba(255,255,255,0.25), transparent 70%); }
+    .bo-3 { --dur:16s; --delay:-3s;  width:320px;height:320px; top:10%; right:5%; background:radial-gradient(circle, rgba(120,200,255,0.40), transparent 70%); }
+    .bo-4 { --dur:20s; --delay:-8s;  width:180px;height:180px; top:70%; right:8%; background:radial-gradient(circle, rgba(200,230,255,0.30), transparent 70%); }
+    .bo-5 { --dur:12s; --delay:-2s;  width:150px;height:150px; top:40%; left:50%; background:radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%); }
+    @keyframes bokehFloat {
+      0%   { opacity:0;   transform: translateY(0px)   scale(1.0); }
+      15%  { opacity:1; }
+      50%  { opacity:0.7; transform: translateY(-35px) scale(1.05); }
+      85%  { opacity:1; }
+      100% { opacity:0;   transform: translateY(15px)  scale(0.96); }
+    }
+
     @keyframes orbPulse {
       0%,100% { transform: scale(1); opacity: 0.5; }
       50%      { transform: scale(1.14); opacity: 1; }
     }
 
-    /* Floating dots */
-    .dot { position: fixed; border-radius: 50%; pointer-events: none; opacity: 0.15; }
-    .dot-1 { width:6px;height:6px;background:#fff;top:20%;left:10%;animation:floatDot 8s ease-in-out infinite; }
-    .dot-2 { width:4px;height:4px;background:#90caf9;top:60%;left:5%;animation:floatDot 6s ease-in-out infinite 2s; }
-    .dot-3 { width:8px;height:8px;background:#fff;top:30%;right:8%;animation:floatDot 10s ease-in-out infinite 1s; }
-    .dot-4 { width:5px;height:5px;background:#90caf9;top:75%;right:12%;animation:floatDot 7s ease-in-out infinite 3s; }
-    @keyframes floatDot {
-      0%,100% { transform:translateY(0) rotate(0deg); }
-      50%      { transform:translateY(-20px) rotate(180deg); }
-    }
+    /* Old dot system — replaced by bokeh */
+    .dot { display: none; }
 
     /* ════════════════════════════════════════
        CARD
@@ -141,25 +169,75 @@
     .login-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      backdrop-filter: blur(22px) saturate(1.5);
+      -webkit-backdrop-filter: blur(22px) saturate(1.5);
       border-radius: 20px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 4px 16px rgba(0,0,0,0.15),
-                  inset 0 1px 0 rgba(255,255,255,0.3);
+                  inset 0 1px 0 rgba(255,255,255,0.22);
       width: 100%; max-width: 410px;
       padding: 28px 30px 24px;
-      position: relative; z-index: 1;
-      animation: cardIn 0.5s cubic-bezier(0.4,0,0.2,1);
-      transition: background 0.3s ease, border-color 0.3s ease;
+      position: relative; z-index: 5;
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
       max-height: calc(100vh - 40px);
       overflow-y: auto;
+      /* 3D tilt */
+      transform-style: preserve-3d;
+      will-change: transform;
     }
+
+    /* ════ 3D TILT PERSPECTIVE WRAPPER ════ */
+    .card-perspective {
+      perspective: 1000px;
+      width: 100%; max-width: 410px;
+      z-index: 5;
+      position: relative;
+    }
+
+    /* ════ CARD GLARE OVERLAY ════ */
+    .card-glare {
+      position: absolute; inset: 0;
+      border-radius: 20px;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      background: radial-gradient(
+        600px circle at var(--glare-x, 50%) var(--glare-y, 50%),
+        rgba(255,255,255,0.15) 0%,
+        rgba(255,255,255,0.05) 30%,
+        transparent 70%
+      );
+    }
+    .card-perspective:hover .card-glare { opacity: 1; }
+    [data-theme="dark"] .card-glare {
+      background: radial-gradient(
+        600px circle at var(--glare-x, 50%) var(--glare-y, 50%),
+        rgba(160,210,255,0.10) 0%,
+        rgba(160,210,255,0.04) 30%,
+        transparent 70%
+      );
+    }
+
     .login-card::-webkit-scrollbar { width: 4px; }
     .login-card::-webkit-scrollbar-track { background: transparent; }
     .login-card::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.2); border-radius: 2px; }
-    @keyframes cardIn {
-      from { opacity:0; transform:translateY(30px) scale(0.98); }
-      to   { opacity:1; transform:translateY(0) scale(1); }
+
+    /* ════ STAGGERED CASCADE ENTRY ════ */
+    @keyframes cascadeIn {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
+    .cascade {
+      opacity: 0;
+      animation: cascadeIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .cascade-1 { animation-delay: 0.08s; }
+    .cascade-2 { animation-delay: 0.18s; }
+    .cascade-3 { animation-delay: 0.28s; }
+    .cascade-4 { animation-delay: 0.38s; }
+    .cascade-5 { animation-delay: 0.48s; }
+    .cascade-6 { animation-delay: 0.58s; }
+    .cascade-7 { animation-delay: 0.68s; }
 
     /* Theme Toggle */
     .theme-toggle {
@@ -193,10 +271,10 @@
        VIEW SYSTEM
     ════════════════════════════════════════ */
     .view { display: none; }
-    .view.active { display: block; animation: viewSlide 0.28s ease-out; }
-    @keyframes viewSlide {
-      from { opacity: 0; transform: translateX(14px); }
-      to   { opacity: 1; transform: translateX(0); }
+    .view.active { display: block; animation: viewEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+    @keyframes viewEnter {
+      from { opacity: 0; transform: translateY(16px) scale(0.98); filter: blur(2px); }
+      to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
     }
 
     .view-header { margin-bottom: 16px; }
@@ -243,6 +321,23 @@
       border-color: var(--input-border-focus);
       background: var(--card-bg);
       box-shadow: 0 0 0 3.5px var(--primary-glow);
+      animation: inputPulse 2s ease-in-out infinite;
+    }
+    @keyframes inputPulse {
+      0%   { box-shadow: 0 0 0 3.5px var(--primary-glow); }
+      50%  { box-shadow: 0 0 0 6px var(--primary-glow), 0 0 20px rgba(21,101,192,0.08); }
+      100% { box-shadow: 0 0 0 3.5px var(--primary-glow); }
+    }
+
+    /* ════ CHROME AUTOFILL FIX ════ */
+    .input-wrapper input:-webkit-autofill,
+    .input-wrapper input:-webkit-autofill:hover,
+    .input-wrapper input:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--input-text);
+      -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+      box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+      transition: background-color 5000s ease-in-out 0s;
+      font-family: 'Inter', sans-serif;
     }
     .input-wrapper input.is-error { border-color: var(--input-border-error) !important; }
     .input-wrapper input.is-ok    { border-color: var(--input-border-ok) !important; }
@@ -297,6 +392,74 @@
     .forgot-link:hover { opacity: 0.75; text-decoration: underline; }
 
     /* ════════════════════════════════════════
+       VALIDATION CHECKLIST
+    ════════════════════════════════════════ */
+    .validation-checklist {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(239,68,68,0.05);
+      border: 1px solid rgba(239,68,68,0.15);
+      display: none;
+      animation: checklistIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .validation-checklist.show { display: block; }
+    @keyframes checklistIn {
+      from { opacity: 0; transform: translateY(-8px); max-height: 0; }
+      to   { opacity: 1; transform: translateY(0); max-height: 300px; }
+    }
+    [data-theme="dark"] .validation-checklist {
+      background: rgba(239,68,68,0.08);
+      border-color: rgba(239,68,68,0.20);
+    }
+    .validation-checklist.all-good {
+      background: rgba(34,197,94,0.05);
+      border-color: rgba(34,197,94,0.2);
+    }
+    [data-theme="dark"] .validation-checklist.all-good {
+      background: rgba(34,197,94,0.08);
+      border-color: rgba(34,197,94,0.25);
+    }
+    .vc-title {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: #ef4444; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .vc-title i { font-size: 11px; }
+    [data-theme="dark"] .vc-title { color: #f87171; }
+    .validation-checklist.all-good .vc-title { color: #16a34a; }
+    [data-theme="dark"] .validation-checklist.all-good .vc-title { color: #4ade80; }
+    .vc-list {
+      list-style: none; padding: 0; margin: 0;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px;
+    }
+    .vc-item {
+      font-size: 0.72rem; font-weight: 500; color: var(--text-sub);
+      display: flex; align-items: center; gap: 5px;
+      padding: 2px 0; transition: color 0.2s;
+    }
+    .vc-item i { font-size: 10px; flex-shrink: 0; transition: color 0.2s; }
+    .vc-item.vc-pass { color: #16a34a; }
+    .vc-item.vc-pass i { color: #22c55e; }
+    .vc-item.vc-fail { color: #ef4444; }
+    .vc-item.vc-fail i { color: #ef4444; }
+    [data-theme="dark"] .vc-item.vc-pass { color: #4ade80; }
+    [data-theme="dark"] .vc-item.vc-pass i { color: #4ade80; }
+    [data-theme="dark"] .vc-item.vc-fail { color: #f87171; }
+    [data-theme="dark"] .vc-item.vc-fail i { color: #f87171; }
+    .input-wrapper input.is-missing,
+    .input-wrapper select.is-missing {
+      border-color: var(--input-border-error) !important;
+      animation: inputShake 0.4s ease;
+    }
+    @keyframes inputShake {
+      0%,100% { transform: translateX(0); }
+      25%     { transform: translateX(-4px); }
+      50%     { transform: translateX(4px); }
+      75%     { transform: translateX(-3px); }
+    }
+
+    /* ════════════════════════════════════════
        PASSWORD STRENGTH
     ════════════════════════════════════════ */
     .strength-wrap { margin-top: 6px; }
@@ -328,10 +491,22 @@
       cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
       transition: box-shadow 0.2s, transform 0.15s;
       box-shadow: 0 4px 14px var(--btn-shadow);
+      position: relative; overflow: hidden;
     }
     .btn-primary:hover:not(:disabled) { box-shadow: 0 7px 22px var(--btn-shadow-hover); transform: translateY(-1px); }
     .btn-primary:active:not(:disabled) { transform: scale(0.98); }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Ripple effect */
+    .btn-ripple {
+      position: absolute; border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      transform: scale(0); animation: rippleAnim 0.6s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes rippleAnim {
+      to { transform: scale(4); opacity: 0; }
+    }
 
     /* ════════════════════════════════════════
        ALERTS
@@ -402,26 +577,37 @@
     ════════════════════════════════════════ */
     .demo-section { margin-top: 14px; }
     .demo-toggle-btn {
-      width: 100%; background: none; border: 1.5px dashed var(--divider); border-radius: 8px;
-      padding: 7px 12px; font-family: 'Inter', sans-serif; font-size: 0.68rem; font-weight: 700;
+      width: 100%; background: var(--demo-bg);
+      border: 1px solid var(--demo-border); border-radius: 10px;
+      padding: 8px 14px; font-family: 'Inter', sans-serif; font-size: 0.68rem; font-weight: 700;
       color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;
       cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
-      transition: all 0.2s;
+      transition: all 0.25s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
-    .demo-toggle-btn:hover { border-color: var(--primary-light); color: var(--primary-light); }
-    .demo-toggle-btn i { transition: transform 0.25s; }
+    .demo-toggle-btn:hover {
+      border-color: var(--primary-light); color: var(--primary-light);
+      background: var(--demo-hover-bg);
+      box-shadow: 0 4px 14px rgba(21,101,192,0.12);
+      transform: translateY(-1px);
+    }
+    .demo-toggle-btn i { transition: transform 0.3s ease; }
     .demo-toggle-btn.open i { transform: rotate(180deg); }
 
-    .demo-panel { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+    .demo-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1); }
     .demo-panel.open { max-height: 240px; }
-    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding-top: 9px; }
+    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding-top: 10px; }
     .demo-btn {
-      padding: 7px 8px; border: 1px solid var(--demo-border); border-radius: 7px;
+      padding: 8px 10px; border: 1px solid var(--demo-border); border-radius: 9px;
       background: var(--demo-bg); cursor: pointer;
-      font-size: 0.7rem; font-family: 'Inter', sans-serif; font-weight: 500; color: var(--demo-text);
-      transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px;
+      font-size: 0.72rem; font-family: 'Inter', sans-serif; font-weight: 600; color: var(--demo-text);
+      transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
     }
-    .demo-btn:hover { border-color: var(--demo-hover-border); background: var(--demo-hover-bg); color: var(--demo-hover-text); }
+    .demo-btn:hover {
+      border-color: var(--demo-hover-border); background: var(--demo-hover-bg); color: var(--demo-hover-text);
+      transform: translateY(-1px); box-shadow: 0 4px 12px rgba(21,101,192,0.10);
+    }
 
     /* ════════════════════════════════════════
        TOAST NOTIFICATIONS
@@ -463,6 +649,27 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .spin { display: inline-block; animation: spin 0.75s linear infinite; }
 
+    /* ════ RAIN CANVAS ════ */
+    #rain-canvas {
+      position: fixed; inset: 0; z-index: 2;
+      pointer-events: none;
+      opacity: 1;
+    }
+    /* lightning flash overlay */
+    #lightning-overlay {
+      position: fixed; inset: 0; z-index: 3;
+      pointer-events: none;
+      background: rgba(200, 230, 255, 0);
+      transition: background 0.04s ease;
+    }
+    /* foreground rain — very faint layer on top of card */
+    #rain-fg-canvas {
+      position: fixed; inset: 0; z-index: 6;
+      pointer-events: none;
+      opacity: 0.12;
+    }
+    [data-theme="dark"] #rain-fg-canvas { opacity: 0.18; }
+
     /* Mobile responsive */
     @media (max-width: 440px) {
       .login-card { padding: 22px 18px 20px; }
@@ -472,18 +679,31 @@
   </style>
 </head>
 <body>
-  <!-- Floating decorative dots -->
-  <div class="dot dot-1"></div>
-  <div class="dot dot-2"></div>
-  <div class="dot dot-3"></div>
-  <div class="dot dot-4"></div>
+  <!-- Background: Ken Burns layer + overlay -->
+  <div class="bg-layer" id="bgLayer"></div>
+  <div class="bg-overlay"></div>
+
+  <!-- Rain effect canvas -->
+  <canvas id="rain-canvas"></canvas>
+  <!-- Lightning flash overlay -->
+  <div id="lightning-overlay"></div>
+
+  <!-- Bokeh orbs -->
+  <div class="bokeh-orb bo-1"></div>
+  <div class="bokeh-orb bo-2"></div>
+  <div class="bokeh-orb bo-3"></div>
+  <div class="bokeh-orb bo-4"></div>
+  <div class="bokeh-orb bo-5"></div>
 
   <!-- Toast Container -->
   <div id="toast-container"></div>
 
-  <div class="login-card">
+  <div class="card-perspective">
+  <div class="login-card" id="loginCard">
+    <!-- Card glare shine effect -->
+    <div class="card-glare" id="cardGlare"></div>
     <!-- Theme Toggle -->
-    <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">
+    <button class="theme-toggle" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
       <i class="fas fa-moon" id="themeIcon"></i>
     </button>
 
@@ -498,29 +718,29 @@
          VIEW: LOGIN
     ══════════════════════════════════════ -->
     <div class="view active" id="view-login">
-      <div class="alert-box is-error" id="loginAlert">
-        <i class="fas fa-exclamation-circle" style="flex-shrink:0;margin-top:1px"></i>
+      <div class="alert-box is-error" id="loginAlert" role="alert" aria-live="polite">
+        <i class="fas fa-exclamation-circle" style="flex-shrink:0;margin-top:1px" aria-hidden="true"></i>
         <span id="loginAlertMsg"></span>
       </div>
 
-      <form id="loginForm" novalidate>
+      <form id="loginForm" novalidate aria-label="Login form">
         <!-- Email -->
         <div class="form-group">
           <label for="l-email">Email Address</label>
           <div class="input-wrapper">
-            <input type="email" id="l-email" placeholder="Enter your UIU email" autocomplete="email" required>
-            <i class="fas fa-envelope input-icon"></i>
+            <input type="email" id="l-email" placeholder="Enter your UIU email" autocomplete="email" required aria-label="Email address" aria-describedby="l-email-msg">
+            <i class="fas fa-envelope input-icon" aria-hidden="true"></i>
           </div>
-          <div class="field-msg" id="l-email-msg"></div>
+          <div class="field-msg" id="l-email-msg" role="status" aria-live="polite"></div>
         </div>
 
         <!-- Password -->
         <div class="form-group">
           <label for="l-pass">Password</label>
           <div class="input-wrapper has-eye">
-            <input type="password" id="l-pass" placeholder="Enter your password" autocomplete="current-password" required>
-            <i class="fas fa-lock input-icon"></i>
-            <button type="button" class="pwd-toggle" data-target="l-pass" title="Show/hide password">
+            <input type="password" id="l-pass" placeholder="Enter your password" autocomplete="current-password" required aria-label="Password">
+            <i class="fas fa-lock input-icon" aria-hidden="true"></i>
+            <button type="button" class="pwd-toggle" data-target="l-pass" title="Show/hide password" aria-label="Toggle password visibility">
               <i class="fas fa-eye"></i>
             </button>
           </div>
@@ -535,8 +755,8 @@
           <a href="#" class="forgot-link" id="toForgotLink">Forgot password?</a>
         </div>
 
-        <button type="submit" class="btn-primary" id="loginBtn">
-          <i class="fas fa-sign-in-alt"></i> Sign In
+        <button type="submit" class="btn-primary" id="loginBtn" aria-label="Sign in">
+          <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Sign In
         </button>
       </form>
 
@@ -569,8 +789,8 @@
         <h2>Create Account</h2>
         <p>Register with your UIU credentials</p>
       </div>
-      <div class="alert-box is-error" id="signupAlert">
-        <i class="fas fa-exclamation-circle" style="flex-shrink:0;margin-top:1px"></i>
+      <div class="alert-box is-error" id="signupAlert" role="alert" aria-live="polite">
+        <i class="fas fa-exclamation-circle" style="flex-shrink:0;margin-top:1px" aria-hidden="true"></i>
         <span id="signupAlertMsg"></span>
       </div>
 
@@ -681,6 +901,12 @@
         <button type="submit" class="btn-primary" id="signupBtn">
           <i class="fas fa-user-plus"></i> Create Account
         </button>
+
+        <!-- Validation Checklist -->
+        <div class="validation-checklist" id="signupChecklist" role="alert" aria-live="polite">
+          <div class="vc-title"><i class="fas fa-circle-exclamation"></i> <span id="vcTitleText">Please complete the following fields</span></div>
+          <ul class="vc-list" id="vcList"></ul>
+        </div>
       </form>
     </div>
 
@@ -693,8 +919,8 @@
         <h2>Forgot Password?</h2>
         <p>Enter your UIU email — we'll send a 6-digit verification code</p>
       </div>
-      <div class="alert-box is-error" id="forgotAlert">
-        <i class="fas fa-exclamation-circle" style="flex-shrink:0;margin-top:1px"></i>
+      <div class="alert-box is-error" id="forgotAlert" role="alert" aria-live="polite">
+        <i class="fas fa-exclamation-circle" style="flex-shrink:0;margin-top:1px" aria-hidden="true"></i>
         <span id="forgotAlertMsg"></span>
       </div>
       <form id="forgotForm" novalidate>
@@ -727,8 +953,8 @@
       </div>
       <p class="otp-email-note"><strong id="otpEmailShow"></strong></p>
 
-      <div class="alert-box is-error" id="otpAlert">
-        <i class="fas fa-exclamation-circle" style="flex-shrink:0;margin-top:1px"></i>
+      <div class="alert-box is-error" id="otpAlert" role="alert" aria-live="polite">
+        <i class="fas fa-exclamation-circle" style="flex-shrink:0;margin-top:1px" aria-hidden="true"></i>
         <span id="otpAlertMsg"></span>
       </div>
 
@@ -766,8 +992,8 @@
         <h2>Set New Password</h2>
         <p>Choose a strong new password for your account</p>
       </div>
-      <div class="alert-box is-error" id="resetAlert">
-        <i class="fas fa-exclamation-circle" style="flex-shrink:0;margin-top:1px"></i>
+      <div class="alert-box is-error" id="resetAlert" role="alert" aria-live="polite">
+        <i class="fas fa-exclamation-circle" style="flex-shrink:0;margin-top:1px" aria-hidden="true"></i>
         <span id="resetAlertMsg"></span>
       </div>
       <form id="resetForm" novalidate>
@@ -802,8 +1028,336 @@
     </div>
 
   </div><!-- /.login-card -->
+  </div><!-- /.card-perspective -->
+
+  <!-- Foreground rain canvas — sits above card for depth -->
+  <canvas id="rain-fg-canvas"></canvas>
 
   <script>
+  /* ══════════════════════════════════════════
+     RAIN EFFECT
+  ══════════════════════════════════════════ */
+  (function initRain() {
+    const canvas    = document.getElementById('rain-canvas');
+    const ctx       = canvas.getContext('2d');
+    const lightning = document.getElementById('lightning-overlay');
+
+    /* ── Device detection ──────────────────────────────────────── */
+    const isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    const MOBILE_SCALE = 0.4; // 40% of desktop drop count on mobile
+
+    /* ── Depth layer configs ──────────────────────────────────────
+       Layer 0 = far   : faint, slow, thin, few
+       Layer 1 = mid   : medium density & speed
+       Layer 2 = near  : bright, fast, thick, heavy
+    ───────────────────────────────────────────────────────────── */
+    const LAYERS = [
+      { count: 80,  speedMin: 6,  speedMax: 10, lenMin: 22, lenMax: 38,  widMin: 0.4, widMax: 0.8, opMin: 0.08, opMax: 0.20, drift: 0.12 },
+      { count: 120, speedMin: 12, speedMax: 20, lenMin: 40, lenMax: 70,  widMin: 0.7, widMax: 1.3, opMin: 0.18, opMax: 0.38, drift: 0.20 },
+      { count: 60,  speedMin: 22, speedMax: 32, lenMin: 70, lenMax: 110, widMin: 1.2, widMax: 2.2, opMin: 0.35, opMax: 0.65, drift: 0.28 }
+    ];
+
+    // Reduce counts on mobile
+    if (isMobile) {
+      LAYERS.forEach(L => { L.count = Math.round(L.count * MOBILE_SCALE); });
+    }
+
+    let allDrops  = [];
+    let splashes  = [];
+    let puddles   = []; // persistent ripple rings on the ground
+    let wind      = -0.22; // horizontal drift ratio (negative = slight left lean)
+    let windTarget= -0.22;
+    let windTimer = 0;
+
+    /* ── Resize ──────────────────────────────────────────────── */
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', () => { resize(); initDrops(); });
+
+    /* ── Colour helpers ──────────────────────────────────────── */
+    function isDark() {
+      return document.documentElement.getAttribute('data-theme') === 'dark';
+    }
+    function dropRGBA(op) {
+      return isDark()
+        ? `rgba(160, 210, 255, ${op})`
+        : `rgba(100, 155, 220, ${op})`;
+    }
+    function splashRGBA(op) {
+      return isDark()
+        ? `rgba(190, 225, 255, ${op})`
+        : `rgba(130, 175, 235, ${op})`;
+    }
+    function mistGrad() {
+      const grad = ctx.createLinearGradient(0, canvas.height * 0.75, 0, canvas.height);
+      if (isDark()) {
+        grad.addColorStop(0,   'rgba(20,40,90,0)');
+        grad.addColorStop(0.6, 'rgba(10,20,60,0.18)');
+        grad.addColorStop(1,   'rgba(5,10,40,0.38)');
+      } else {
+        grad.addColorStop(0,   'rgba(140,180,230,0)');
+        grad.addColorStop(0.6, 'rgba(120,165,215,0.10)');
+        grad.addColorStop(1,   'rgba(100,145,200,0.22)');
+      }
+      return grad;
+    }
+
+    /* ── Drop factory ───────────────────────────────────────── */
+    function makeDrop(layer, scatterY) {
+      const L = LAYERS[layer];
+      const speed = L.speedMin + Math.random() * (L.speedMax - L.speedMin);
+      return {
+        layer,
+        x:     Math.random() * (canvas.width + 200) - 100,
+        y:     scatterY ? Math.random() * canvas.height : -(L.lenMax + Math.random() * 120),
+        len:   L.lenMin  + Math.random() * (L.lenMax  - L.lenMin),
+        speed,
+        width: L.widMin  + Math.random() * (L.widMax  - L.widMin),
+        op:    L.opMin   + Math.random() * (L.opMax   - L.opMin),
+        drift: L.drift,  // how much wind affects this layer
+      };
+    }
+
+    /* ── Initialise all drops ───────────────────────────────── */
+    function initDrops() {
+      allDrops = [];
+      LAYERS.forEach((_, li) => {
+        const L = LAYERS[li];
+        for (let i = 0; i < L.count; i++) {
+          allDrops.push(makeDrop(li, true));
+        }
+      });
+    }
+    initDrops();
+
+    /* ── Splash burst ───────────────────────────────────────── */
+    function addSplash(x, y, layer) {
+      if (Math.random() > 0.5) return;
+      const rings = 1 + Math.floor(Math.random() * (layer + 1)); // near drops get more rings
+      for (let r = 0; r < rings; r++) {
+        splashes.push({
+          x: x + (Math.random() - 0.5) * 6,
+          y,
+          r:    1,
+          maxR: 4 + Math.random() * 8 * (layer + 1),
+          alpha: 0.55 + layer * 0.12,
+          grow: 0.5 + layer * 0.35,
+          delay: r * 2   // stagger rings
+        });
+      }
+      // random tiny droplet arcs
+      if (layer >= 1 && Math.random() > 0.6) {
+        const arcs = 2 + Math.floor(Math.random() * 4);
+        for (let a = 0; a < arcs; a++) {
+          const angle = -Math.PI + Math.random() * Math.PI;
+          const dist  = 4 + Math.random() * 12;
+          puddles.push({
+            x: x + Math.cos(angle) * dist,
+            y: y + Math.sin(angle) * dist * 0.3,
+            r: 0.5, maxR: 1.5 + Math.random() * 3,
+            alpha: 0.4, grow: 0.3
+          });
+        }
+      }
+    }
+
+    /* ── Draw splashes ──────────────────────────────────────── */
+    function drawSplashes() {
+      for (let i = splashes.length - 1; i >= 0; i--) {
+        const s = splashes[i];
+        if (s.delay > 0) { s.delay--; continue; }
+        ctx.beginPath();
+        // draw an ellipse (rain spreads horizontally more)
+        ctx.ellipse(s.x, s.y, s.r, s.r * 0.4, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = splashRGBA(s.alpha);
+        ctx.lineWidth   = 0.8;
+        ctx.stroke();
+        s.r     += s.grow;
+        s.alpha -= 0.038;
+        if (s.alpha <= 0 || s.r >= s.maxR) splashes.splice(i, 1);
+      }
+    }
+
+    /* ── Draw puddle micro-droplets ─────────────────────────── */
+    function drawPuddles() {
+      for (let i = puddles.length - 1; i >= 0; i--) {
+        const p = puddles[i];
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.strokeStyle = splashRGBA(p.alpha);
+        ctx.lineWidth   = 0.5;
+        ctx.stroke();
+        p.r     += p.grow;
+        p.alpha -= 0.06;
+        if (p.alpha <= 0 || p.r >= p.maxR) puddles.splice(i, 1);
+      }
+    }
+
+    /* ── Wind gust logic ────────────────────────────────────── */
+    function tickWind() {
+      windTimer--;
+      if (windTimer <= 0) {
+        windTarget = (-0.15 - Math.random() * 0.25) * (Math.random() > 0.15 ? 1 : -0.4);
+        windTimer  = 180 + Math.floor(Math.random() * 300);
+      }
+      wind += (windTarget - wind) * 0.008; // smooth lerp
+    }
+
+    /* ── Bottom mist band ───────────────────────────────────── */
+    function drawMist() {
+      ctx.fillStyle = mistGrad();
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    /* ── Lightning ──────────────────────────────────────────── */
+    let lightningCd = 300 + Math.random() * 400;
+    let lightningAlpha = 0;
+    let lightningFade  = false;
+
+    function tickLightning() {
+      lightningCd--;
+      if (lightningCd <= 0) {
+        lightningAlpha = 0.18 + Math.random() * 0.22;
+        lightningFade  = false;
+        lightningCd    = 400 + Math.random() * 600;
+      }
+      if (lightningAlpha > 0) {
+        if (!lightningFade && lightningAlpha >= 0.15) {
+          lightningFade = Math.random() > 0.5;
+        }
+        if (lightningFade) lightningAlpha -= 0.018;
+        else               lightningAlpha -= 0.004;
+        if (lightningAlpha < 0) lightningAlpha = 0;
+        lightning.style.background = `rgba(200,230,255,${lightningAlpha})`;
+      } else {
+        lightning.style.background = 'rgba(200,230,255,0)';
+      }
+    }
+
+    /* ── Main draw loop ─────────────────────────────────────── */
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      tickWind();
+      tickLightning();
+
+      // Draw drops by layer order (far → near)
+      allDrops.forEach(d => {
+        const wx = wind * d.drift * d.speed; // wind horizontal offset per frame
+        const ex = d.x + wx;                 // end x with wind
+
+        ctx.beginPath();
+        ctx.moveTo(d.x, d.y);
+        ctx.lineTo(ex,  d.y + d.len);
+
+        // gradient stroke: bright top → faded bottom
+        const grad = ctx.createLinearGradient(d.x, d.y, ex, d.y + d.len);
+        grad.addColorStop(0,   dropRGBA(d.op * 0.3));
+        grad.addColorStop(0.4, dropRGBA(d.op));
+        grad.addColorStop(1,   dropRGBA(d.op * 0.15));
+
+        ctx.strokeStyle = grad;
+        ctx.lineWidth   = d.width;
+        ctx.lineCap     = 'round';
+        ctx.stroke();
+
+        d.x += wx;
+        d.y += d.speed;
+
+        if (d.y - d.len > canvas.height || d.x < -150 || d.x > canvas.width + 150) {
+          addSplash(d.x, canvas.height - 1, d.layer);
+          const nd = makeDrop(d.layer, false);
+          Object.assign(d, nd);
+        }
+      });
+
+      drawSplashes();
+      drawPuddles();
+      drawMist();
+
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  })();
+
+  /* ══════════════════════════════════════════
+     FOREGROUND RAIN — very faint over the card
+     (Disabled on mobile for performance)
+  ══════════════════════════════════════════ */
+  (function initFgRain() {
+    const isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    if (isMobile) {
+      // Hide FG canvas entirely on mobile
+      const fgCanvas = document.getElementById('rain-fg-canvas');
+      if (fgCanvas) fgCanvas.style.display = 'none';
+      return;
+    }
+
+    const fgCanvas = document.getElementById('rain-fg-canvas');
+    const fgCtx    = fgCanvas.getContext('2d');
+    const FG_COUNT = 30;
+    let fgDrops    = [];
+
+    function fgResize() {
+      fgCanvas.width  = window.innerWidth;
+      fgCanvas.height = window.innerHeight;
+    }
+    fgResize();
+    window.addEventListener('resize', fgResize);
+
+    function isDark() {
+      return document.documentElement.getAttribute('data-theme') === 'dark';
+    }
+    function fgColor(op) {
+      return isDark()
+        ? `rgba(180, 225, 255, ${op})`
+        : `rgba(140, 185, 240, ${op})`;
+    }
+
+    function makeFgDrop(scatter) {
+      return {
+        x:     Math.random() * fgCanvas.width,
+        y:     scatter ? Math.random() * fgCanvas.height : -(Math.random() * 100 + 30),
+        len:   Math.random() * 60 + 30,
+        speed: Math.random() * 18 + 14,
+        op:    Math.random() * 0.5 + 0.25,
+        width: Math.random() * 0.8 + 0.3,
+        wx:    -0.18 - Math.random() * 0.12
+      };
+    }
+
+    for (let i = 0; i < FG_COUNT; i++) fgDrops.push(makeFgDrop(true));
+
+    function drawFg() {
+      fgCtx.clearRect(0, 0, fgCanvas.width, fgCanvas.height);
+
+      fgDrops.forEach(d => {
+        const ex = d.x + d.len * d.wx;
+        fgCtx.beginPath();
+        fgCtx.moveTo(d.x, d.y);
+        fgCtx.lineTo(ex, d.y + d.len);
+        fgCtx.strokeStyle = fgColor(d.op);
+        fgCtx.lineWidth   = d.width;
+        fgCtx.lineCap     = 'round';
+        fgCtx.stroke();
+
+        d.y += d.speed;
+        d.x += d.wx * d.speed;
+
+        if (d.y > fgCanvas.height + 20) {
+          Object.assign(d, makeFgDrop(false));
+        }
+      });
+
+      requestAnimationFrame(drawFg);
+    }
+    drawFg();
+  })();
+
   /* ══════════════════════════════════════════
      STATE
   ══════════════════════════════════════════ */
@@ -837,18 +1391,74 @@
   /* ══════════════════════════════════════════
      VIEW NAVIGATION
   ══════════════════════════════════════════ */
-  function showView(name) {
+
+  /* Internal: activate a view without touching history */
+  function _activateView(name) {
+    const el = document.getElementById('view-' + name);
+    if (!el) return;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-' + name).classList.add('active');
+    el.classList.add('active');
     clearAllAlerts();
-    // focus first input in new view
-    const firstInput = document.querySelector('#view-' + name + ' input:not([type=checkbox])');
-    if (firstInput) setTimeout(() => firstInput.focus(), 280);
-    
-    if (window.location.hash !== '#' + name) {
-      window.history.replaceState(null, null, '#' + name);
-    }
+
+    // --- Dynamic cascade entry ---
+    _applyCascade(el);
+
+    const firstInput = el.querySelector('input:not([type=checkbox])');
+    if (firstInput) setTimeout(() => firstInput.focus(), 500);
   }
+
+  /* Apply staggered cascade animation to a view's children */
+  function _applyCascade(container) {
+    // Select all direct meaningful children to animate
+    const targets = container.querySelectorAll(
+      '.form-group, .form-2col, .form-inline, .view-header, .back-btn, ' +
+      '.btn-primary, .divider, .nav-row, .demo-section, .step-dots, ' +
+      '.otp-email-note, .otp-inputs, .resend-row, .strength-wrap, .alert-box'
+    );
+
+    targets.forEach((el, i) => {
+      el.classList.remove('cascade', 'cascade-1','cascade-2','cascade-3','cascade-4','cascade-5','cascade-6','cascade-7');
+      // force reflow so animation replays
+      void el.offsetWidth;
+      el.style.animationDelay = `${0.06 + i * 0.07}s`;
+      el.classList.add('cascade');
+    });
+  }
+
+  /* Apply cascade to shared elements (logo, toggle) on first load */
+  function _cascadeShared() {
+    const shared = document.querySelectorAll('.login-logo, .theme-toggle');
+    shared.forEach((el, i) => {
+      el.style.animationDelay = `${i * 0.1}s`;
+      el.classList.add('cascade');
+    });
+  }
+  _cascadeShared();
+
+  /* Public: navigate to a view AND push a history entry */
+  function showView(name) {
+    const hash = '#' + name;
+    if (window.location.hash !== hash) {
+      window.history.pushState({ view: name }, '', hash);
+    }
+    _activateView(name);
+  }
+
+  /* Handle browser back / forward */
+  window.addEventListener('popstate', (e) => {
+    const name = e.state && e.state.view
+      ? e.state.view
+      : (window.location.hash.replace('#', '') || 'login');
+    _activateView(name);
+  });
+
+  /* On first load: set the initial history state from the URL hash */
+  (function initNavState() {
+    const initial = window.location.hash.replace('#', '') || 'login';
+    // Replace current entry so it carries our state object
+    window.history.replaceState({ view: initial }, '', '#' + initial);
+    _activateView(initial);
+  })();
 
   /* ══════════════════════════════════════════
      TOAST SYSTEM
@@ -906,7 +1516,6 @@
     }
   }
 
-
   /* ══════════════════════════════════════════
      API HELPER
   ══════════════════════════════════════════ */
@@ -923,7 +1532,6 @@
     return data;
   }
 
-  
   /* ══════════════════════════════════════════
      SIGNUP EMAIL VALIDATOR (shared)
   ══════════════════════════════════════════ */
@@ -940,19 +1548,16 @@
 
     const isStudent = ['STUDENT', 'PRE_FYDP_STUDENT'].includes(role);
 
-    // Step 1: basic UIU domain check
     if (!/^[a-zA-Z0-9._%+-]+@([a-z]+\.)*uiu\.ac\.bd$/i.test(email)) {
       msg.textContent = 'Must be a valid UIU email address';
       msg.className   = 'field-msg err';
       return;
     }
 
-    // Step 2: strict dept + role check (only when both are selected)
     if (role && deptName) {
       const expectedDomain = isStudent ? `bs${deptName}.uiu.ac.bd` : `${deptName}.uiu.ac.bd`;
 
       if (isStudent) {
-        // Must match: letters + 6-9 digits @ bs<dept>.uiu.ac.bd
         const rx = new RegExp(`^[a-zA-Z._]+[0-9]{6,9}@bs${deptName}\\.uiu\\.ac\\.bd$`, 'i');
         if (!rx.test(email)) {
           msg.textContent = `Student email must end with @${expectedDomain} (e.g. sbose2410374@bs${deptName}.uiu.ac.bd)`;
@@ -960,7 +1565,6 @@
           return;
         }
       } else {
-        // Must match: name (no 6-9 digit run) @ <dept>.uiu.ac.bd  OR  name@uiu.ac.bd
         const rx = new RegExp(
           `^(?!.*[0-9]{6,9}@)[a-zA-Z0-9._%+-]+@(${deptName}\\.uiu\\.ac\\.bd|uiu\\.ac\\.bd)$`, 'i'
         );
@@ -996,7 +1600,7 @@
       'r-num': /[0-9]/.test(pwd),
       'r-special': /[^A-Za-z0-9]/.test(pwd)
     };
-    
+
     const ruleBox = document.getElementById(prefix + '-rules');
     if (ruleBox) {
       for (const [id, passed] of Object.entries(rules)) {
@@ -1011,7 +1615,7 @@
     const score = getStrengthScore(pwd);
     const sbar = document.getElementById(prefix + '-sbar');
     const slabel = document.getElementById(prefix + '-slabel');
-    
+
     if (!sbar || !slabel) return;
 
     if (pwd.length === 0) {
@@ -1066,19 +1670,12 @@
       const input = document.getElementById(targetId);
       if (!input) return;
       const icon = this.querySelector('i');
-      
       if (input.type === 'password') {
         input.type = 'text';
-        if (icon) {
-          icon.classList.remove('fa-eye');
-          icon.classList.add('fa-eye-slash');
-        }
+        if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
       } else {
         input.type = 'password';
-        if (icon) {
-          icon.classList.remove('fa-eye-slash');
-          icon.classList.add('fa-eye');
-        }
+        if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
       }
     });
   });
@@ -1099,40 +1696,32 @@
     const deptSelect = document.getElementById('su-dept');
     const deptName = deptSelect.value ? deptSelect.options[deptSelect.selectedIndex].text.toLowerCase() : '';
     const email = this.value.trim();
-    
-    if (!email) {
-      msg.textContent = ''; msg.className = 'field-msg';
-      return;
-    }
+
+    if (!email) { msg.textContent = ''; msg.className = 'field-msg'; return; }
 
     const isStudent = ['STUDENT','PRE_FYDP_STUDENT'].includes(role);
     let isValid = true;
     let errMsg = 'Please use your UIU email address';
 
-    // Basic UIU check first
     if (!/^[a-zA-Z0-9._%+-]+@([a-z]+\.)*uiu\.ac\.bd$/i.test(email)) {
       isValid = false;
     } else if (role && deptName) {
-       // Strict Check based on Dept and Role
-       const expectedDomain = isStudent ? `bs${deptName}.uiu.ac.bd` : `${deptName}.uiu.ac.bd`;
-       
-       if (isStudent) {
-         // Student must have 6-9 digits and match expected domain
-         const studentRegex = new RegExp(`^[a-zA-Z._]+[0-9]{6,9}@${expectedDomain}$`, 'i');
-         if (!studentRegex.test(email)) {
-            isValid = false;
-            errMsg = `Student email must match your ID and department (e.g. 123456789@${expectedDomain})`;
-         }
-       } else {
-         // Faculty must NOT have 6-9 digits and match expected domain (or plain uiu.ac.bd)
-         const facultyRegex = new RegExp(`^(?!.*[0-9]{6,9}@)[a-zA-Z0-9._%+-]+@(${expectedDomain}|uiu\\.ac\\.bd)$`, 'i');
-         if (!facultyRegex.test(email)) {
-            isValid = false;
-            errMsg = `Faculty email must not contain student ID and match department (e.g. name@${expectedDomain})`;
-         }
-       }
+      const expectedDomain = isStudent ? `bs${deptName}.uiu.ac.bd` : `${deptName}.uiu.ac.bd`;
+      if (isStudent) {
+        const studentRegex = new RegExp(`^[a-zA-Z._]+[0-9]{6,9}@${expectedDomain}$`, 'i');
+        if (!studentRegex.test(email)) {
+          isValid = false;
+          errMsg = `Student email must match your ID and department (e.g. 123456789@${expectedDomain})`;
+        }
+      } else {
+        const facultyRegex = new RegExp(`^(?!.*[0-9]{6,9}@)[a-zA-Z0-9._%+-]+@(${expectedDomain}|uiu\\.ac\\.bd)$`, 'i');
+        if (!facultyRegex.test(email)) {
+          isValid = false;
+          errMsg = `Faculty email must not contain student ID and match department (e.g. name@${expectedDomain})`;
+        }
+      }
     }
-    
+
     if (!isValid) {
       msg.textContent = errMsg; msg.className = 'field-msg err';
     } else {
@@ -1153,8 +1742,8 @@
      DEMO ACCOUNTS
   ══════════════════════════════════════════ */
   function fillDemo(email, pass) {
-    document.getElementById('l-email').value    = email;
-    document.getElementById('l-pass').value = pass;
+    document.getElementById('l-email').value = email;
+    document.getElementById('l-pass').value  = pass;
     hideAlert('loginAlert');
     showToast('Demo credentials loaded!', 'info', 2500);
   }
@@ -1167,21 +1756,21 @@
   }
 
   /* ══════════════════════════════════════════
-     ROLE CHANGE (signup batch field + university ID)
+     ROLE CHANGE
   ══════════════════════════════════════════ */
   function handleRoleChange() {
     const role  = document.getElementById('su-role').value;
     const deptSelect = document.getElementById('su-dept');
     const deptName = deptSelect.value ? deptSelect.options[deptSelect.selectedIndex].text.toLowerCase() : 'cse';
-    
+
     const group = document.getElementById('batchGroup');
     const emailInput = document.getElementById('su-email');
     const uidInput = document.getElementById('su-uid');
     const uidLabel = uidInput.parentElement.previousElementSibling;
-    
+
     const isStudent = ['STUDENT','PRE_FYDP_STUDENT'].includes(role);
     group.style.display = isStudent ? 'block' : 'none';
-    
+
     if (isStudent || !role) {
       uidInput.required = true;
       uidLabel.innerHTML = 'University ID';
@@ -1191,8 +1780,7 @@
       uidLabel.innerHTML = 'University ID <span style="font-size: 0.7rem; color: #9e9e9e; font-weight: normal; margin-left: 4px">(Optional)</span>';
       uidInput.placeholder = 'Optional for Faculty';
     }
-    
-    // Change email placeholder dynamically
+
     if (isStudent) {
       emailInput.placeholder = `e.g. 123456789@bs${deptName}.uiu.ac.bd`;
     } else if (role) {
@@ -1230,7 +1818,6 @@
       } else {
         localStorage.removeItem('fydp_remember');
       }
-
       const data = await apiFetch('/auth/login', { method: 'POST', body: { email, password } });
       if (data.success) {
         showToast(`Welcome back, ${data.user.full_name}! 🎉`, 'success', 3000);
@@ -1248,17 +1835,70 @@
   ══════════════════════════════════════════ */
   document.getElementById('signupForm').addEventListener('submit', async e => {
     e.preventDefault();
+    const name     = document.getElementById('su-name').value.trim();
+    const uid      = document.getElementById('su-uid').value.trim();
+    const role     = document.getElementById('su-role').value;
+    const email    = document.getElementById('su-email').value.trim();
+    const dept     = document.getElementById('su-dept').value;
+    const batch    = document.getElementById('su-batch').value.trim();
     const password = document.getElementById('su-pass').value;
     const confirm  = document.getElementById('su-confirm').value;
-    const role     = document.getElementById('su-role').value;
-    const dept     = document.getElementById('su-dept').value;
+    const isStudent = ['STUDENT','PRE_FYDP_STUDENT'].includes(role);
 
-    if (!role)               { showAlert('signupAlert', 'Please select your role'); return; }
-    if (!dept)               { showAlert('signupAlert', 'Please select your department'); return; }
-    if (password !== confirm) { showAlert('signupAlert', 'Passwords do not match'); return; }
-    if (getStrengthScore(password) < 4) {
-      showAlert('signupAlert', 'Password is too weak — aim for at least "Good" strength'); return;
+    // --- Validation rules ---
+    const checks = [
+      { id: 'su-name',    label: 'Full Name',        ok: !!name },
+      { id: 'su-uid',     label: 'University ID',     ok: !!uid },
+      { id: 'su-role',    label: 'Role',              ok: !!role },
+      { id: 'su-email',   label: 'Email Address',     ok: !!email && email.includes('@') },
+      { id: 'su-dept',    label: 'Department',         ok: !!dept },
+      ...(isStudent ? [{ id: 'su-batch', label: 'Batch', ok: !!batch }] : []),
+      { id: 'su-pass',    label: 'Password',           ok: password.length >= 8 },
+      { id: 'su-confirm', label: 'Confirm Password',   ok: !!confirm && confirm === password },
+    ];
+
+    // Password strength check
+    const pwdStrong = getStrengthScore(password) >= 4;
+    checks.push({ id: 'su-pass', label: 'Password Strength', ok: pwdStrong });
+
+    const failCount = checks.filter(c => !c.ok).length;
+
+    // --- Update checklist UI ---
+    const checklist = document.getElementById('signupChecklist');
+    const vcList    = document.getElementById('vcList');
+    const vcTitle   = document.getElementById('vcTitleText');
+
+    vcList.innerHTML = checks.map(c => `
+      <li class="vc-item ${c.ok ? 'vc-pass' : 'vc-fail'}">
+        <i class="fas ${c.ok ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+        ${c.label}
+      </li>
+    `).join('');
+
+    // Clear previous missing highlights
+    document.querySelectorAll('#view-signup .is-missing').forEach(el => el.classList.remove('is-missing'));
+
+    if (failCount > 0) {
+      checklist.classList.remove('all-good');
+      vcTitle.innerHTML = `Please complete the following (${failCount} remaining)`;
+      checklist.querySelector('.vc-title i').className = 'fas fa-circle-exclamation';
+      checklist.classList.add('show');
+
+      // Highlight missing fields
+      checks.filter(c => !c.ok).forEach(c => {
+        const input = document.getElementById(c.id);
+        if (input) input.classList.add('is-missing');
+      });
+
+      // Scroll checklist into view
+      setTimeout(() => checklist.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+      return;
     }
+
+    // All checks passed — show green checklist briefly
+    checklist.classList.add('all-good', 'show');
+    vcTitle.innerHTML = 'All fields look great!';
+    checklist.querySelector('.vc-title i').className = 'fas fa-circle-check';
 
     const ORIG = '<i class="fas fa-user-plus"></i> Create Account';
     setLoading('signupBtn', true, ORIG);
@@ -1266,20 +1906,20 @@
 
     try {
       const payload = {
-        full_name:     document.getElementById('su-name').value.trim(),
-        university_id: document.getElementById('su-uid').value.trim(),
-        email:         document.getElementById('su-email').value.trim(),
-        role, department_id: dept,
-        batch:         document.getElementById('su-batch').value.trim() || null,
+        full_name: name,
+        university_id: uid,
+        email, role, department_id: dept,
+        batch: batch || null,
         password
       };
       const data = await apiFetch('/auth/signup', { method: 'POST', body: payload });
       if (data.success) {
-        otpEmail   = payload.email;
+        otpEmail   = email;
         otpContext = 'signup';
         document.getElementById('otpEmailShow').textContent = otpEmail;
-        document.getElementById('step3dot').style.display = 'none'; // only 2 steps for signup OTP
+        document.getElementById('step3dot').style.display = 'none';
         showToast('Account created! Please verify your email.', 'success');
+        checklist.classList.remove('show');
         showView('otp');
         startOTPTimer();
       }
@@ -1386,7 +2026,6 @@
   function startOTPTimer(secs = 60) {
     clearInterval(otpTimer);
     const btn = document.getElementById('resendBtn');
-    const cd  = document.getElementById('otpCd');
     btn.disabled = true; btn.innerHTML = `Resend in <span class="countdown" id="otpCd">${secs}s</span>`;
     let rem = secs;
     otpTimer = setInterval(() => {
@@ -1449,13 +2088,10 @@
   function handleHash() {
     const hash = window.location.hash.substring(1);
     const validViews = ['login', 'signup', 'forgot', 'reset', 'otp'];
-    if (validViews.includes(hash)) {
-      showView(hash);
-    }
+    if (validViews.includes(hash)) { showView(hash); }
   }
   window.addEventListener('hashchange', handleHash);
 
-  // Form auto-save to prevent data loss on refresh
   document.querySelectorAll('.view input:not([type=password]), .view select').forEach(el => {
     if (!el.id) return;
     el.addEventListener('input', () => sessionStorage.setItem('form_autosave_' + el.id, el.value));
@@ -1463,7 +2099,6 @@
     const saved = sessionStorage.getItem('form_autosave_' + el.id);
     if (saved) {
       el.value = saved;
-      // trigger events so UI updates correctly
       setTimeout(() => {
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1472,6 +2107,131 @@
   });
 
   handleHash();
+
+  /* ════════════════════════════════════════
+     MOUSE PARALLAX — subtle background shift
+  ════════════════════════════════════════ */
+  (function() {
+    const bgLayer = document.getElementById('bgLayer');
+    if (!bgLayer) return;
+    let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+    const STRENGTH = 18;
+
+    document.addEventListener('mousemove', (e) => {
+      const cx = window.innerWidth  / 2;
+      const cy = window.innerHeight / 2;
+      targetX = ((e.clientX - cx) / cx) * STRENGTH;
+      targetY = ((e.clientY - cy) / cy) * STRENGTH;
+    });
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function animateParallax() {
+      currentX = lerp(currentX, targetX, 0.06);
+      currentY = lerp(currentY, targetY, 0.06);
+      bgLayer.style.transform = `translate(${-currentX}px, ${-currentY}px) scale(1.08)`;
+      requestAnimationFrame(animateParallax);
+    }
+    animateParallax();
+  })();
+  /* ══════════════════════════════════════════
+     3D CARD TILT EFFECT
+  ══════════════════════════════════════════ */
+  (function init3DTilt() {
+    const card = document.getElementById('loginCard');
+    const wrapper = card.closest('.card-perspective');
+    if (!card || !wrapper) return;
+
+    let tiltX = 0, tiltY = 0;
+    let targetTiltX = 0, targetTiltY = 0;
+    const MAX_TILT = 6; // degrees
+
+    wrapper.addEventListener('mousemove', (e) => {
+      const rect = wrapper.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      targetTiltX = ((y - centerY) / centerY) * -MAX_TILT;
+      targetTiltY = ((x - centerX) / centerX) * MAX_TILT;
+
+      // Update glare position
+      const glareEl = document.getElementById('cardGlare');
+      if (glareEl) {
+        const px = (x / rect.width * 100).toFixed(1);
+        const py = (y / rect.height * 100).toFixed(1);
+        glareEl.style.setProperty('--glare-x', px + '%');
+        glareEl.style.setProperty('--glare-y', py + '%');
+      }
+    });
+
+    wrapper.addEventListener('mouseleave', () => {
+      targetTiltX = 0;
+      targetTiltY = 0;
+    });
+
+    function animateTilt() {
+      tiltX += (targetTiltX - tiltX) * 0.08;
+      tiltY += (targetTiltY - tiltY) * 0.08;
+
+      card.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+      card.style.boxShadow = `
+        ${-tiltY * 3}px ${tiltX * 3 + 20}px 60px rgba(0,0,0,0.35),
+        ${-tiltY}px ${tiltX + 4}px 16px rgba(0,0,0,0.15),
+        inset 0 1px 0 rgba(255,255,255,0.22)
+      `;
+
+      requestAnimationFrame(animateTilt);
+    }
+    animateTilt();
+  })();
+
+  /* ══════════════════════════════════════════
+     MAGNETIC BUTTON + RIPPLE CLICK
+  ══════════════════════════════════════════ */
+  (function initMagneticButtons() {
+    const MAGNETIC_RANGE = 80;  // px radius of magnetic pull
+    const MAGNETIC_STRENGTH = 0.3;
+
+    document.querySelectorAll('.btn-primary').forEach(btn => {
+      // --- Magnetic pull on hover ---
+      btn.addEventListener('mousemove', (e) => {
+        const rect = btn.getBoundingClientRect();
+        const bx = rect.left + rect.width / 2;
+        const by = rect.top + rect.height / 2;
+        const dx = e.clientX - bx;
+        const dy = e.clientY - by;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < MAGNETIC_RANGE) {
+          btn.style.transform = `translate(${dx * MAGNETIC_STRENGTH}px, ${dy * MAGNETIC_STRENGTH}px)`;
+        }
+      });
+
+      btn.addEventListener('mouseleave', () => {
+        btn.style.transform = '';
+      });
+
+      // --- Ripple on click ---
+      btn.addEventListener('click', (e) => {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const size = Math.max(rect.width, rect.height);
+
+        const ripple = document.createElement('span');
+        ripple.className = 'btn-ripple';
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (x - size / 2) + 'px';
+        ripple.style.top = (y - size / 2) + 'px';
+
+        btn.appendChild(ripple);
+        ripple.addEventListener('animationend', () => ripple.remove());
+      });
+    });
+  })();
+
   </script>
 </body>
 </html>

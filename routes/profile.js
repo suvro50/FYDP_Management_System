@@ -58,8 +58,8 @@ router.get('/:userId', async (req, res) => {
       const [[pfProfile]] = await db.query(
         `SELECT p.bio, p.cgpa, p.preferred_role, p.github_url,
                 p.linkedin_url, p.portfolio_url, p.profile_strength, p.availability_status
-         FROM pre_fydp_profiles p
-         WHERE p.user_id = ?`,
+         FROM user_profiles p
+         WHERE p.user_id = ? AND p.profile_type = 'PRE_FYDP'`,
         [req.params.userId]
       );
       if (pfProfile) {
@@ -75,18 +75,18 @@ router.get('/:userId', async (req, res) => {
 
       // Skills
       const [skillRows] = await db.query(
-        `SELECT s.skill_name FROM pre_fydp_student_skills pss
-         JOIN skills s ON pss.skill_id = s.skill_id
-         WHERE pss.user_id = ?`,
+        `SELECT s.skill_name FROM user_skills us
+         JOIN skills s ON us.skill_id = s.skill_id
+         WHERE us.user_id = ?`,
         [req.params.userId]
       );
       user.skills = skillRows.map(s => s.skill_name);
 
       // Domain interests
       const [domainRows] = await db.query(
-        `SELECT pd.domain_name FROM pre_fydp_student_domain_interests pdi
-         JOIN project_domains pd ON pdi.domain_id = pd.domain_id
-         WHERE pdi.user_id = ?`,
+        `SELECT pd.domain_name FROM user_domain_interests udi
+         JOIN project_domains pd ON udi.domain_id = pd.domain_id
+         WHERE udi.user_id = ?`,
         [req.params.userId]
       );
       user.domain_interests = domainRows.map(d => d.domain_name);

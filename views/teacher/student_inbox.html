@@ -69,6 +69,21 @@
     
     .send-btn { width:42px;height:42px;border-radius:50%;border:none;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s; box-shadow: 0 4px 12px rgba(108,92,231,0.3); }
     .send-btn:hover { transform:scale(1.05); box-shadow: 0 6px 16px rgba(108,92,231,0.4); }
+
+    /* Delete Context Menu */
+    .msg-ctx-menu {
+      position: fixed; z-index: 9999; background: #1e2240; border: 1px solid #2d3354;
+      border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); padding: 4px 0; min-width: 160px;
+    }
+    .msg-ctx-item {
+      padding: 10px 16px; font-size: 0.88rem; color: #ef4444; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; transition: background 0.15s;
+    }
+    .msg-ctx-item:hover { background: rgba(239,68,68,0.1); }
+    .msg-deleted-text { font-style: italic; color: #64748b; font-size: 0.85rem; }
+    .msg-row { display: flex; flex-direction: column; }
+    .msg-row.sent { align-items: flex-end; }
+    .msg-row.received { align-items: flex-start; }
   </style>
 </head>
 <body>
@@ -173,12 +188,51 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/main.js"></script>
+
+  <!-- Delete Context Menu -->
+  <div id="msgCtxMenu" class="msg-ctx-menu" style="display:none;">
+    <div class="msg-ctx-item" onclick="confirmDelete()"><i class="fas fa-trash-alt"></i> Delete Message</div>
+  </div>
   <script>
     let currentUser = null;
     let activeStudentId = null;
     let allConversations = [];
     let selectedFile = null;
     let socket = null;
+    let ctxTargetMsgId = null;
+    let longPressTimer = null;
+
+    // ── Delete Context Menu ──
+    function showCtxMenu(e, msgId) {
+      e.preventDefault();
+      ctxTargetMsgId = msgId;
+      const menu = document.getElementById('msgCtxMenu');
+      menu.style.display = 'block';
+      const x = Math.min(e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0), window.innerWidth - 180);
+      const y = Math.min(e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0), window.innerHeight - 60);
+      menu.style.left = x + 'px'; menu.style.top = y + 'px';
+    }
+    function hideCtxMenu() { document.getElementById('msgCtxMenu').style.display = 'none'; ctxTargetMsgId = null; }
+    document.addEventListener('click', hideCtxMenu);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideCtxMenu(); });
+
+    async function confirmDelete() {
+      if (!ctxTargetMsgId) return;
+      const msgId = ctxTargetMsgId; hideCtxMenu();
+      if (!confirm('Delete this message for everyone?')) return;
+      try {
+        const res = await fetch(`/api/chat/direct/${msgId}`, { method: 'DELETE', credentials: 'same-origin' });
+        if (!res.ok) { const d = await res.json(); showToast(d.error || 'Delete failed', 'error'); return; }
+        markMsgDeleted(msgId); showToast('Message deleted', 'success');
+      } catch { showToast('Delete failed', 'error'); }
+    }
+
+    function markMsgDeleted(msgId) {
+      const row = document.querySelector(`.msg-row[data-msg-id="${msgId}"]`);
+      if (!row) return;
+      const bubble = row.querySelector('.msg-bubble');
+      if (bubble) bubble.innerHTML = '<span class="msg-deleted-text">🚫 This message was deleted</span>';
+    }
 
     document.addEventListener('DOMContentLoaded', async () => {
       currentUser = await getCurrentUser();
@@ -197,6 +251,7 @@
             appendMsg(msg, false);
           }
         });
+        socket.on('message_deleted', ({ message_id }) => { markMsgDeleted(message_id); });
         socket.on('messages_read', ({ by, sender }) => {
           if (sender === currentUser.user_id) {
             document.querySelectorAll('.msg-bubble.sent .msg-tick').forEach(tick => {
@@ -291,25 +346,50 @@
     }
 
     function appendMsg(m, isHistory) {
-      if (document.querySelector(`.msg-bubble[data-msg-id="${m.message_id}"]`)) return;
+      if (document.querySelector(`.msg-row[data-msg-id="${m.message_id}"]`)) return;
       const c = document.getElementById('chatMessages');
       const isSent = m.sender_id === currentUser.user_id;
       const isRead = m.is_read == 1;
+      const isDeleted = m.message_text === '🚫 This message was deleted';
       const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-BD',{hour:'2-digit',minute:'2-digit',hour12:true}) : '';
       
-      let content = m.message_text ? `<div>${escapeHtml(m.message_text)}</div>` : '';
-      if (m.attachment_path) {
-        content += `<div class="msg-attachment"><i class="fas fa-paperclip"></i> ${escapeHtml(m.attachment_name||'File')} <a href="${m.attachment_path}" target="_blank">View</a></div>`;
+      let content = '';
+      if (isDeleted) {
+        content = '<span class="msg-deleted-text">🚫 This message was deleted</span>';
+      } else {
+        content = m.message_text ? `<div>${escapeHtml(m.message_text)}</div>` : '';
+        if (m.attachment_path) {
+          const isPdf = m.attachment_path.toLowerCase().endsWith('.pdf');
+          const isImg = /\.(png|jpg|jpeg|gif|webp)$/i.test(m.attachment_path);
+          const fileIcon = isPdf ? 'file-pdf' : (isImg ? 'file-image' : 'file-alt');
+          const iconColor = isPdf ? '#ef4444' : (isImg ? '#4caf50' : '#a29bfe');
+          let links = `<a href="${m.attachment_path}" download style="color:#a29bfe;font-weight:600;text-decoration:none;">Download</a>`;
+          if (isPdf) links = `<a href="#" onclick="event.preventDefault();window.open('${m.attachment_path}')" style="color:#a29bfe;font-weight:600;text-decoration:none;margin-right:10px;">View</a>` + links;
+          if (isImg) content += `<img src="${m.attachment_path}" style="max-width:200px;border-radius:8px;display:block;margin-top:6px;cursor:pointer;" onclick="window.open('${m.attachment_path}')">`;
+          content += `<div class="msg-attachment"><i class="fas fa-${fileIcon}" style="color:${iconColor}"></i> <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(m.attachment_name||'File')}</span> <div>${links}</div></div>`;
+        }
       }
 
       const tick = isSent ? (isRead
         ? '<span class="msg-tick" style="color:#1976d2;font-size:0.7rem;margin-left:3px;" title="Seen">✓✓</span>'
         : '<span class="msg-tick" style="color:rgba(0,0,0,0.35);font-size:0.7rem;margin-left:3px;" title="Delivered">✓</span>') : '';
-      const div = document.createElement('div');
-      div.className = `msg-bubble ${isSent ? 'sent' : 'received'}`;
-      div.dataset.msgId = m.message_id;
-      div.innerHTML = `${content}<div class="msg-time">${time}${tick}</div>`;
-      c.appendChild(div);
+
+      const row = document.createElement('div');
+      row.className = `msg-row ${isSent ? 'sent' : 'received'}`;
+      row.dataset.msgId = m.message_id;
+
+      const bubble = document.createElement('div');
+      bubble.className = `msg-bubble ${isSent ? 'sent' : 'received'}`;
+      bubble.innerHTML = `${content}<div class="msg-time">${time}${tick}</div>`;
+      row.appendChild(bubble);
+
+      if (isSent && !isDeleted) {
+        row.addEventListener('contextmenu', (e) => showCtxMenu(e, m.message_id));
+        row.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => showCtxMenu(e, m.message_id), 600); }, { passive: true });
+        row.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        row.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+      }
+      c.appendChild(row);
       if (!isHistory) scrollBottom();
     }
 

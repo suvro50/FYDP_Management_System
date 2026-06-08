@@ -1,6 +1,10 @@
 /**
  * Migration: Create task_submissions table
  * Run: node create_task_submissions.js
+ *
+ * NOTE: This table is now also defined in database.sql (v3.2 — Section 6: Messaging).
+ *       This migration script exists for incremental deployment on live databases
+ *       that were created before v3.2. For fresh installs, running database.sql is sufficient.
  */
 const db = require('./config/db');
 
@@ -23,17 +27,20 @@ const db = require('./config/db');
                                               COMMENT 'Relative server path e.g. /uploads/task_submissions/file.pdf',
           file_name       VARCHAR(255)        NULL
                                               COMMENT 'Original filename shown in UI',
+          status          ENUM('NEW','REVIEWED','ACCEPTED','REJECTED')
+                                              NOT NULL DEFAULT 'NEW'
+                                              COMMENT 'NEW = awaiting review, REVIEWED = graded, ACCEPTED/REJECTED by supervisor',
           grade           VARCHAR(10)         NULL
-                                              COMMENT 'Supervisor grade e.g. A, B+, C, F or None',
+                                              COMMENT 'Supervisor grade e.g. A+, B, 85',
           feedback        TEXT                NULL
                                               COMMENT 'Supervisor feedback to student',
-          status          ENUM('NEW','REVIEWED')
-                                              NOT NULL DEFAULT 'NEW'
-                                              COMMENT 'NEW = awaiting review, REVIEWED = graded',
+          rejection_reason TEXT               NULL
+                                              COMMENT 'Reason for rejection (required when status=REJECTED)',
           submitted_at    DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          reviewed_at     DATETIME            NULL,
+          reviewed_at     DATETIME            NULL
+                                              COMMENT 'Timestamp of supervisor review',
           PRIMARY KEY (submission_id),
-          UNIQUE KEY uq_task_student (task_id, student_id),
+          UNIQUE KEY uq_ts_task_student (task_id, student_id),
           CONSTRAINT fk_ts_task
               FOREIGN KEY (task_id) REFERENCES group_tasks(task_id)
               ON DELETE CASCADE ON UPDATE CASCADE,
@@ -44,10 +51,10 @@ const db = require('./config/db');
               FOREIGN KEY (group_id) REFERENCES project_groups(group_id)
               ON DELETE CASCADE ON UPDATE CASCADE,
           INDEX idx_ts_group (group_id),
-          INDEX idx_ts_status (status),
-          INDEX idx_ts_task (task_id)
+          INDEX idx_ts_student (student_id),
+          INDEX idx_ts_status (status)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        COMMENT='Student task submissions with supervisor grading — created by migration';
+        COMMENT='[v3.2] Student task submissions — supervisor review/grade/feedback workflow';
     `);
 
     console.log('✅ task_submissions table created successfully!');

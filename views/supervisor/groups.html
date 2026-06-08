@@ -389,6 +389,15 @@
     .gc-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:#475569; }
     .gc-empty i { font-size:2.5rem; color:#2d3354; }
 
+    /* ─── Msg context menu ─── */
+    .gc-ctx-menu { position:fixed; z-index:9999; background:#1e2240; border:1px solid #2d3354; border-radius:10px; padding:4px; min-width:155px; box-shadow:0 8px 32px rgba(0,0,0,0.5); animation:ctxFadeIn 0.12s ease; }
+    @keyframes ctxFadeIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
+    .gc-ctx-item { display:flex; align-items:center; gap:9px; padding:9px 14px; font-size:0.82rem; color:#ef4444; border-radius:7px; cursor:pointer; transition:background 0.15s; font-weight:600; }
+    .gc-ctx-item:hover { background:rgba(239,68,68,0.12); }
+    .gc-ctx-item i { font-size:0.9rem; }
+    .gc-deleted-text { font-style:italic; color:#475569; font-size:0.82rem; display:flex; align-items:center; gap:5px; }
+    .gc-deleted-text i { font-size:0.75rem; }
+
     /* ═══ DARK MODAL OVERRIDES ═══ */
     .modal-overlay { background:rgba(5,7,18,0.88) !important; }
     .modal { background:#161929 !important; border:1px solid #2d3354 !important; }
@@ -1074,7 +1083,7 @@
     }
 
     function renderGroupItemCard(g) {
-      const pct = g.total_weeks > 0 ? Math.round(((g.approved_count||0) / (g.total_weeks||1)) * 100) : 0;
+      const pct = g.total_weeks > 0 ? Math.round(((g.approved_weeks||0) / (g.total_weeks||12)) * 100) : 0;
       const statusCls = g.color_status === 'green' ? 'approved' : g.color_status === 'red' ? 'overdue' : 'pending';
       const statusLbl = g.color_status === 'green' ? '✓ Approved' : g.color_status === 'red' ? '⚠ Overdue' : '⏳ Pending';
       const avatars   = (g.members||[]).slice(0,4).map(m => `<div class="gic-avatar" style="background:${avatarColor(m.full_name)}">${getInitials(m.full_name)}</div>`).join('');
@@ -2017,12 +2026,75 @@
       if (!gcSocket) return;
       gcSocket.emit('join_group', groupId);
       gcSocket.off('new_group_message');
+      gcSocket.off('message_deleted');
       gcSocket.on('new_group_message', (msg) => {
         if (parseInt(msg.group_id) !== parseInt(gcCurrentGroupId)) return;
         // Skip if this is our own message — already shown optimistically
         if (parseInt(msg.sender_id) === parseInt(currentUser?.user_id)) return;
         gcAppendBubble(msg, true);
       });
+      gcSocket.on('message_deleted', ({ message_id }) => {
+        gcMarkDeleted(message_id);
+      });
+    }
+
+    // ── Context menu for delete ────────────────────────────────
+    let gcCtxTargetMsgId = null;
+    let gcLongPressTimer = null;
+
+    function showGcCtxMenu(e, msgId) {
+      e.preventDefault();
+      gcCtxTargetMsgId = msgId;
+      const menu = document.getElementById('gcCtxMenu');
+      menu.style.display = 'block';
+      const x = Math.min(
+        e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0),
+        window.innerWidth - 170
+      );
+      const y = Math.min(
+        e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0),
+        window.innerHeight - 60
+      );
+      menu.style.left = x + 'px';
+      menu.style.top  = y + 'px';
+    }
+    function hideGcCtxMenu() {
+      document.getElementById('gcCtxMenu').style.display = 'none';
+      gcCtxTargetMsgId = null;
+    }
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#gcCtxMenu')) hideGcCtxMenu();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideGcCtxMenu(); });
+
+    async function gcConfirmDelete() {
+      if (!gcCtxTargetMsgId) return;
+      const msgId = gcCtxTargetMsgId;
+      hideGcCtxMenu();
+      if (!confirm('Delete this message for everyone?')) return;
+      try {
+        const res = await fetch(`/api/chat/group/messages/${msgId}`, {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          showToast(d.error || 'Delete failed', 'error');
+          return;
+        }
+        gcMarkDeleted(msgId);
+        showToast('Message deleted', 'success');
+      } catch(err) {
+        showToast('Delete failed', 'error');
+      }
+    }
+
+    function gcMarkDeleted(msgId) {
+      const wrap = document.querySelector(`.gc-bubble-wrap[data-msg-id="${msgId}"]`);
+      if (!wrap) return;
+      const bubble = wrap.querySelector('.gc-bubble');
+      if (bubble) bubble.innerHTML = '<span class="gc-deleted-text"><i class="fas fa-ban"></i> This message was deleted</span>';
+      wrap.oncontextmenu = null;
     }
 
     // ── Load group chat messages ───────────────────────────────
@@ -2103,6 +2175,19 @@
           <div class="gc-bubble">${body}</div>
           <div class="gc-time">${gcFormatTime(msg.created_at)}</div>
         </div>`;
+
+      // Right-click → delete (only for messages I sent, with a real message_id)
+      if (isMe && msg.message_id && !String(msg.message_id).startsWith('tmp_')) {
+        wrap.style.cursor = 'pointer';
+        wrap.addEventListener('contextmenu', (e) => showGcCtxMenu(e, msg.message_id));
+        // Long-press support for touch
+        wrap.addEventListener('touchstart', (e) => {
+          gcLongPressTimer = setTimeout(() => showGcCtxMenu(e, msg.message_id), 600);
+        }, { passive: true });
+        wrap.addEventListener('touchend', () => clearTimeout(gcLongPressTimer));
+        wrap.addEventListener('touchmove', () => clearTimeout(gcLongPressTimer));
+      }
+
       list.appendChild(wrap);
       if (doScroll) list.scrollTop = list.scrollHeight;
     }
@@ -2182,5 +2267,10 @@
       document.getElementById('gcInput').placeholder = 'Message group...';
     }
   </script>
+
+  <!-- Group Chat Delete Context Menu -->
+  <div id="gcCtxMenu" class="gc-ctx-menu" style="display:none;">
+    <div class="gc-ctx-item" onclick="gcConfirmDelete()"><i class="fas fa-trash-alt"></i> Delete Message</div>
+  </div>
 </body>
 </html>

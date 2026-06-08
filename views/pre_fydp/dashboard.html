@@ -424,6 +424,7 @@ async function loadDomains() {
 // ── GROUPS ───────────────────────────────────────────────────────────────
 let _userIsInTeam = false;
 let _pendingGroupIds = {};  // { group_id: request_id }
+let _pendingLeaveGroupIds = {};  // { group_id: request_id }
 
 async function loadGroups() {
   const domain = document.getElementById('filterDomain').value;
@@ -440,11 +441,14 @@ async function loadGroups() {
 
     // Fetch user's pending join requests to mark cards
     _pendingGroupIds = {};
+    _pendingLeaveGroupIds = {};
     try {
       const reqData = await apiFetch('/api/pre-fydp/my-requests');
       if (reqData.sent) {
         reqData.sent.filter(r => r.request_status === 'PENDING' && r.request_type === 'JOIN_REQUEST')
           .forEach(r => { _pendingGroupIds[r.group_id] = r.request_id; });
+        reqData.sent.filter(r => r.request_status === 'PENDING' && r.request_type === 'LEAVE_REQUEST')
+          .forEach(r => { _pendingLeaveGroupIds[r.group_id] = r.request_id; });
       }
     } catch(e2) {}
 
@@ -480,6 +484,8 @@ function renderGroups(groups) {
     let actionBtn;
     if (isMyGroup && isLead) {
       actionBtn = `<div style="display:flex;gap:6px;width:100%"><button class="pf-join-btn" style="background:var(--pf-success);color:#fff;flex:1;cursor:default" disabled><i class="fas fa-crown"></i> Your Team (Lead)</button><button class="pf-join-btn" style="background:#ef4444;color:#fff;flex:1" onclick="event.stopPropagation();dropTeam(${g.group_id},'${g.group_name.replace(/'/g, "\\'")}')"><i class="fas fa-trash-alt"></i> Drop Team</button></div>`;
+    } else if (isMyGroup && !isLead && _pendingLeaveGroupIds[g.group_id]) {
+      actionBtn = `<div style="display:flex;gap:6px;width:100%"><button class="pf-join-btn disabled" style="background:#f59e0b;color:#fff;flex:1;cursor:default;opacity:0.9" disabled><i class="fas fa-clock"></i> Leave Pending</button><button class="pf-join-btn" style="background:var(--pf-card-bg);color:var(--pf-text-muted);flex:0 0 auto;border:1px solid var(--pf-card-border);padding:0 12px" onclick="event.stopPropagation();cancelLeaveRequest(${_pendingLeaveGroupIds[g.group_id]})" title="Cancel Leave Request"><i class="fas fa-times"></i></button></div>`;
     } else if (isMyGroup && !isLead) {
       actionBtn = `<button class="pf-join-btn" style="background:#ef4444;color:#fff" onclick="sendLeaveRequest(${g.group_id})"><i class="fas fa-sign-out-alt"></i> Request to Leave</button>`;
     } else if (_userIsInTeam) {
@@ -554,6 +560,15 @@ async function cancelJoinRequest(requestId) {
   try {
     await apiFetch(`/api/pre-fydp/join-request/${requestId}`, { method:'DELETE' });
     toast('Join request cancelled', 'success');
+    loadGroups(); loadStats();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function cancelLeaveRequest(requestId) {
+  if (!confirm('Cancel this leave request?')) return;
+  try {
+    await apiFetch(`/api/pre-fydp/join-request/${requestId}`, { method:'DELETE' });
+    toast('Leave request cancelled', 'success');
     loadGroups(); loadStats();
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -647,6 +662,11 @@ function openGroupDetail(groupId) {
     joinBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Drop Team';
     joinBtn.style.background = '#ef4444';
     joinBtn.onclick = () => { dropTeam(g.group_id, g.group_name); closeGroupDetail(); };
+  } else if (isMyGroup && !amLead && _pendingLeaveGroupIds[g.group_id]) {
+    joinBtn.disabled = false;
+    joinBtn.innerHTML = '<i class="fas fa-times-circle"></i> Cancel Leave Request';
+    joinBtn.style.background = '#f59e0b';
+    joinBtn.onclick = () => { cancelLeaveRequest(_pendingLeaveGroupIds[g.group_id]); closeGroupDetail(); };
   } else if (isMyGroup && !amLead) {
     joinBtn.disabled = false;
     joinBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Request to Leave';

@@ -225,16 +225,6 @@
       backdrop-filter: blur(12px);
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: default;
-      animation: cardSlideUp 0.6s ease-out backwards;
-    }
-    .stat-card:nth-child(1) { animation-delay: 0.1s; }
-    .stat-card:nth-child(2) { animation-delay: 0.2s; }
-    .stat-card:nth-child(3) { animation-delay: 0.3s; }
-    .stat-card:nth-child(4) { animation-delay: 0.4s; }
-
-    @keyframes cardSlideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     .stat-card:hover {
@@ -364,7 +354,6 @@
       cursor: pointer;
       overflow: hidden;
       backdrop-filter: blur(8px);
-      animation: cardSlideUp 0.6s ease-out 0.5s backwards;
     }
     .quick-card::before {
       content: '';
@@ -429,7 +418,6 @@
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 14px;
       padding: 18px;
-      animation: cardSlideUp 0.6s ease-out 0.6s backwards;
     }
     .sections-panel-header {
       display: flex; align-items: center; justify-content: space-between;
@@ -558,7 +546,6 @@
       padding: 18px;
       margin: 0;
       transition: all 0.35s ease;
-      animation: cardSlideUp 0.6s ease-out 0.7s backwards;
     }
     .chart-card:hover {
       border-color: rgba(99,102,241,0.1);
@@ -572,6 +559,63 @@
     .cl-dot { width: 8px; height: 8px; border-radius: 50%; }
     .chart-note { font-size: 0.65rem; color: #475569; text-align: center; margin-top: 8px; }
 
+    /* ── Chart summary stat cards (supervisor style) ── */
+    .chart-summary-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
+    .chart-summary-item {
+      background:rgba(30,34,60,0.7); border-radius:10px; padding:10px 14px;
+      border-top:3px solid transparent; position:relative;
+    }
+    .chart-summary-item .cs-value { font-size:1.6rem; font-weight:900; line-height:1.1; }
+    .chart-summary-item .cs-label { font-size:0.75rem; font-weight:600; color:#94a3b8; margin-top:2px; }
+    .chart-summary-item.purple { border-top-color:#7c3aed; }
+    .chart-summary-item.purple .cs-value { color:#a78bfa; }
+    .chart-summary-item.green  { border-top-color:#10b981; }
+    .chart-summary-item.green .cs-value  { color:#34d399; }
+    .chart-summary-item.amber  { border-top-color:#f59e0b; }
+    .chart-summary-item.amber .cs-value  { color:#fbbf24; }
+    .chart-summary-item.red    { border-top-color:#ef4444; }
+    .chart-summary-item.red .cs-value    { color:#f87171; }
+
+    /* ── Chart inline legend ── */
+    .chart-legend-row {
+      display:flex; align-items:center; gap:18px; margin-bottom:10px;
+      padding:0 4px;
+    }
+    .chart-legend-item {
+      display:flex; align-items:center; gap:6px;
+      font-size:0.78rem; font-weight:600; color:#94a3b8;
+    }
+    .chart-legend-dot {
+      width:12px; height:12px; border-radius:3px; flex-shrink:0;
+    }
+
+    /* Supervisor-style stage row classes */
+    .stage-row { background:#161929; border:1px solid #1e2240; border-radius:12px; padding:10px 14px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px; }
+    .stage-row:last-child { margin-bottom:0; }
+    .stage-row-header { display:flex; align-items:center; gap:10px; }
+    .stage-num { width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.9rem; font-weight:900; color:#fff; flex-shrink:0; }
+    .stage-num.s1 { background:linear-gradient(135deg,#6c5ce7,#7c3aed); }
+    .stage-num.s2 { background:linear-gradient(135deg,#f59e0b,#d97706); }
+    .stage-num.s3 { background:linear-gradient(135deg,#10b981,#059669); }
+    .stage-info h4 { font-size:0.85rem; font-weight:800; color:#fff; margin:0; }
+    .stage-info p  { font-size:0.7rem; color:#64748b; margin:0; }
+    .stage-count { margin-left:auto; font-size:1.1rem; font-weight:900; }
+    .stage-count.s1 { color:#7c3aed; } .stage-count.s2 { color:#f59e0b; } .stage-count.s3 { color:#10b981; }
+    .stage-progress-row { display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:#64748b; }
+    .stage-bar-wrap { height:6px; background:#1e2240; border-radius:3px; overflow:hidden; margin:4px 0 6px; }
+    .stage-bar { height:100%; border-radius:3px; transition:width 0.6s ease; }
+    .stage-bar.s1 { background:linear-gradient(90deg,#6c5ce7,#a78bfa); }
+    .stage-bar.s2 { background:linear-gradient(90deg,#f59e0b,#fcd34d); }
+    .stage-bar.s3 { background:linear-gradient(90deg,#10b981,#34d399); }
+    .stage-active { font-size:0.8rem; color:#475569; }
+
+    /* chart tab button */
+    .chart-tab-bar { display:flex; gap:6px; margin-bottom:10px; }
+    .chart-tab { padding:4px 12px; border-radius:20px; font-size:0.68rem; font-weight:700; cursor:pointer; transition:all 0.2s; border:1px solid transparent; }
+    .chart-tab.active { background:rgba(99,102,241,0.15); border-color:rgba(99,102,241,0.3); color:#a5b4fc; }
+    .chart-tab:not(.active) { color:#64748b; }
+    .chart-tab:not(.active):hover { background:rgba(255,255,255,0.04); }
+
     /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        GROUPS TABLE â€” FIGMA EXACT
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
@@ -581,7 +625,6 @@
       border-radius: 14px;
       overflow: hidden;
       backdrop-filter: blur(8px);
-      animation: cardSlideUp 0.6s ease-out 0.8s backwards;
     }
     .table-header {
       padding: 14px 18px;
@@ -810,153 +853,233 @@
           <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
         </div>
       </header>
-
       <div class="page-content">
 
-        <!-- â•â•â• HERO WELCOME BANNER â•â•â• -->
-        <div class="dash-hero">
-          <div class="dash-hero-content">
-            <div class="dash-hero-left">
-              <div class="dash-hero-icon">
-                <i class="fas fa-th-large"></i>
-              </div>
-              <div>
-                <div style="display:flex;align-items:center;flex-wrap:wrap;">
-                  <h1 class="dash-hero-title">Course Teacher Dashboard</h1>
-                  <span class="dash-hero-badge">
-                    <span class="pulse-dot"></span> Live
-                  </span>
-                </div>
-                <p class="dash-hero-sub">Overview of your sections, groups, and escalated report packages</p>
-                <div class="dash-hero-meta">
-                  <span><span class="meta-dot" style="background:#f59e0b;"></span> <span id="metaSemester">Spring Semester</span></span>
-                  <span><span class="meta-dot" style="background:#10b981;"></span> <span id="metaWeek">Week 1</span></span>
-                  <span><span class="meta-dot" style="background:#6366f1;"></span> <span id="metaYear">Academic Year 2025-26</span></span>
-                </div>
-              </div>
+        <!-- PAGE TITLE -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6c5ce7,#a78bfa);display:flex;align-items:center;justify-content:center;">
+              <i class="fas fa-chalkboard-teacher" style="color:#fff;font-size:1rem;"></i>
             </div>
-            <div class="dash-hero-right">
-              <div class="dash-hero-date" id="dashDate">â€”</div>
-              <div class="dash-hero-clock" id="dashClock">00:00:00</div>
-              <div class="dash-hero-tz" id="dashTz">PKT â€” UTC+5</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="font-size:1.4rem;font-weight:800;color:#fff;margin:0;">Course Teacher Dashboard</h1>
+                <span style="background:#6c5ce720;color:#a78bfa;border:1px solid #6c5ce740;padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;">&#10022; Live</span>
+              </div>
+              <p style="color:#64748b;font-size:0.82rem;margin:3px 0 0;">Overview of your sections, groups, and escalated report packages</p>
             </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.88rem;font-weight:700;color:#e2e8f0;" id="dashDate">-</div>
+            <div style="font-size:0.78rem;color:#64748b;" id="dashSemesterLabel">Spring Semester</div>
           </div>
         </div>
 
-        <!-- â•â•â• STAT CARDS â•â•â• -->
-        <div class="stat-grid">
-          <!-- My Sections -->
-          <div class="stat-card coral">
-            <div class="stat-card-top">
-              <div class="stat-icon coral"><i class="fas fa-layer-group"></i></div>
-              <span class="stat-tag coral">Assigned sections</span>
+        <!-- 4 STAT CARDS -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+
+          <div style="background:linear-gradient(135deg,#1c1450,#221860);border:1px solid #3d2fa0;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6c5ce7,#8b5cf6);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-layer-group" style="color:#fff;font-size:0.9rem;"></i>
             </div>
-            <div class="stat-body">
-              <div class="stat-num" id="statSections">â€”</div>
-              <div class="stat-label coral">MY SECTIONS</div>
-              <div class="stat-sublabel">Active sections</div>
+            <div style="min-width:0;">
+              <div style="font-size:0.6rem;color:#94a3b8;font-weight:600;margin-bottom:2px;">Assigned to you</div>
+              <div style="font-size:1.5rem;font-weight:900;color:#fff;line-height:1;" id="statSections">-</div>
+              <div style="font-size:0.75rem;font-weight:700;color:#c4b5fd;margin-top:2px;">My Sections</div>
             </div>
-            <div class="stat-accent-bar coral"></div>
           </div>
-          <!-- Total Groups -->
-          <div class="stat-card green">
-            <div class="stat-card-top">
-              <div class="stat-icon green"><i class="fas fa-users"></i></div>
-              <span class="stat-tag green">Across all sections</span>
+
+          <div style="background:linear-gradient(135deg,#0a2a18,#0f3d22);border:1px solid #166534;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-users" style="color:#fff;font-size:0.9rem;"></i>
             </div>
-            <div class="stat-body">
-              <div class="stat-num" id="statGroups">â€”</div>
-              <div class="stat-label green">TOTAL GROUPS</div>
-              <div class="stat-sublabel">Active groups</div>
+            <div style="min-width:0;">
+              <div style="font-size:0.6rem;color:#10b981;font-weight:600;margin-bottom:2px;">Across all sections</div>
+              <div style="font-size:1.5rem;font-weight:900;color:#fff;line-height:1;" id="statGroups">-</div>
+              <div style="font-size:0.75rem;font-weight:700;color:#34d399;margin-top:2px;">Total Groups</div>
             </div>
-            <div class="stat-accent-bar green"></div>
           </div>
-          <!-- Pending Packages -->
-          <div class="stat-card amber">
-            <div class="stat-card-top">
-              <div class="stat-icon amber"><i class="fas fa-inbox"></i></div>
-              <span class="stat-tag amber">Awaiting review</span>
+
+          <div style="background:linear-gradient(135deg,#2a1800,#3d2200);border:1px solid #7c4000;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-inbox" style="color:#fff;font-size:0.9rem;"></i>
             </div>
-            <div class="stat-body">
-              <div class="stat-num" id="statPending">â€”</div>
-              <div class="stat-label amber">PENDING PACKAGES</div>
-              <div class="stat-sublabel">Report packages</div>
+            <div style="min-width:0;">
+              <div style="font-size:0.6rem;color:#f59e0b;font-weight:600;margin-bottom:2px;">Awaiting review</div>
+              <div style="font-size:1.5rem;font-weight:900;color:#fff;line-height:1;" id="statPending">-</div>
+              <div style="font-size:0.75rem;font-weight:700;color:#fcd34d;margin-top:2px;">Pending Packages</div>
             </div>
-            <div class="stat-accent-bar amber"></div>
           </div>
-          <!-- Total Students -->
-          <div class="stat-card teal">
-            <div class="stat-card-top">
-              <div class="stat-icon teal"><i class="fas fa-graduation-cap"></i></div>
-              <span class="stat-tag teal">All sections</span>
+
+          <div style="background:linear-gradient(135deg,#180e40,#22145c);border:1px solid #4c1d95;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#a855f7,#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fas fa-graduation-cap" style="color:#fff;font-size:0.9rem;"></i>
             </div>
-            <div class="stat-body">
-              <div class="stat-num" id="statStudents">â€”</div>
-              <div class="stat-label teal">TOTAL STUDENTS</div>
-              <div class="stat-sublabel">Enrolled students</div>
+            <div style="min-width:0;">
+              <div style="font-size:0.6rem;color:#94a3b8;font-weight:600;margin-bottom:2px;">Enrolled students</div>
+              <div style="font-size:1.5rem;font-weight:900;color:#fff;line-height:1;" id="statStudents">-</div>
+              <div style="font-size:0.75rem;font-weight:700;color:#c084fc;margin-top:2px;">Total Students</div>
             </div>
-            <div class="stat-accent-bar teal"></div>
           </div>
+
         </div>
 
-        <!-- â•â•â• QUICK ACTIONS â•â•â• -->
-        <div class="quick-actions">
-          <a href="/teacher/groups" class="quick-card">
-            <div class="quick-card-icon blue"><i class="fas fa-users"></i></div>
-            <div class="quick-card-text">
-              <div class="quick-card-title">View All Groups</div>
-              <div class="quick-card-sub">Browse groups in your sections</div>
-            </div>
-            <div class="quick-card-arrow"><i class="fas fa-chevron-right"></i></div>
-          </a>
-          <a href="/teacher/supervisor-chat" class="quick-card">
-            <div class="quick-card-icon teal"><i class="fas fa-user-tie"></i></div>
-            <div class="quick-card-text">
-              <div class="quick-card-title">Supervisor Chat</div>
-              <div class="quick-card-sub">Chat directly with supervisors</div>
-            </div>
-            <div class="quick-card-arrow"><i class="fas fa-chevron-right"></i></div>
-          </a>
-        </div>
+        <!-- 2-COLUMN: LEFT = Sections + Stage Doughnut, RIGHT = Charts -->
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);gap:14px;margin-bottom:20px;align-items:stretch;">
 
-        <!-- â•â•â• 2-COLUMN: SECTIONS + CHART â•â•â• -->
-        <div class="dash-two-col">
-          <!-- Left: Sections Panel -->
-          <div class="sections-panel">
-            <div class="sections-panel-header">
-              <div>
-                <h3>My Sections</h3>
-                <div class="sec-subtitle">Active this semester</div>
+          <!-- LEFT COLUMN -->
+          <div style="display:flex;flex-direction:column;gap:12px;">
+
+            <!-- My Sections -->
+            <div style="background:#161929;border:1px solid #1e2240;border-radius:12px;padding:14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div>
+                  <div style="font-size:0.9rem;font-weight:800;color:#fff;">My Sections</div>
+                  <div style="font-size:0.7rem;color:#64748b;">Active this semester</div>
+                </div>
+                <span style="background:#6c5ce720;color:#a78bfa;border:1px solid #6c5ce740;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;" id="sectionCountBadge">0 Sections</span>
               </div>
-              <span class="sections-panel-badge" id="sectionCountBadge">0 Sections</span>
+              <div id="sectionRowsWrap">
+                <div style="opacity:0.4;background:#1e2240;border-radius:10px;padding:10px 12px;font-size:0.8rem;color:#64748b;">Loading sections...</div>
+              </div>
             </div>
-            <div class="section-cards-wrap" id="sectionRowsWrap">
-              <div class="sec-card" style="opacity:0.5;">
-                <div class="sec-card-row">
-                  <div class="sec-badge s1">â€”</div>
-                  <div class="sec-card-info"><h4>Loading sections...</h4><p>Please wait</p></div>
+
+            <!-- FYDP Stage Distribution - DOUGHNUT CHART -->
+            <div style="background:#161929;border:1px solid #1e2240;border-radius:12px;padding:16px;flex:1;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div style="font-size:0.9rem;font-weight:800;color:#fff;">FYDP Stage Distribution</div>
+                <div style="font-size:0.7rem;color:#64748b;">Groups by stage</div>
+              </div>
+              <!-- Doughnut chart + legend side by side -->
+              <div style="display:flex;align-items:center;gap:18px;">
+                <div style="position:relative;width:130px;height:130px;flex-shrink:0;">
+                  <canvas id="stageDonut" width="130" height="130"></canvas>
+                  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
+                    <div style="font-size:1.3rem;font-weight:900;color:#fff;" id="stageTotalGroups">-</div>
+                    <div style="font-size:0.55rem;color:#64748b;font-weight:700;letter-spacing:0.05em;">GROUPS</div>
+                  </div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="display:flex;align-items:center;gap:7px;font-size:0.78rem;color:#94a3b8;">
+                      <span style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#6c5ce7,#a78bfa);display:inline-block;"></span>FYDP-1
+                    </span>
+                    <div style="text-align:right;">
+                      <span style="font-size:1rem;font-weight:900;color:#a78bfa;" id="sCount1">-</span>
+                      <div style="font-size:0.6rem;color:#64748b;" id="sStudents1">- students</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="display:flex;align-items:center;gap:7px;font-size:0.78rem;color:#94a3b8;">
+                      <span style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fcd34d);display:inline-block;"></span>FYDP-2
+                    </span>
+                    <div style="text-align:right;">
+                      <span style="font-size:1rem;font-weight:900;color:#fbbf24;" id="sCount2">-</span>
+                      <div style="font-size:0.6rem;color:#64748b;" id="sStudents2">- students</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="display:flex;align-items:center;gap:7px;font-size:0.78rem;color:#94a3b8;">
+                      <span style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#10b981,#34d399);display:inline-block;"></span>FYDP-3
+                    </span>
+                    <div style="text-align:right;">
+                      <span style="font-size:1rem;font-weight:900;color:#34d399;" id="sCount3">-</span>
+                      <div style="font-size:0.6rem;color:#64748b;" id="sStudents3">- students</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="sec-data-note">
-              <span class="note-dot"></span> Data from active sections
+
+          </div><!-- /LEFT COLUMN -->
+
+          <!-- RIGHT COLUMN: charts -->
+          <div style="display:flex;flex-direction:column;gap:12px;">
+
+            <!-- Tab bar -->
+            <div style="display:flex;gap:8px;">
+              <button id="tabWeekly" onclick="switchChartTab('weekly')" style="padding:5px 16px;border-radius:20px;font-size:0.72rem;font-weight:700;cursor:pointer;border:1px solid #6c5ce740;background:#6c5ce720;color:#a78bfa;transition:all 0.2s;">Weekly Reports</button>
+              <button id="tabSection" onclick="switchChartTab('section')" style="padding:5px 16px;border-radius:20px;font-size:0.72rem;font-weight:700;cursor:pointer;border:1px solid transparent;background:transparent;color:#64748b;transition:all 0.2s;">By Section</button>
             </div>
-          </div>
-          <!-- Right: Chart -->
-          <div class="chart-card">
-            <div class="chart-card-header">
-              <div>
-                <h3>Groups per Section</h3>
-                <p>Distribution across your sections</p>
+
+            <!-- Weekly Report Activity Chart -->
+            <div class="chart-card" id="chartWeekly" style="margin:0;flex:1;">
+              <div class="chart-card-header">
+                <div>
+                  <h3>Weekly Report Activity</h3>
+                  <p>Reports submitted in your sections — by week</p>
+                </div>
               </div>
-              <div class="chart-legend">
-                <span><span class="cl-dot" style="background:#6366f1;"></span>Groups</span>
-                <span><span class="cl-dot" style="background:#38bdf8;"></span>Students</span>
+              <!-- Summary stat cards -->
+              <div class="chart-summary-row">
+                <div class="chart-summary-item purple">
+                  <div class="cs-value" id="chartTotalSubmitted">0</div>
+                  <div class="cs-label">Submitted</div>
+                </div>
+                <div class="chart-summary-item green">
+                  <div class="cs-value" id="chartTotalApproved">0</div>
+                  <div class="cs-label">Approved</div>
+                </div>
+                <div class="chart-summary-item amber">
+                  <div class="cs-value" id="chartTotalPending">0</div>
+                  <div class="cs-label">Pending</div>
+                </div>
+                <div class="chart-summary-item red">
+                  <div class="cs-value" id="chartTotalRejected">0</div>
+                  <div class="cs-label">Rejected</div>
+                </div>
+              </div>
+              <!-- Legend row -->
+              <div class="chart-legend-row">
+                <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#7c3aed;"></span> Submitted</div>
+                <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#10b981;"></span> Approved</div>
+                <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#d97706;"></span> Pending</div>
+                <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#dc2626;"></span> Rejected</div>
+              </div>
+              <canvas id="weeklyReportChart" height="140"></canvas>
+              <p class="chart-note">Data from supervisor-approved reports in your sections</p>
+            </div>
+
+            <!-- By Section Chart (hidden by default) -->
+            <div class="chart-card" id="chartSection" style="margin:0;flex:1;display:none;">
+              <div class="chart-card-header">
+                <div>
+                  <h3>Groups &amp; Students per Section</h3>
+                  <p>Distribution across your assigned sections</p>
+                </div>
+                <div class="chart-legend">
+                  <span><span class="cl-dot" style="background:#6366f1;"></span>Groups</span>
+                  <span><span class="cl-dot" style="background:#38bdf8;"></span>Students</span>
+                </div>
+              </div>
+              <canvas id="sectionChart" height="160"></canvas>
+              <p class="chart-note">Active groups and enrolled students per section</p>
+            </div>
+
+            <!-- Bottom: Inbox status mini row -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+              <div style="background:#161929;border:1px solid #1e2240;border-radius:12px;padding:12px 14px;text-align:center;">
+                <div style="font-size:0.65rem;color:#34d399;font-weight:700;margin-bottom:4px;">REVIEWED</div>
+                <div style="font-size:1.6rem;font-weight:900;color:#10b981;" id="inboxReviewed">-</div>
+                <div style="font-size:0.65rem;color:#64748b;margin-top:2px;">packages</div>
+              </div>
+              <div style="background:#161929;border:1px solid #1e2240;border-radius:12px;padding:12px 14px;text-align:center;">
+                <div style="font-size:0.65rem;color:#fbbf24;font-weight:700;margin-bottom:4px;">PENDING</div>
+                <div style="font-size:1.6rem;font-weight:900;color:#f59e0b;" id="inboxPending">-</div>
+                <div style="font-size:0.65rem;color:#64748b;margin-top:2px;">packages</div>
+              </div>
+              <div style="background:#161929;border:1px solid #1e2240;border-radius:12px;padding:12px 14px;text-align:center;">
+                <div style="font-size:0.65rem;color:#f87171;font-weight:700;margin-bottom:4px;">FLAGGED</div>
+                <div style="font-size:1.6rem;font-weight:900;color:#ef4444;" id="inboxFlagged">-</div>
+                <div style="font-size:0.65rem;color:#64748b;margin-top:2px;">packages</div>
               </div>
             </div>
-            <canvas id="sectionChart" height="160"></canvas>
-          </div>
-        </div>
+
+          </div><!-- /RIGHT COLUMN -->
+
+        </div><!-- /2-col grid -->
+
+
 
         <!-- â•â•â• GROUPS TABLE â•â•â• -->
         <div class="table-wrap">
@@ -1050,9 +1173,9 @@
       requestAnimationFrame(update);
     }
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
     // INIT
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
     document.addEventListener('DOMContentLoaded', async () => {
       const user = await getCurrentUser();
       if (user) {
@@ -1070,15 +1193,11 @@
       const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
       const el = document.getElementById('dashDate');
       if (el) el.textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
-      const weekOfYear = Math.ceil((now - new Date(now.getFullYear(), 0, 1)) / (7*86400000));
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const weekOfYear = Math.ceil(((now - startOfYear) + (startOfYear.getDay() * 86400000)) / 604800000);
       const semWeek = Math.max(1, (weekOfYear % 20) || 1);
-      const metaWeek = document.getElementById('metaWeek');
-      if (metaWeek) metaWeek.textContent = `Week ${semWeek}`;
-      const metaYear = document.getElementById('metaYear');
-      if (metaYear) {
-        const yr = now.getFullYear();
-        metaYear.textContent = `Academic Year ${yr}-${(yr+1).toString().slice(-2)}`;
-      }
+      const semLabel = document.getElementById('dashSemesterLabel');
+      if (semLabel) semLabel.textContent = `Spring Semester • Week ${semWeek}`;
     }
 
     function setTimezone() {
@@ -1103,114 +1222,453 @@
     async function loadDashboard() {
       try {
         showLoading();
-        const [stats, sections, groupsData] = await Promise.all([
+        setDashDate();
+        const [stats, sections, groupsData, chartData] = await Promise.all([
           apiFetch('/api/teacher/stats'),
           apiFetch('/api/teacher/sections'),
-          apiFetch('/api/teacher/groups')
+          apiFetch('/api/teacher/groups'),
+          apiFetch('/api/teacher/chart-data').catch(() => ({ weeks: [], stageData: [], inboxWeeks: [] }))
         ]);
 
-        // Animated stat cards
-        const statSections = stats.totalSections ?? 0;
-        const statGroups = stats.totalGroups ?? 0;
-        const statPending = stats.pendingInbox ?? 0;
-        const statStudents = stats.totalStudents ?? 0;
-
-        animateCounter(document.getElementById('statSections'), statSections);
-        animateCounter(document.getElementById('statGroups'), statGroups);
-        animateCounter(document.getElementById('statPending'), statPending);
-        animateCounter(document.getElementById('statStudents'), statStudents);
+        // Stat cards
+        animateCounter(document.getElementById('statSections'), stats.totalSections ?? 0);
+        animateCounter(document.getElementById('statGroups'),   stats.totalGroups ?? 0);
+        animateCounter(document.getElementById('statPending'),  stats.pendingInbox ?? 0);
+        animateCounter(document.getElementById('statStudents'), stats.totalStudents ?? 0);
 
         // Section count badge
-        const secBadge = document.getElementById('sectionCountBadge');
         const secs = sections.sections || [];
+        const secBadge = document.getElementById('sectionCountBadge');
         if (secBadge) secBadge.textContent = `${secs.length} Section${secs.length !== 1 ? 's' : ''}`;
 
-        // Sections rows
+        // Sections panel
         renderSectionRows(secs, groupsData.groups || []);
+
+        // FYDP Stage rows (supervisor-style: sCount1/2/3, sBar1/2/3, sStudents1/2/3)
+        const stageData = chartData.stageData || [];
+        const phaseLabels = { 'FYDP-1':'Proposal Phase', 'FYDP-2':'Development Phase', 'FYDP-3':'Finalization Phase' };
+        const idxMap = { 'FYDP-1': 1, 'FYDP-2': 2, 'FYDP-3': 3 };
+        let totalGroupsAllStages = 0;
+        stageData.forEach(s => {
+          const i = idxMap[s.stage_name];
+          if (!i) return;
+          const gc = Number(s.group_count) || 0;
+          const sc = Number(s.student_count) || 0;
+          totalGroupsAllStages += gc;
+          const el = id => document.getElementById(id);
+          if (el(`sCount${i}`)) el(`sCount${i}`).textContent = gc;
+          if (el(`sStudents${i}`)) el(`sStudents${i}`).textContent = `${sc} students`;
+          if (el(`sPct${i}`)) el(`sPct${i}`).textContent = `${gc} groups`;
+        });
+        // Animate stage bars (proportional to total)
+        if (totalGroupsAllStages > 0) {
+          stageData.forEach(s => {
+            const i = idxMap[s.stage_name];
+            if (!i) return;
+            const gc = Number(s.group_count) || 0;
+            const pct = Math.round((gc / totalGroupsAllStages) * 100);
+            const bar = document.getElementById(`sBar${i}`);
+            if (bar) setTimeout(() => bar.style.width = pct + '%', 300);
+          });
+        }
 
         // Groups table
         allGroupsData = groupsData.groups || [];
         renderGroupsTable(allGroupsData);
 
-        // Populate section filter
+        // Section filter
         const secFilter = document.getElementById('sectionFilter');
-        const secCodes = [...new Set(allGroupsData.map(g => g.section_code).filter(Boolean))].sort();
-        secCodes.forEach(sc => {
-          const opt = document.createElement('option');
-          opt.value = sc; opt.textContent = sc;
-          secFilter.appendChild(opt);
-        });
+        if (secFilter) {
+          const secCodes = [...new Set(allGroupsData.map(g => g.section_code).filter(Boolean))].sort();
+          secCodes.forEach(sc => {
+            const opt = document.createElement('option');
+            opt.value = sc; opt.textContent = sc;
+            secFilter.appendChild(opt);
+          });
+        }
 
-        // Badge
         const badge = document.getElementById('groupCountBadge');
         if (badge) badge.textContent = `${allGroupsData.length} GROUPS`;
 
-        // Chart
+        // Weekly chart
+        const weeks = chartData.weeks || [];
+        const chartLabels    = weeks.length > 0 ? weeks.map(w => 'Wk ' + w.week_no) : ['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'];
+        const chartSubmitted = weeks.length > 0 ? weeks.map(w => Number(w.submitted)) : [0,0,0,0,0];
+        const chartApproved  = weeks.length > 0 ? weeks.map(w => Number(w.approved))  : [0,0,0,0,0];
+        const chartPending   = weeks.length > 0 ? weeks.map(w => Number(w.pending))   : [0,0,0,0,0];
+        const chartRejected  = weeks.length > 0 ? weeks.map(w => Number(w.rejected))  : [0,0,0,0,0];
+        buildWeeklyChart(chartLabels, chartSubmitted, chartApproved, chartPending, chartRejected);
+
+        // Section chart
         buildChart(secs, groupsData.groups || []);
 
+        // Stage doughnut chart
+        buildStageDoughnut(stageData);
+
+        // Inbox counters (simple text, no canvas needed)
+        const inboxWeeks = chartData.inboxWeeks || [];
+        const iReviewed = inboxWeeks.reduce((s, w) => s + Number(w.reviewed || 0), 0);
+        const iPending  = inboxWeeks.reduce((s, w) => s + Number(w.pending  || 0), 0);
+        const iFlagged  = inboxWeeks.reduce((s, w) => s + Number(w.flagged  || 0), 0);
+        const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+        setEl('inboxReviewed', iReviewed);
+        setEl('inboxPending',  iPending);
+        setEl('inboxFlagged',  iFlagged);
+
       } catch(err) {
+        console.error('loadDashboard error:', err);
         buildChart([], []);
+        buildWeeklyChart(['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'], [0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]);
       } finally {
         hideLoading();
       }
+    }
+
+    // Chart tab switcher
+    function switchChartTab(tab) {
+      const wEl = document.getElementById('chartWeekly');
+      const sEl = document.getElementById('chartSection');
+      const bW  = document.getElementById('tabWeekly');
+      const bS  = document.getElementById('tabSection');
+      if (wEl) wEl.style.display = tab === 'weekly'  ? 'block' : 'none';
+      if (sEl) sEl.style.display = tab === 'section' ? 'block' : 'none';
+      if (bW) { bW.style.background = tab==='weekly' ? '#6c5ce720':'transparent'; bW.style.color = tab==='weekly' ? '#a78bfa':'#64748b'; bW.style.borderColor = tab==='weekly' ? '#6c5ce740':'transparent'; }
+      if (bS) { bS.style.background = tab==='section'? '#6c5ce720':'transparent'; bS.style.color = tab==='section'? '#a78bfa':'#64748b'; bS.style.borderColor = tab==='section'? '#6c5ce740':'transparent'; }
+      if (tab === 'section' && dashChart)   setTimeout(() => dashChart.resize(), 50);
+      if (tab === 'weekly'  && weeklyChart) setTimeout(() => weeklyChart.resize(), 50);
+    }
+
+    // Stage Doughnut Chart
+    let stageDonutChart = null;
+    function buildStageDoughnut(stageData) {
+      const el = document.getElementById('stageDonut');
+      if (!el) return;
+      const idxMap = { 'FYDP-1':0, 'FYDP-2':1, 'FYDP-3':2 };
+      const counts = [0, 0, 0];
+      stageData.forEach(s => {
+        const i = idxMap[s.stage_name];
+        if (i !== undefined) counts[i] = Number(s.group_count) || 0;
+      });
+      const total = counts.reduce((a,b) => a+b, 0);
+      const el2 = document.getElementById('stageTotalGroups');
+      if (el2) el2.textContent = total;
+      if (stageDonutChart) stageDonutChart.destroy();
+      stageDonutChart = new Chart(el.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: ['FYDP-1','FYDP-2','FYDP-3'],
+          datasets: [{
+            data: total > 0 ? counts : [1,1,1],
+            backgroundColor: total > 0
+              ? ['rgba(108,92,231,0.85)','rgba(245,158,11,0.85)','rgba(16,185,129,0.85)']
+              : ['rgba(30,34,64,0.6)','rgba(30,34,64,0.4)','rgba(30,34,64,0.2)'],
+            borderColor: '#161929',
+            borderWidth: 3,
+            hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive: false,
+          cutout: '72%',
+          animation: { animateRotate: true, duration: 900 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: total > 0,
+              backgroundColor: '#1a1d2e',
+              titleColor: '#fff',
+              bodyColor: '#cbd5e1',
+              borderColor: '#2d3354',
+              borderWidth: 1,
+              padding: 10,
+              callbacks: {
+                label(ctx) {
+                  if (total === 0) return '';
+                  const pct = Math.round((ctx.raw / total) * 100);
+                  return ` ${ctx.raw} groups (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Weekly Report Activity Chart (supervisor-style with summary cards, gradients, approval rate)
+    let weeklyChart = null;
+    function buildWeeklyChart(labels, submitted, approved, pending, rejected) {
+      const ctx = document.getElementById('weeklyReportChart').getContext('2d');
+      if (weeklyChart) weeklyChart.destroy();
+
+      // Update summary stat cards with totals across all weeks
+      const sumArr = arr => arr.reduce((a,b) => a + b, 0);
+      const totalSubmitted = sumArr(submitted);
+      const totalApproved  = sumArr(approved);
+      const totalPending   = sumArr(pending);
+      const totalRejected  = sumArr(rejected);
+      const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+      setEl('chartTotalSubmitted', totalSubmitted);
+      setEl('chartTotalApproved',  totalApproved);
+      setEl('chartTotalPending',   totalPending);
+      setEl('chartTotalRejected',  totalRejected);
+
+      // Gradient fills (same as supervisor)
+      const h = ctx.canvas.clientHeight || 200;
+      const gradPurple = ctx.createLinearGradient(0, 0, 0, h);
+      gradPurple.addColorStop(0, 'rgba(124,58,237,0.85)');
+      gradPurple.addColorStop(1, 'rgba(124,58,237,0.55)');
+
+      const gradGreen = ctx.createLinearGradient(0, 0, 0, h);
+      gradGreen.addColorStop(0, 'rgba(16,185,129,0.85)');
+      gradGreen.addColorStop(1, 'rgba(16,185,129,0.55)');
+
+      const gradAmber = ctx.createLinearGradient(0, 0, 0, h);
+      gradAmber.addColorStop(0, 'rgba(217,119,6,0.85)');
+      gradAmber.addColorStop(1, 'rgba(217,119,6,0.55)');
+
+      const gradRed = ctx.createLinearGradient(0, 0, 0, h);
+      gradRed.addColorStop(0, 'rgba(220,38,38,0.85)');
+      gradRed.addColorStop(1, 'rgba(220,38,38,0.55)');
+
+      weeklyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Submitted',
+              data: submitted,
+              backgroundColor: gradPurple,
+              hoverBackgroundColor: 'rgba(124,58,237,1)',
+              borderColor: 'transparent',
+              borderWidth: 0,
+              borderRadius: 3,
+              borderSkipped: false,
+              barPercentage: 0.45,
+              categoryPercentage: 0.6,
+              minBarLength: 5
+            },
+            {
+              label: 'Approved',
+              data: approved,
+              backgroundColor: gradGreen,
+              hoverBackgroundColor: 'rgba(16,185,129,1)',
+              borderColor: 'transparent',
+              borderWidth: 0,
+              borderRadius: 3,
+              borderSkipped: false,
+              barPercentage: 0.45,
+              categoryPercentage: 0.6,
+              minBarLength: 5
+            },
+            {
+              label: 'Pending',
+              data: pending,
+              backgroundColor: gradAmber,
+              hoverBackgroundColor: 'rgba(217,119,6,1)',
+              borderColor: 'transparent',
+              borderWidth: 0,
+              borderRadius: 3,
+              borderSkipped: false,
+              barPercentage: 0.45,
+              categoryPercentage: 0.6,
+              minBarLength: 5
+            },
+            {
+              label: 'Rejected',
+              data: rejected,
+              backgroundColor: gradRed,
+              hoverBackgroundColor: 'rgba(220,38,38,1)',
+              borderColor: 'transparent',
+              borderWidth: 0,
+              borderRadius: 3,
+              borderSkipped: false,
+              barPercentage: 0.45,
+              categoryPercentage: 0.6,
+              minBarLength: 5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          animation: {
+            duration: 800,
+            easing: 'easeOutQuart'
+          },
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(15,16,32,0.96)',
+              titleColor: '#e2e8f0',
+              titleFont: { size: 12, weight: '700' },
+              bodyColor: '#94a3b8',
+              bodyFont: { size: 11 },
+              borderColor: 'rgba(108,92,231,0.3)',
+              borderWidth: 1,
+              padding: 12,
+              cornerRadius: 10,
+              usePointStyle: true,
+              boxPadding: 5,
+              callbacks: {
+                title: function(context) {
+                  return context[0].label + ' Summary';
+                },
+                label: function(context) {
+                  const icons = { Submitted: '■', Approved: '■', Pending: '■', Rejected: '■' };
+                  return ` ${icons[context.dataset.label] || '●'} ${context.dataset.label}: ${context.parsed.y}`;
+                },
+                afterBody: function(context) {
+                  const idx = context[0].dataIndex;
+                  const total = submitted[idx];
+                  const appr  = approved[idx];
+                  if (total > 0) {
+                    const rate = Math.round((appr / total) * 100);
+                    return `\n  Approval Rate: ${rate}%`;
+                  }
+                  return '';
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#64748b', font: { size: 11, weight: '600' }, padding: 6 },
+              border: { color: 'rgba(45,51,84,0.4)' }
+            },
+            y: {
+              grid: { color: 'rgba(45,51,84,0.25)', drawBorder: false },
+              ticks: { color: '#64748b', font: { size: 11 }, stepSize: 2, padding: 8 },
+              beginAtZero: true,
+              border: { color: 'transparent' }
+            }
+          }
+        }
+      });
+    }
+
+    // ── Inbox Doughnut ──
+    let inboxChart = null;
+    function buildInboxDoughnut(reviewed, pending, flagged) {
+      const total = reviewed + pending + flagged;
+      document.getElementById('doughnutTotal').textContent = total;
+      document.getElementById('inboxReviewed').textContent = reviewed;
+      document.getElementById('inboxPending').textContent  = pending;
+      document.getElementById('inboxFlagged').textContent  = flagged;
+      const ctx = document.getElementById('inboxDoughnut').getContext('2d');
+      if (inboxChart) inboxChart.destroy();
+      inboxChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Reviewed','Pending','Flagged'],
+          datasets: [{
+            data: total > 0 ? [reviewed, pending, flagged] : [1, 0, 0],
+            backgroundColor: total > 0
+              ? ['rgba(16,185,129,0.8)', 'rgba(245,158,11,0.8)', 'rgba(239,68,68,0.8)']
+              : ['rgba(30,34,64,0.8)', 'rgba(30,34,64,0.3)', 'rgba(30,34,64,0.3)'],
+            borderColor: '#0f1229', borderWidth: 3,
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true, cutout: '72%',
+          plugins: { legend:{ display:false }, tooltip:{ enabled: total > 0,
+            backgroundColor:'#1a1d2e', titleColor:'#fff', bodyColor:'#cbd5e1', borderColor:'#2d3354', borderWidth:1, padding:10
+          }}
+        }
+      });
+    }
+
+    // ── FYDP Stage Rows ──
+    function renderTeacherStageRows(stageData) {
+      const wrap = document.getElementById('teacherStageRows');
+      if (!wrap) return;
+      const phaseLabels = { 'FYDP-1':'Proposal Phase', 'FYDP-2':'Development Phase', 'FYDP-3':'Finalization Phase' };
+      const numCls = { 'FYDP-1':'sn1', 'FYDP-2':'sn2', 'FYDP-3':'sn3' };
+      const numIdx = { 'FYDP-1':1, 'FYDP-2':2, 'FYDP-3':3 };
+      if (!stageData.length) {
+        wrap.innerHTML = '<div style="font-size:0.72rem;color:#64748b;text-align:center;padding:8px;">No stage data</div>';
+        return;
+      }
+      wrap.innerHTML = stageData.map(s => {
+        const cls = numCls[s.stage_name] || 'sn1';
+        const idx = numIdx[s.stage_name] || 1;
+        const gc  = Number(s.group_count)   || 0;
+        const sc  = Number(s.student_count) || 0;
+        const pct = Math.min(100, gc * 15);
+        return `<div class="stage-row">
+          <div class="stage-row-hd">
+            <div class="s-num ${cls}">${idx}</div>
+            <div class="s-info"><h4>${escapeHtml(s.stage_name)}</h4><p>${phaseLabels[s.stage_name] || ''}</p></div>
+            <span class="s-cnt ${cls}">${gc}</span>
+          </div>
+          <div class="s-bwrap"><div class="s-bar ${cls}" style="width:0%" data-target="${pct}"></div></div>
+          <div class="s-prow"><span>${sc} students</span><span style="color:${cls==='sn1'?'#a78bfa':cls==='sn2'?'#fbbf24':'#34d399'};font-weight:700;">${pct}%</span></div>
+        </div>`;
+      }).join('');
+      requestAnimationFrame(() => setTimeout(() => {
+        wrap.querySelectorAll('.s-bar').forEach(b => b.style.width = b.dataset.target + '%');
+      }, 300));
     }
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // SECTION ROWS â€” FIGMA EXACT
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     const sClasses = ['s1','s2','s3','s4'];
+    const sBgColors = [
+      'linear-gradient(135deg,#1c1450,#221860)', 'linear-gradient(135deg,#0a2a18,#0f3d22)',
+      'linear-gradient(135deg,#2a1800,#3d2200)', 'linear-gradient(135deg,#180e40,#22145c)'
+    ];
+    const sBorderColors = ['#3d2fa0','#166534','#7c4000','#4c1d95'];
+    const sNumGrads = [
+      'linear-gradient(135deg,#6c5ce7,#8b5cf6)', 'linear-gradient(135deg,#10b981,#059669)',
+      'linear-gradient(135deg,#f59e0b,#d97706)',  'linear-gradient(135deg,#a855f7,#7c3aed)'
+    ];
+    const sTextColors = ['#c4b5fd','#34d399','#fcd34d','#c084fc'];
+    const sBarColors  = ['linear-gradient(90deg,#6c5ce7,#a78bfa)', 'linear-gradient(90deg,#10b981,#34d399)', 'linear-gradient(90deg,#f59e0b,#fcd34d)', 'linear-gradient(90deg,#a855f7,#c084fc)'];
+
     function renderSectionRows(sections, groups) {
       const wrap = document.getElementById('sectionRowsWrap');
       if (!wrap) return;
       if (!sections.length) {
-        wrap.innerHTML = `<div class="sec-card">
-          <div class="sec-card-row">
-            <div class="sec-card-info"><h4>No sections assigned</h4><p>Contact admin</p></div>
-          </div>
-        </div>`;
+        wrap.innerHTML = '<div style="background:#1e2240;border-radius:10px;padding:14px;font-size:0.8rem;color:#64748b;text-align:center;">No sections assigned. Contact admin.</div>';
         return;
       }
       wrap.innerHTML = sections.map((s, i) => {
-        const cls = sClasses[i % sClasses.length];
         const groupCount = s.group_count || 0;
-        const pct = Math.min(100, groupCount * 20);
-        // Count students for this section
         const sectionGroups = groups.filter(g => g.section_code === s.section_code);
         const studentCount = sectionGroups.reduce((sum, g) => sum + (g.member_count || 0), 0);
-        return `<div class="sec-card">
-          <div class="sec-card-row">
-            <div class="sec-badge ${cls}">${i+1}</div>
-            <div class="sec-card-info">
-              <h4>${escapeHtml(s.section_code)}</h4>
-              <p>${escapeHtml(s.stage_name || 'FYDP')}</p>
+        const pct = Math.min(100, groupCount * 20);
+        const bg  = sBgColors[i % sBgColors.length];
+        const bdr = sBorderColors[i % sBorderColors.length];
+        const ng  = sNumGrads[i % sNumGrads.length];
+        const tc  = sTextColors[i % sTextColors.length];
+        const bc  = sBarColors[i % sBarColors.length];
+        return `<div style="background:${bg};border:1px solid ${bdr};border-radius:12px;padding:12px 14px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:32px;height:32px;border-radius:9px;background:${ng};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.85rem;font-weight:900;color:#fff;">${i+1}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.85rem;font-weight:800;color:#fff;">${escapeHtml(s.section_code)}</div>
+              <div style="font-size:0.68rem;color:#64748b;">${escapeHtml(s.stage_name || 'FYDP')}</div>
             </div>
-            <div class="sec-card-right">
-              <div style="text-align:right;">
-                <span class="sec-group-count">${groupCount}</span>
-                <div style="font-size:0.62rem;color:#64748b;margin-top:-2px;">group${groupCount!==1?'s':''}</div>
-              </div>
-              <div class="sec-card-arrow"><i class="fas fa-chevron-right"></i></div>
+            <div style="text-align:right;">
+              <div style="font-size:1.1rem;font-weight:900;color:${tc};">${groupCount}</div>
+              <div style="font-size:0.62rem;color:#64748b;">group${groupCount!==1?'s':''}</div>
             </div>
           </div>
-          <div class="sec-progress">
-            <div class="sec-bar-track">
-              <div class="sec-bar-fill ${cls}" style="width:0%" data-target="${pct}"></div>
+          <div style="margin-top:10px;">
+            <div style="height:5px;background:#1e2240;border-radius:3px;overflow:hidden;">
+              <div style="height:100%;border-radius:3px;background:${bc};width:0%;transition:width 0.6s ease;" data-target="${pct}"></div>
             </div>
-            <div class="sec-student-info">
-              <i class="fas fa-user-graduate"></i> ${studentCount} students
-            </div>
+            <div style="font-size:0.65rem;color:#64748b;margin-top:5px;"><i class="fas fa-user-graduate"></i> ${studentCount} students</div>
           </div>
         </div>`;
       }).join('');
-
-      // Animate bars after render
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          wrap.querySelectorAll('.sec-bar-fill').forEach(bar => {
-            bar.style.width = bar.dataset.target + '%';
-          });
-        }, 300);
-      });
+      requestAnimationFrame(() => setTimeout(() => {
+        wrap.querySelectorAll('[data-target]').forEach(b => b.style.width = b.dataset.target + '%');
+      }, 300));
     }
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

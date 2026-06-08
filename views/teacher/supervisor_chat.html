@@ -57,6 +57,21 @@
     .pdf-viewer { width:90%;height:90%;background:#161929;border-radius:12px;overflow:hidden;display:flex;flex-direction:column; border: 1px solid #1e2240; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
     .pdf-viewer-header { padding:12px 20px;background:#0d0f1e;color:#fff;display:flex;align-items:center;justify-content:space-between; border-bottom: 1px solid #1e2240; }
     .pdf-viewer iframe { flex:1;border:none; }
+
+    /* Delete Context Menu */
+    .msg-ctx-menu {
+      position: fixed; z-index: 9999; background: #161929; border: 1px solid #2d3354;
+      border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); padding: 4px 0; min-width: 160px;
+    }
+    .msg-ctx-item {
+      padding: 10px 16px; font-size: 0.88rem; color: #ef4444; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; transition: background 0.15s;
+    }
+    .msg-ctx-item:hover { background: rgba(239,68,68,0.1); }
+    .msg-deleted-text { font-style: italic; color: #64748b; font-size: 0.85rem; }
+    .msg-row-wrap { display: flex; flex-direction: column; }
+    .msg-row-wrap.sent-wrap { align-items: flex-end; }
+    .msg-row-wrap.received-wrap { align-items: flex-start; }
   </style>
 </head>
 <body>
@@ -176,11 +191,50 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/main.js"></script>
+
+  <!-- Delete Context Menu -->
+  <div id="msgCtxMenu" class="msg-ctx-menu" style="display:none;">
+    <div class="msg-ctx-item" onclick="confirmDelete()"><i class="fas fa-trash-alt"></i> Delete Message</div>
+  </div>
   <script>
     let activeContact = null;
     let selectedFile = null;
     let socket = null;
     let currentUser = null;
+    let ctxTargetMsgId = null;
+    let longPressTimer = null;
+
+    // ── Delete Context Menu ──
+    function showCtxMenu(e, msgId) {
+      e.preventDefault();
+      ctxTargetMsgId = msgId;
+      const menu = document.getElementById('msgCtxMenu');
+      menu.style.display = 'block';
+      const x = Math.min(e.clientX || 0, window.innerWidth - 180);
+      const y = Math.min(e.clientY || 0, window.innerHeight - 60);
+      menu.style.left = x + 'px'; menu.style.top = y + 'px';
+    }
+    function hideCtxMenu() { document.getElementById('msgCtxMenu').style.display = 'none'; ctxTargetMsgId = null; }
+    document.addEventListener('click', hideCtxMenu);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideCtxMenu(); });
+
+    async function confirmDelete() {
+      if (!ctxTargetMsgId) return;
+      const msgId = ctxTargetMsgId; hideCtxMenu();
+      if (!confirm('Delete this message for everyone?')) return;
+      try {
+        const res = await fetch(`/api/chat/direct/${msgId}`, { method: 'DELETE', credentials: 'same-origin' });
+        if (!res.ok) { const d = await res.json(); showToast(d.error || 'Delete failed', 'error'); return; }
+        markMsgDeleted(msgId); showToast('Message deleted', 'success');
+      } catch { showToast('Delete failed', 'error'); }
+    }
+
+    function markMsgDeleted(msgId) {
+      const row = document.querySelector(`.msg-row-wrap[data-msg-id="${msgId}"]`);
+      if (!row) return;
+      const bubble = row.querySelector('.msg-bubble');
+      if (bubble) bubble.innerHTML = '<span class="msg-deleted-text">🚫 This message was deleted</span>';
+    }
 
     document.addEventListener('DOMContentLoaded', async () => {
       currentUser = await getCurrentUser();
@@ -203,6 +257,7 @@
             }
             loadContacts();
           });
+          socket.on('message_deleted', ({ message_id }) => { markMsgDeleted(message_id); });
         }
       }
       loadContacts();
@@ -260,10 +315,13 @@
         const data = await apiFetch(`/api/chat/messages/${activeContact}`);
         const el = document.getElementById('chatMessages');
         const wasAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
-        el.innerHTML = data.messages.map(m => {
+        el.innerHTML = '';
+        data.messages.forEach(m => {
+          if (document.querySelector(`.msg-row-wrap[data-msg-id="${m.message_id}"]`)) return;
           const isSent = m.sender_id === currentUser.user_id;
+          const isDeleted = m.message_text === '🚫 This message was deleted';
           let attachHtml = '';
-          if (m.attachment_path) {
+          if (!isDeleted && m.attachment_path) {
             const isPdf = m.attachment_path.toLowerCase().endsWith('.pdf');
             attachHtml = `<div class="msg-attachment">
               <i class="fas fa-${isPdf?'file-pdf':'file'}"></i>
@@ -272,12 +330,21 @@
               <a href="${m.attachment_path}" download="${escapeHtml(m.attachment_name||'file')}" onclick="event.stopPropagation()">Download</a>
             </div>`;
           }
-          return `<div class="msg-bubble ${isSent?'sent':'received'}">
-            ${escapeHtml(m.message_text||'')}
-            ${attachHtml}
+          const bubbleContent = isDeleted
+            ? '<span class="msg-deleted-text">🚫 This message was deleted</span>'
+            : `${escapeHtml(m.message_text||'')}${attachHtml}`;
+          const row = document.createElement('div');
+          row.className = `msg-row-wrap ${isSent ? 'sent-wrap' : 'received-wrap'}`;
+          row.dataset.msgId = m.message_id;
+          row.innerHTML = `<div class="msg-bubble ${isSent?'sent':'received'}">
+            ${bubbleContent}
             <div class="msg-time">${formatDateTime(m.created_at)}${isSent?' ✓✓':''}</div>
           </div>`;
-        }).join('');
+          if (isSent && !isDeleted) {
+            row.addEventListener('contextmenu', (e) => showCtxMenu(e, m.message_id));
+          }
+          el.appendChild(row);
+        });
         if (wasAtBottom || data.messages.length <= 20) el.scrollTop = el.scrollHeight;
       } catch(err) {}
     }

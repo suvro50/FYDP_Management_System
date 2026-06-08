@@ -116,18 +116,49 @@
 
     /* ═══ CHART CARD ═══ */
     .chart-card {
-      background:#161929; border:1px solid #1e2240; border-radius:12px;
-      padding:14px; margin-bottom:10px;
+      background: #1e2030;
+      border: 1px solid #2a2d50;
+      border-radius: 16px;
+      padding: 18px 18px 14px;
+      margin-bottom: 10px;
+      position: relative;
+      overflow: hidden;
     }
-    .chart-card-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
-    .chart-card-header h3 { font-size:0.9rem; font-weight:800; color:#fff; margin:0 0 4px; }
-    .chart-card-header p  { font-size:0.7rem; color:#64748b; margin:0; }
-    .chart-legend { display:flex; gap:16px; font-size:0.78rem; color:#94a3b8; }
-    .chart-legend span { display:flex; align-items:center; gap:6px; }
-    .cl-dot { width:10px; height:10px; border-radius:50%; }
-    .chart-note { font-size:0.72rem; color:#475569; text-align:center; margin-top:10px; }
+    .chart-card-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+    .chart-card-header h3 { font-size:0.95rem; font-weight:800; color:#fff; margin:0 0 4px; letter-spacing:0.01em; }
+    .chart-card-header p  { font-size:0.72rem; color:#64748b; margin:0; }
 
-    .chart-note { font-size:0.72rem; color:#475569; text-align:center; margin-top:10px; }
+    /* ── Chart summary stat cards ── */
+    .chart-summary-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
+    .chart-summary-item {
+      background:#282b3d; border-radius:10px; padding:10px 14px;
+      border-top:3px solid transparent; position:relative;
+    }
+    .chart-summary-item .cs-value { font-size:1.6rem; font-weight:900; line-height:1.1; }
+    .chart-summary-item .cs-label { font-size:0.75rem; font-weight:600; color:#94a3b8; margin-top:2px; }
+    .chart-summary-item.purple { border-top-color:#7c3aed; }
+    .chart-summary-item.purple .cs-value { color:#a78bfa; }
+    .chart-summary-item.green  { border-top-color:#10b981; }
+    .chart-summary-item.green .cs-value  { color:#34d399; }
+    .chart-summary-item.amber  { border-top-color:#f59e0b; }
+    .chart-summary-item.amber .cs-value  { color:#fbbf24; }
+    .chart-summary-item.red    { border-top-color:#ef4444; }
+    .chart-summary-item.red .cs-value    { color:#f87171; }
+
+    /* ── Chart inline legend ── */
+    .chart-legend-row {
+      display:flex; align-items:center; gap:18px; margin-bottom:10px;
+      padding:0 4px;
+    }
+    .chart-legend-item {
+      display:flex; align-items:center; gap:6px;
+      font-size:0.78rem; font-weight:600; color:#94a3b8;
+    }
+    .chart-legend-dot {
+      width:12px; height:12px; border-radius:3px; flex-shrink:0;
+    }
+
+    .chart-note { font-size:0.7rem; color:#3d4466; text-align:center; margin-top:8px; letter-spacing:0.03em; }
 
     /* ── Force sidebar ALWAYS visible on dashboard ── */
     .sidebar { width:230px !important; }
@@ -341,18 +372,33 @@
 
           <!-- Center: Chart -->
           <div class="chart-card" style="margin:0;">
-            <div class="chart-card-header">
-              <div>
-                <h3>Weekly Report Activity</h3>
-                <p>Reports submitted vs approvals</p>
+            <!-- Summary stat cards -->
+            <div class="chart-summary-row">
+              <div class="chart-summary-item purple">
+                <div class="cs-value" id="chartTotalSubmitted">0</div>
+                <div class="cs-label">Submitted</div>
               </div>
-              <div class="chart-legend">
-                <span><span class="cl-dot" style="background:#7c3aed;"></span>Reports</span>
-                <span><span class="cl-dot" style="background:#10b981;"></span>Approvals</span>
+              <div class="chart-summary-item green">
+                <div class="cs-value" id="chartTotalApproved">0</div>
+                <div class="cs-label">Approved</div>
+              </div>
+              <div class="chart-summary-item amber">
+                <div class="cs-value" id="chartTotalPending">0</div>
+                <div class="cs-label">Pending</div>
+              </div>
+              <div class="chart-summary-item red">
+                <div class="cs-value" id="chartTotalRejected">0</div>
+                <div class="cs-label">Rejected</div>
               </div>
             </div>
-            <canvas id="weeklyChart" height="150"></canvas>
-            <p class="chart-note">↑ Data from current semester</p>
+            <!-- Legend: which color = which status -->
+            <div class="chart-legend-row">
+              <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#7c3aed;"></span> Submitted</div>
+              <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#10b981;"></span> Approved</div>
+              <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#d97706;"></span> Pending</div>
+              <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#dc2626;"></span> Rejected</div>
+            </div>
+            <canvas id="weeklyChart" height="140"></canvas>
           </div>
         </div>
 
@@ -453,9 +499,10 @@
       try {
         showLoading();
         setDashDate();
-        const [stats, groupData] = await Promise.all([
+        const [stats, groupData, chartData] = await Promise.all([
           apiFetch('/api/supervisor/stats'),
-          apiFetch('/api/supervisor/groups')
+          apiFetch('/api/supervisor/groups'),
+          apiFetch('/api/supervisor/chart-data')
         ]);
 
         // Stat cards
@@ -491,43 +538,37 @@
         const badge = document.getElementById('groupCountBadge');
         if (badge) badge.textContent = `${totalGroups} GROUPS`;
 
-        // Store all groups for table and aggregate chart data
+        // Store all groups for table
         allGroupsData = [];
-        const weekMap = {};
-        
         (groupData.stages || []).forEach(stage => {
           (stage.groups || []).forEach(g => {
             allGroupsData.push({ ...g, stage_name: stage.stage_name });
-            
-            if (g.latest_reports && Array.isArray(g.latest_reports)) {
-              g.latest_reports.forEach(r => {
-                if (!weekMap[r.week_no]) weekMap[r.week_no] = { submitted: 0, approved: 0 };
-                weekMap[r.week_no].submitted++;
-                if (r.supervisor_status === 'APPROVED') {
-                  weekMap[r.week_no].approved++;
-                }
-              });
-            }
           });
         });
-        
-        // Sort weeks
-        const sortedWeeks = Object.keys(weekMap).map(Number).sort((a,b)=>a-b);
-        let actualLabels = sortedWeeks.map(w => 'Wk ' + w);
-        let actualReports = sortedWeeks.map(w => weekMap[w].submitted);
-        let actualApprovals = sortedWeeks.map(w => weekMap[w].approved);
-        
-        // Fallback to placeholder if no data exists at all
-        if (actualLabels.length === 0) {
-          actualLabels = ['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'];
-          actualReports = [0,0,0,0,0];
-          actualApprovals = [0,0,0,0,0];
+
+        // Build chart from dedicated endpoint
+        const weeks = chartData.weeks || [];
+        let chartLabels, chartReports, chartApprovals, chartRejected, chartPending;
+
+        if (weeks.length > 0) {
+          chartLabels    = weeks.map(w => 'Wk ' + w.week_no);
+          chartReports   = weeks.map(w => Number(w.submitted));
+          chartApprovals = weeks.map(w => Number(w.approved));
+          chartRejected  = weeks.map(w => Number(w.rejected));
+          chartPending   = weeks.map(w => Number(w.pending));
+        } else {
+          chartLabels    = ['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'];
+          chartReports   = [0,0,0,0,0];
+          chartApprovals = [0,0,0,0,0];
+          chartRejected  = [0,0,0,0,0];
+          chartPending   = [0,0,0,0,0];
         }
-        
+
         renderGroupsTable(allGroupsData);
-        buildChart(actualLabels, actualReports, actualApprovals);
+        buildChart(chartLabels, chartReports, chartApprovals, chartRejected, chartPending);
       } catch(err) {
-        buildChart(['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'], [0,0,0,0,0], [0,0,0,0,0]);
+        console.error('Dashboard load error:', err);
+        buildChart(['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'], [0,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0], [0,0,0,0,0]);
       } finally {
         hideLoading();
       }
@@ -567,7 +608,7 @@
         }
         const grpCode = g.group_code || g.group_name || ('GRP-' + (g.group_id?g.group_id.toString().padStart(3,'0'):'001'));
         const domName = g.domain_name || g.domain || ['Web Dev','Machine Learning','IoT','App Dev'][(g.group_id||0)%4];
-        const secName = g.section || ['CSE-A','CSE-B','CSE-C','EEE-A'][(g.group_id||0)%4];
+        const secName = g.section || g.section_code || ['CSE-A','CSE-B','CSE-C','EEE-A'][(g.group_id||0)%4];
         const wkNum = (g.latest_reports && g.latest_reports.length) ? g.latest_reports[0].week_no : (g.latest_week||1);
 
         return `<tr style="border-bottom:1px solid #1e2240;transition:background 0.15s;" onmouseover="this.style.background='#1a1d2e'" onmouseout="this.style.background=''">
@@ -597,39 +638,153 @@
 
     let dashChart = null;
 
-    function buildChart(labels, reports, approvals) {
+    function buildChart(labels, reports, approvals, rejected, pending) {
       const ctx = document.getElementById('weeklyChart').getContext('2d');
       if (dashChart) dashChart.destroy();
+
+      // Update summary stat cards with totals across all weeks
+      const sumArr = arr => arr.reduce((a,b) => a + b, 0);
+      const totalSubmitted = sumArr(reports);
+      const totalApproved  = sumArr(approvals);
+      const totalPending   = sumArr(pending);
+      const totalRejected  = sumArr(rejected);
+      document.getElementById('chartTotalSubmitted').textContent = totalSubmitted;
+      document.getElementById('chartTotalApproved').textContent  = totalApproved;
+      document.getElementById('chartTotalPending').textContent   = totalPending;
+      document.getElementById('chartTotalRejected').textContent  = totalRejected;
+
+      // Gradient fills
+      const h = ctx.canvas.clientHeight || 200;
+      const gradPurple = ctx.createLinearGradient(0, 0, 0, h);
+      gradPurple.addColorStop(0, 'rgba(124,58,237,0.85)');
+      gradPurple.addColorStop(1, 'rgba(124,58,237,0.55)');
+
+      const gradGreen = ctx.createLinearGradient(0, 0, 0, h);
+      gradGreen.addColorStop(0, 'rgba(16,185,129,0.85)');
+      gradGreen.addColorStop(1, 'rgba(16,185,129,0.55)');
+
+      const gradAmber = ctx.createLinearGradient(0, 0, 0, h);
+      gradAmber.addColorStop(0, 'rgba(217,119,6,0.85)');
+      gradAmber.addColorStop(1, 'rgba(217,119,6,0.55)');
+
+      const gradRed = ctx.createLinearGradient(0, 0, 0, h);
+      gradRed.addColorStop(0, 'rgba(220,38,38,0.85)');
+      gradRed.addColorStop(1, 'rgba(220,38,38,0.55)');
+
       dashChart = new Chart(ctx, {
-        type:'line',
+        type: 'bar',
         data: {
           labels,
-          datasets:[
-            { label:'Reports', data:reports, borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.12)',
-              tension:0.4, pointBackgroundColor:'#7c3aed', pointRadius:5, pointHoverRadius:7,
-              borderWidth:2.5, fill:true },
-            { label:'Approvals', data:approvals, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)',
-              tension:0.4, pointBackgroundColor:'#10b981', pointRadius:5, pointHoverRadius:7,
-              borderWidth:2.5, fill:true }
+          datasets: [
+            {
+              label: 'Submitted',
+              data: reports,
+              backgroundColor: gradPurple,
+              hoverBackgroundColor: 'rgba(124,58,237,1)',
+              borderColor: 'transparent',
+              borderWidth: 0,
+              borderRadius: 3,
+              borderSkipped: false,
+              barPercentage: 0.45,
+              categoryPercentage: 0.6,
+              minBarLength: 5
+            },
+            {
+              label: 'Approved',
+              data: approvals,
+              backgroundColor: gradGreen,
+              hoverBackgroundColor: 'rgba(16,185,129,1)',
+              borderColor: 'transparent',
+              borderWidth: 0,
+              borderRadius: 3,
+              borderSkipped: false,
+              barPercentage: 0.45,
+              categoryPercentage: 0.6,
+              minBarLength: 5
+            },
+            {
+              label: 'Pending',
+              data: pending,
+              backgroundColor: gradAmber,
+              hoverBackgroundColor: 'rgba(217,119,6,1)',
+              borderColor: 'transparent',
+              borderWidth: 0,
+              borderRadius: 3,
+              borderSkipped: false,
+              barPercentage: 0.45,
+              categoryPercentage: 0.6,
+              minBarLength: 5
+            },
+            {
+              label: 'Rejected',
+              data: rejected,
+              backgroundColor: gradRed,
+              hoverBackgroundColor: 'rgba(220,38,38,1)',
+              borderColor: 'transparent',
+              borderWidth: 0,
+              borderRadius: 3,
+              borderSkipped: false,
+              barPercentage: 0.45,
+              categoryPercentage: 0.6,
+              minBarLength: 5
+            }
           ]
         },
-        options:{
-          responsive:true,
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          animation: {
+            duration: 800,
+            easing: 'easeOutQuart'
+          },
           interaction: { mode: 'index', intersect: false },
-          plugins:{
-            legend:{
-              display:true, position:'top', align:'end',
-              labels:{ color:'#94a3b8', usePointStyle:true, pointStyle:'circle', boxWidth:8, padding:16, font:{size:12} }
-            },
+          plugins: {
+            legend: { display: false },
             tooltip: {
-              backgroundColor: '#161929', titleColor: '#fff', bodyColor: '#cbd5e1',
-              borderColor: '#2d3354', borderWidth: 1, padding: 12, usePointStyle: true
+              backgroundColor: 'rgba(15,16,32,0.96)',
+              titleColor: '#e2e8f0',
+              titleFont: { size: 12, weight: '700' },
+              bodyColor: '#94a3b8',
+              bodyFont: { size: 11 },
+              borderColor: 'rgba(108,92,231,0.3)',
+              borderWidth: 1,
+              padding: 12,
+              cornerRadius: 10,
+              usePointStyle: true,
+              boxPadding: 5,
+              callbacks: {
+                title: function(context) {
+                  return context[0].label + ' Summary';
+                },
+                label: function(context) {
+                  const icons = { Submitted: '■', Approved: '■', Pending: '■', Rejected: '■' };
+                  return ` ${icons[context.dataset.label] || '●'} ${context.dataset.label}: ${context.parsed.y}`;
+                },
+                afterBody: function(context) {
+                  const idx = context[0].dataIndex;
+                  const total = reports[idx];
+                  const appr  = approvals[idx];
+                  if (total > 0) {
+                    const rate = Math.round((appr / total) * 100);
+                    return `\n  Approval Rate: ${rate}%`;
+                  }
+                  return '';
+                }
+              }
             }
           },
-          scales:{
-            x:{ grid:{ color:'rgba(30,34,64,0.8)' }, ticks:{ color:'#64748b', font:{size:11} }, border:{color:'transparent'} },
-            y:{ grid:{ color:'rgba(30,34,64,0.8)' }, ticks:{ color:'#64748b', font:{size:11}, stepSize:1 },
-                beginAtZero:true, border:{color:'transparent'} }
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#64748b', font: { size: 11, weight: '600' }, padding: 6 },
+              border: { color: 'rgba(45,51,84,0.4)' }
+            },
+            y: {
+              grid: { color: 'rgba(45,51,84,0.25)', drawBorder: false },
+              ticks: { color: '#64748b', font: { size: 11 }, stepSize: 2, padding: 8 },
+              beginAtZero: true,
+              border: { color: 'transparent' }
+            }
           }
         }
       });
