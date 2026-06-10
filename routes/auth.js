@@ -202,11 +202,13 @@ router.post("/signup", async (req, res) => {
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Insert user as inactive until OTP verified
+    // NOTE: The chk_users_soft_delete constraint requires deleted_at IS NOT NULL when is_active=0.
+    // We use deleted_at=NOW() as a placeholder for unverified accounts; it is cleared on activation.
     const [insertResult] = await db.query(
       `INSERT INTO users
         (full_name, university_id, email, password_hash, role, department_id, batch,
-         account_status, is_active, otp_code, otp_expires_at)
-       VALUES (?, ?, ?, SHA2(?, 256), ?, ?, ?, 'ACTIVE', 0, ?, ?)`,
+         account_status, is_active, deleted_at, otp_code, otp_expires_at)
+       VALUES (?, ?, ?, SHA2(?, 256), ?, ?, ?, 'ACTIVE', 0, NOW(), ?, ?)`,
       [
         full_name,
         finalUniversityId,
@@ -342,9 +344,9 @@ router.post("/verify-otp", async (req, res) => {
     }
 
     if (context === "signup") {
-      // Activate the account
+      // Activate the account and clear the soft-delete placeholder set during registration
       await db.query(
-        "UPDATE users SET is_active = 1, otp_code = NULL, otp_expires_at = NULL WHERE user_id = ?",
+        "UPDATE users SET is_active = 1, deleted_at = NULL, otp_code = NULL, otp_expires_at = NULL WHERE user_id = ?",
         [user.user_id],
       );
     } else {

@@ -589,7 +589,7 @@
       }
       const cls = ['fydp1','fydp2','fydp3'];
       const icons = ['fa-lightbulb','fa-code','fa-trophy'];
-      const subtitles = ['Initial proposal & literature review','Implementation & development','Final presentation & thesis'];
+      const subtitles = ['Final Year Design Project I','Final Year Design Project II','Final Year Design Project III'];
       c.innerHTML = stages.map((s,i) => {
         const ci = s.stage_order - 1;
         const totalGroups = s.sections.reduce((a,sec) => a + sec.groups.length, 0);
@@ -600,7 +600,7 @@
           <div class="sem-card-top">
             <div class="sem-card-icon"><i class="fas ${icons[ci]}"></i></div>
             <div class="sem-card-title">${s.stage_name}</div>
-            <div class="sem-card-sub">${isEmpty ? 'No groups assigned yet' : subtitles[ci]}</div>
+            <div class="sem-card-sub">${subtitles[ci]}</div>
           </div>
           <div class="sem-card-bottom">
             <div class="sem-card-info">Semester ${6 + s.stage_order} · Fall 2025</div>

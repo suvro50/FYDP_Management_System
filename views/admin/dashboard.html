@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,653 +8,330 @@
   <link rel="stylesheet" href="/css/admin-dark.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
-  <style>
-    /* ── Live Login Notification Panel ── */
-    #liveLoginPanel {
-      position: fixed;
-      top: 70px;
-      right: 20px;
-      width: 360px;
-      max-height: 520px;
-      background: #0f172a;
-      border: 1px solid rgba(99,102,241,0.3);
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15);
-      z-index: 9999;
-      display: none;
-      flex-direction: column;
-      overflow: hidden;
-      animation: slideInPanel 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    #liveLoginPanel.show { display: flex; }
-    @keyframes slideInPanel {
-      from { opacity:0; transform: translateY(-10px) scale(0.95); }
-      to   { opacity:1; transform: translateY(0) scale(1); }
-    }
-    .llp-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 18px;
-      background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.15));
-      border-bottom: 1px solid rgba(99,102,241,0.2);
-    }
-    .llp-header h4 {
-      margin: 0;
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: #e2e8f0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .llp-header h4 .live-dot {
-      width: 8px; height: 8px;
-      background: #22c55e;
-      border-radius: 50%;
-      animation: pulse-dot 1.5s infinite;
-      display: inline-block;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.8); }
-    }
-    .llp-close {
-      background: none;
-      border: none;
-      color: #64748b;
-      cursor: pointer;
-      font-size: 1rem;
-      padding: 4px 6px;
-      border-radius: 6px;
-      transition: color 0.2s, background 0.2s;
-    }
-    .llp-close:hover { color: #e2e8f0; background: rgba(255,255,255,0.08); }
-    .llp-body {
-      overflow-y: auto;
-      flex: 1;
-      padding: 10px;
-    }
-    .llp-body::-webkit-scrollbar { width: 4px; }
-    .llp-body::-webkit-scrollbar-track { background: transparent; }
-    .llp-body::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 2px; }
-    .llp-empty {
-      text-align: center;
-      color: #475569;
-      font-size: 0.8rem;
-      padding: 40px 20px;
-    }
-    .llp-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(99,102,241,0.15);
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      transition: background 0.2s;
-      animation: slideInCard 0.35s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    @keyframes slideInCard {
-      from { opacity:0; transform: translateX(20px); }
-      to   { opacity:1; transform: translateX(0); }
-    }
-    .llp-card:hover { background: rgba(255,255,255,0.07); }
-    .llp-avatar {
-      width: 38px; height: 38px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.9rem; font-weight: 800;
-      flex-shrink: 0;
-      color: #fff;
-    }
-    .llp-avatar.role-student    { background: linear-gradient(135deg,#6366f1,#818cf8); }
-    .llp-avatar.role-supervisor { background: linear-gradient(135deg,#22c55e,#4ade80); }
-    .llp-avatar.role-teacher    { background: linear-gradient(135deg,#f59e0b,#fbbf24); }
-    .llp-avatar.role-prefydp   { background: linear-gradient(135deg,#ec4899,#f472b6); }
-    .llp-info { flex: 1; min-width: 0; }
-    .llp-name {
-      font-size: 0.82rem; font-weight: 700; color: #e2e8f0;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .llp-meta {
-      font-size: 0.71rem; color: #64748b; margin-top: 2px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .llp-role-badge {
-      font-size: 0.62rem; font-weight: 700; padding: 2px 8px;
-      border-radius: 20px; display: inline-block; margin-top: 4px;
-    }
-    .rb-student    { background:rgba(99,102,241,0.2); color:#818cf8; border:1px solid rgba(99,102,241,0.3); }
-    .rb-supervisor { background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
-    .rb-teacher    { background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
-    .rb-prefydp   { background:rgba(236,72,153,0.15); color:#f472b6; border:1px solid rgba(236,72,153,0.3); }
-    .llp-time {
-      font-size: 0.65rem; color: #334155; white-space: nowrap; margin-top: 3px;
-    }
-    /* Bell badge for live logins */
-    .adm-bell-btn { position: relative; }
-    #loginAlertBadge {
-      position: absolute;
-      top: -4px; right: -4px;
-      background: #22c55e;
-      color: #fff;
-      font-size: 0.6rem;
-      font-weight: 800;
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid #0f172a;
-      animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    @keyframes popIn {
-      from { transform: scale(0); }
-      to   { transform: scale(1); }
-    }
-    /* Login toast */
-    .login-toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      border: 1px solid rgba(34,197,94,0.4);
-      border-left: 4px solid #22c55e;
-      border-radius: 14px;
-      padding: 14px 18px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 300px;
-      max-width: 380px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-      z-index: 10000;
-      cursor: pointer;
-      animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-      transition: opacity 0.3s, transform 0.3s;
-    }
-    @keyframes toastIn {
-      from { opacity:0; transform: translateX(60px); }
-      to   { opacity:1; transform: translateX(0); }
-    }
-    .login-toast.removing { opacity:0; transform: translateX(60px); }
-    .lt-icon {
-      width: 40px; height: 40px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.95rem; font-weight: 800; color: #fff; flex-shrink: 0;
-    }
-    .lt-text { flex: 1; min-width: 0; }
-    .lt-title { font-size: 0.75rem; font-weight: 700; color: #22c55e; margin-bottom: 2px; }
-    .lt-name  { font-size: 0.85rem; font-weight: 800; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .lt-sub   { font-size: 0.7rem; color: #64748b; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .lt-close { color: #334155; background: none; border: none; cursor: pointer; font-size: 1rem; flex-shrink: 0; transition: color 0.2s; }
-    .lt-close:hover { color: #e2e8f0; }
-  </style>
 </head>
+
 <body>
-<div class="adm-layout">
+  <div class="adm-layout">
 
-  <!-- ── SIDEBAR ── -->
-  <aside class="adm-sidebar">
-    <div class="adm-logo">
-      <div class="adm-logo-icon"><i class="fas fa-shield-alt"></i></div>
-      <div>
-        <h2>FYDP System</h2>
-        <span>Admin Control Center</span>
-      </div>
-    </div>
-
-    <nav class="adm-nav">
-      <div class="adm-nav-label">Overview</div>
-      <a href="/admin/dashboard" class="active"><i class="fas fa-th-large"></i> Dashboard</a>
-
-      <div class="adm-nav-label">Assignments</div>
-      <a href="/admin/assign-supervisor"><i class="fas fa-user-tie"></i> Supervisor Assign</a>
-      <a href="/admin/assign-groups"><i class="fas fa-layer-group"></i> FYDP Group Assign</a>
-      <a href="/admin/assign-teacher"><i class="fas fa-chalkboard-teacher"></i> Course Teacher Assign</a>
-
-      <div class="adm-nav-label">Management</div>
-      <a href="/admin/users"><i class="fas fa-users"></i> Manage Users</a>
-      <a href="/admin/groups"><i class="fas fa-folder-open"></i> Manage Groups</a>
-    </nav>
-
-    <div class="adm-sidebar-foot">
-      <div class="adm-user-av" id="userAvatar">AD</div>
-      <div class="adm-user-info">
-        <h4 id="userName">Admin</h4>
-        <p>Administrator</p>
-      </div>
-      <button class="adm-logout-btn" onclick="logout()" title="Logout">
-        <i class="fas fa-sign-out-alt"></i>
-      </button>
-    </div>
-  </aside>
-
-  <!-- ── MAIN ── -->
-  <main class="adm-main">
-
-    <!-- Topbar -->
-    <header class="adm-topbar">
-      <div class="adm-breadcrumb">
-        <i class="fas fa-home"></i> Admin / <span>Dashboard</span>
-      </div>
-      <div class="adm-topbar-right">
-        <div style="text-align:right;">
-          <div style="font-size:0.8rem;font-weight:700;color:#e2e8f0;" id="dashDate">—</div>
-          <div style="font-size:0.68rem;color:#475569;">Spring 2026</div>
-        </div>
-        <!-- Live Login Alert Bell -->
-        <button class="adm-bell-btn" id="loginAlertBell" onclick="toggleLoginPanel()" title="Live User Login Activity" style="position:relative;">
-          <i class="fas fa-user-clock"></i>
-          <span id="loginAlertBadge" style="display:none;"></span>
-        </button>
-        <button class="adm-bell-btn" onclick="window.location.href='/notifications'">
-          <i class="fas fa-bell"></i>
-        </button>
-      </div>
-    </header>
-
-    <!-- Page Content -->
-    <div class="adm-page">
-
-      <!-- Page Title -->
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
-        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;">
-          <i class="fas fa-shield-alt" style="color:#fff;font-size:1.1rem;"></i>
-        </div>
+    <!-- ── SIDEBAR ── -->
+    <aside class="adm-sidebar">
+      <div class="adm-logo">
+        <div class="adm-logo-icon"><i class="fas fa-shield-alt"></i></div>
         <div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <h1 style="font-size:1.4rem;font-weight:900;color:#fff;margin:0;">Admin Control Center</h1>
-            <span style="background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.3);padding:3px 12px;border-radius:20px;font-size:0.7rem;font-weight:700;">✦ LIVE</span>
-          </div>
-          <p style="color:#64748b;font-size:0.78rem;margin:3px 0 0;">Full system overview — manage supervisors, groups, and course teachers</p>
+          <h2>FYDP System</h2>
+          <span>Admin Control Center</span>
         </div>
       </div>
 
-      <!-- ── STAT CARDS ── -->
-      <div class="adm-stat-grid">
-        <div class="adm-stat indigo">
-          <div class="adm-stat-icon"><i class="fas fa-user-graduate"></i></div>
-          <div class="adm-stat-body">
-            <div class="adm-stat-trend">↗ Active students</div>
-            <div class="adm-stat-num" id="statStudents">—</div>
-            <div class="adm-stat-label">Total Students</div>
-          </div>
-        </div>
-        <div class="adm-stat green">
-          <div class="adm-stat-icon"><i class="fas fa-user-tie"></i></div>
-          <div class="adm-stat-body">
-            <div class="adm-stat-trend">↗ Supervisors</div>
-            <div class="adm-stat-num" id="statSupervisors">—</div>
-            <div class="adm-stat-label">Supervisors</div>
-          </div>
-        </div>
-        <div class="adm-stat blue">
-          <div class="adm-stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
-          <div class="adm-stat-body">
-            <div class="adm-stat-trend">↗ Teachers</div>
-            <div class="adm-stat-num" id="statTeachers">—</div>
-            <div class="adm-stat-label">Course Teachers</div>
-          </div>
-        </div>
-        <div class="adm-stat amber">
-          <div class="adm-stat-icon"><i class="fas fa-layer-group"></i></div>
-          <div class="adm-stat-body">
-            <div class="adm-stat-trend">↗ Active groups</div>
-            <div class="adm-stat-num" id="statGroups">—</div>
-            <div class="adm-stat-label">Active Groups</div>
-          </div>
-        </div>
-      </div>
-      <!-- Needs review — second row, compact -->
-      <div class="adm-stat-row2">
-        <div class="adm-stat purple needs-review">
-          <div class="adm-stat-icon"><i class="fas fa-clock"></i></div>
-          <div class="adm-stat-body">
-            <div class="adm-stat-trend" style="color:#f59e0b;">Needs review</div>
-            <div class="adm-stat-num" id="statPending">—</div>
-            <div class="adm-stat-label">Pending Reports</div>
-          </div>
-        </div>
-      </div>
+      <nav class="adm-nav">
+        <div class="adm-nav-label">Overview</div>
+        <a href="/admin/dashboard" class="active"><i class="fas fa-th-large"></i> Dashboard</a>
 
-      <!-- ── 3 TASK CARDS ── -->
-      <div style="margin-bottom:8px;font-size:0.72rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.06em;">
-        ⚡ Assignment Control Panels
-      </div>
-      <div class="adm-task-grid">
+        <div class="adm-nav-label">Assignments</div>
+        <a href="/admin/assign-supervisor"><i class="fas fa-user-tie"></i> Supervisor Assign</a>
+        <a href="/admin/assign-groups"><i class="fas fa-layer-group"></i> FYDP Group Assign</a>
+        <a href="/admin/assign-teacher"><i class="fas fa-chalkboard-teacher"></i> Course Teacher Assign</a>
 
-        <!-- Supervisor Assign -->
-        <a href="/admin/assign-supervisor" class="adm-task-card tc-sup">
-          <div class="adm-task-icon"><i class="fas fa-user-tie"></i></div>
+        <div class="adm-nav-label">Management</div>
+        <a href="/admin/users"><i class="fas fa-users"></i> Manage Users</a>
+        <a href="/admin/groups"><i class="fas fa-folder-open"></i> Manage Groups</a>
+      </nav>
+
+      <div class="adm-sidebar-foot">
+        <div class="adm-user-av" id="userAvatar">AD</div>
+        <div class="adm-user-info">
+          <h4 id="userName">Admin</h4>
+          <p>Administrator</p>
+        </div>
+        <button class="adm-logout-btn" onclick="logout()" title="Logout">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── MAIN ── -->
+    <main class="adm-main">
+
+      <!-- Topbar -->
+      <header class="adm-topbar">
+        <div class="adm-breadcrumb">
+          <i class="fas fa-home"></i> Admin / <span>Dashboard</span>
+        </div>
+        <div class="adm-topbar-right">
+          <div style="text-align:right;">
+            <div style="font-size:0.8rem;font-weight:700;color:#e2e8f0;" id="dashDate">—</div>
+            <div style="font-size:0.68rem;color:#475569;">Spring 2026</div>
+          </div>
+          <button class="adm-bell-btn" onclick="window.location.href='/notifications'">
+            <i class="fas fa-bell"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="adm-page">
+
+        <!-- Page Title -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+          <div
+            style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-shield-alt" style="color:#fff;font-size:1.1rem;"></i>
+          </div>
           <div>
-            <div class="adm-task-title">Supervisor Assignment</div>
-            <div class="adm-task-desc">Assign supervisors to FYDP student groups. Manage supervisor workload and group allocation.</div>
-          </div>
-          <div class="adm-task-count" id="taskSupCount">
-            <i class="fas fa-circle" style="font-size:6px;"></i> Loading...
-          </div>
-          <div class="adm-task-arrow">
-            <span>Manage Assignments →</span>
-          </div>
-        </a>
-
-        <!-- FYDP Group Assign -->
-        <a href="/admin/assign-groups" class="adm-task-card tc-grp">
-          <div class="adm-task-icon"><i class="fas fa-layer-group"></i></div>
-          <div>
-            <div class="adm-task-title">FYDP Group Assignment</div>
-            <div class="adm-task-desc">Manage group–stage promotion, domain changes and group organization across all FYDP stages.</div>
-          </div>
-          <div class="adm-task-count" id="taskGrpCount">
-            <i class="fas fa-circle" style="font-size:6px;"></i> Loading...
-          </div>
-          <div class="adm-task-arrow">
-            <span>Manage Groups →</span>
-          </div>
-        </a>
-
-        <!-- Course Teacher Assign -->
-        <a href="/admin/assign-teacher" class="adm-task-card tc-tch">
-          <div class="adm-task-icon"><i class="fas fa-chalkboard-teacher"></i></div>
-          <div>
-            <div class="adm-task-title">Course Teacher Assignment</div>
-            <div class="adm-task-desc">Assign course teachers to sections. Control which teacher oversees which FYDP section.</div>
-          </div>
-          <div class="adm-task-count" id="taskTchCount">
-            <i class="fas fa-circle" style="font-size:6px;"></i> Loading...
-          </div>
-          <div class="adm-task-arrow">
-            <span>Manage Teachers →</span>
-          </div>
-        </a>
-
-      </div>
-
-      <!-- ── QUICK LINKS ── -->
-      <div class="adm-quick-grid" style="margin-bottom:20px;grid-template-columns:1fr;">
-        <a href="/admin/users" class="adm-quick-link">
-          <i class="fas fa-users" style="background:rgba(99,102,241,0.12);color:#818cf8;"></i>
-          Manage All Users
-        </a>
-      </div>
-
-      <!-- ── BOTTOM: FYDP stages + Audit Log ── -->
-      <div class="adm-bottom-grid">
-
-        <!-- FYDP Stage Overview -->
-        <div class="adm-card">
-          <div class="adm-card-head">
-            <h3><i class="fas fa-chart-pie" style="color:#818cf8;margin-right:8px;"></i>FYDP Stage Overview</h3>
-          </div>
-          <div class="adm-card-body">
-            <div class="adm-stage-row">
-              <div class="adm-stage-num s1">1</div>
-              <div class="adm-stage-info">
-                <h4>FYDP-1 — Proposal</h4>
-                <div class="adm-bar-wrap"><div class="adm-bar s1" id="bar1" style="width:0%"></div></div>
-              </div>
-              <div class="adm-stage-cnt s1" id="cnt1">—</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <h1 style="font-size:1.4rem;font-weight:900;color:#fff;margin:0;">Admin Control Center</h1>
+              <span
+                style="background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.3);padding:3px 12px;border-radius:20px;font-size:0.7rem;font-weight:700;">✦
+                LIVE</span>
             </div>
-            <div class="adm-stage-row">
-              <div class="adm-stage-num s2">2</div>
-              <div class="adm-stage-info">
-                <h4>FYDP-2 — Development</h4>
-                <div class="adm-bar-wrap"><div class="adm-bar s2" id="bar2" style="width:0%"></div></div>
-              </div>
-              <div class="adm-stage-cnt s2" id="cnt2">—</div>
+            <p style="color:#64748b;font-size:0.78rem;margin:3px 0 0;">Full system overview — manage supervisors,
+              groups, and course teachers</p>
+          </div>
+        </div>
+
+        <!-- ── STAT CARDS ── -->
+        <div class="adm-stat-grid">
+          <div class="adm-stat indigo">
+            <div class="adm-stat-icon"><i class="fas fa-user-graduate"></i></div>
+            <div class="adm-stat-body">
+              <div class="adm-stat-trend">↗ Active students</div>
+              <div class="adm-stat-num" id="statStudents">—</div>
+              <div class="adm-stat-label">Total Students</div>
             </div>
-            <div class="adm-stage-row">
-              <div class="adm-stage-num s3">3</div>
-              <div class="adm-stage-info">
-                <h4>FYDP-3 — Finalization</h4>
-                <div class="adm-bar-wrap"><div class="adm-bar s3" id="bar3" style="width:0%"></div></div>
-              </div>
-              <div class="adm-stage-cnt s3" id="cnt3">—</div>
+          </div>
+          <div class="adm-stat green">
+            <div class="adm-stat-icon"><i class="fas fa-user-tie"></i></div>
+            <div class="adm-stat-body">
+              <div class="adm-stat-trend">↗ Supervisors</div>
+              <div class="adm-stat-num" id="statSupervisors">—</div>
+              <div class="adm-stat-label">Supervisors</div>
+            </div>
+          </div>
+          <div class="adm-stat blue">
+            <div class="adm-stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+            <div class="adm-stat-body">
+              <div class="adm-stat-trend">↗ Teachers</div>
+              <div class="adm-stat-num" id="statTeachers">—</div>
+              <div class="adm-stat-label">Course Teachers</div>
+            </div>
+          </div>
+          <div class="adm-stat amber">
+            <div class="adm-stat-icon"><i class="fas fa-layer-group"></i></div>
+            <div class="adm-stat-body">
+              <div class="adm-stat-trend">↗ Active groups</div>
+              <div class="adm-stat-num" id="statGroups">—</div>
+              <div class="adm-stat-label">Active Groups</div>
+            </div>
+          </div>
+        </div>
+        <!-- Needs review — second row, compact -->
+        <div class="adm-stat-row2">
+          <div class="adm-stat purple needs-review">
+            <div class="adm-stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="adm-stat-body">
+              <div class="adm-stat-trend" style="color:#f59e0b;">Needs review</div>
+              <div class="adm-stat-num" id="statPending">—</div>
+              <div class="adm-stat-label">Pending Reports</div>
             </div>
           </div>
         </div>
 
-        <!-- Audit Log -->
-        <div class="adm-card">
-          <div class="adm-card-head">
-            <h3><i class="fas fa-scroll" style="color:#f59e0b;margin-right:8px;"></i>Recent Audit Log</h3>
-            <span style="font-size:0.7rem;color:#475569;">Last 10 actions</span>
-          </div>
-          <div style="overflow-x:auto;">
-            <table class="adm-table">
-              <thead>
-                <tr>
-                  <th>Table</th>
-                  <th>Operation</th>
-                  <th>Record</th>
-                  <th>Time</th>
-                </tr>
-              </thead>
-              <tbody id="auditBody">
-                <tr><td colspan="4" style="text-align:center;color:#475569;padding:30px;">Loading...</td></tr>
-              </tbody>
-            </table>
-          </div>
+        <!-- ── 3 TASK CARDS ── -->
+        <div
+          style="margin-bottom:8px;font-size:0.72rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.06em;">
+          ⚡ Assignment Control Panels
+        </div>
+        <div class="adm-task-grid">
+
+          <!-- Supervisor Assign -->
+          <a href="/admin/assign-supervisor" class="adm-task-card tc-sup">
+            <div class="adm-task-icon"><i class="fas fa-user-tie"></i></div>
+            <div>
+              <div class="adm-task-title">Supervisor Assignment</div>
+              <div class="adm-task-desc">Assign supervisors to FYDP student groups. Manage supervisor workload and group
+                allocation.</div>
+            </div>
+            <div class="adm-task-count" id="taskSupCount">
+              <i class="fas fa-circle" style="font-size:6px;"></i> Loading...
+            </div>
+            <div class="adm-task-arrow">
+              <span>Manage Assignments →</span>
+            </div>
+          </a>
+
+          <!-- FYDP Group Assign -->
+          <a href="/admin/assign-groups" class="adm-task-card tc-grp">
+            <div class="adm-task-icon"><i class="fas fa-layer-group"></i></div>
+            <div>
+              <div class="adm-task-title">FYDP Group Assignment</div>
+              <div class="adm-task-desc">Manage group–stage promotion, domain changes and group organization across all
+                FYDP stages.</div>
+            </div>
+            <div class="adm-task-count" id="taskGrpCount">
+              <i class="fas fa-circle" style="font-size:6px;"></i> Loading...
+            </div>
+            <div class="adm-task-arrow">
+              <span>Manage Groups →</span>
+            </div>
+          </a>
+
+          <!-- Course Teacher Assign -->
+          <a href="/admin/assign-teacher" class="adm-task-card tc-tch">
+            <div class="adm-task-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+            <div>
+              <div class="adm-task-title">Course Teacher Assignment</div>
+              <div class="adm-task-desc">Assign course teachers to sections. Control which teacher oversees which FYDP
+                section.</div>
+            </div>
+            <div class="adm-task-count" id="taskTchCount">
+              <i class="fas fa-circle" style="font-size:6px;"></i> Loading...
+            </div>
+            <div class="adm-task-arrow">
+              <span>Manage Teachers →</span>
+            </div>
+          </a>
+
         </div>
 
-      </div>
-    </div><!-- /adm-page -->
-  </main>
-</div>
+        <!-- ── QUICK LINKS ── -->
+        <div class="adm-quick-grid" style="margin-bottom:20px;">
+          <a href="/admin/users" class="adm-quick-link">
+            <i class="fas fa-users" style="background:rgba(99,102,241,0.12);color:#818cf8;"></i>
+            Manage All Users
+          </a>
+          <a href="/admin/import" class="adm-quick-link">
+            <i class="fas fa-file-import" style="background:rgba(6,182,212,0.12);color:#06b6d4;"></i>
+            Bulk Import Data
+          </a>
+        </div>
 
-<!-- ── Live Login Activity Panel ── -->
-<div id="liveLoginPanel">
-  <div class="llp-header">
-    <h4><span class="live-dot"></span> Live Login Activity</h4>
-    <button class="llp-close" onclick="toggleLoginPanel()" title="Close"><i class="fas fa-times"></i></button>
+        <!-- ── BOTTOM: FYDP stages + Audit Log ── -->
+        <div class="adm-bottom-grid">
+
+          <!-- FYDP Stage Overview -->
+          <div class="adm-card">
+            <div class="adm-card-head">
+              <h3><i class="fas fa-chart-pie" style="color:#818cf8;margin-right:8px;"></i>FYDP Stage Overview</h3>
+            </div>
+            <div class="adm-card-body">
+              <div class="adm-stage-row">
+                <div class="adm-stage-num s1">1</div>
+                <div class="adm-stage-info">
+                  <h4>FYDP-1 — Proposal</h4>
+                  <div class="adm-bar-wrap">
+                    <div class="adm-bar s1" id="bar1" style="width:0%"></div>
+                  </div>
+                </div>
+                <div class="adm-stage-cnt s1" id="cnt1">—</div>
+              </div>
+              <div class="adm-stage-row">
+                <div class="adm-stage-num s2">2</div>
+                <div class="adm-stage-info">
+                  <h4>FYDP-2 — Development</h4>
+                  <div class="adm-bar-wrap">
+                    <div class="adm-bar s2" id="bar2" style="width:0%"></div>
+                  </div>
+                </div>
+                <div class="adm-stage-cnt s2" id="cnt2">—</div>
+              </div>
+              <div class="adm-stage-row">
+                <div class="adm-stage-num s3">3</div>
+                <div class="adm-stage-info">
+                  <h4>FYDP-3 — Finalization</h4>
+                  <div class="adm-bar-wrap">
+                    <div class="adm-bar s3" id="bar3" style="width:0%"></div>
+                  </div>
+                </div>
+                <div class="adm-stage-cnt s3" id="cnt3">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audit Log -->
+          <div class="adm-card">
+            <div class="adm-card-head">
+              <h3><i class="fas fa-scroll" style="color:#f59e0b;margin-right:8px;"></i>Recent Audit Log</h3>
+              <span style="font-size:0.7rem;color:#475569;">Last 10 actions</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="adm-table">
+                <thead>
+                  <tr>
+                    <th>Table</th>
+                    <th>Operation</th>
+                    <th>Record</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="auditBody">
+                  <tr>
+                    <td colspan="4" style="text-align:center;color:#475569;padding:30px;">Loading...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /adm-page -->
+    </main>
   </div>
-  <div class="llp-body" id="llpBody">
-    <div class="llp-empty"><i class="fas fa-satellite-dish" style="font-size:2rem;margin-bottom:10px;color:#334155;"></i><br>Waiting for logins...</div>
-  </div>
-</div>
 
-<script src="/js/main.js"></script>
-<script>
-  // ── Live Login Notification System ──
-  let loginCount = 0;
-  let loginHistory = [];
-  const MAX_HISTORY = 30;
+  <script src="/js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Set date
+      const now = new Date();
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      document.getElementById('dashDate').textContent =
+        `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
 
-  const roleLabels = {
-    'STUDENT':        'Student',
-    'PRE_FYDP_STUDENT': 'Pre-FYDP Student',
-    'SUPERVISOR':     'Supervisor',
-    'COURSE_TEACHER': 'Course Teacher',
-  };
-  const roleAvatarClass = {
-    'STUDENT':           'role-student',
-    'PRE_FYDP_STUDENT':  'role-prefydp',
-    'SUPERVISOR':        'role-supervisor',
-    'COURSE_TEACHER':    'role-teacher',
-  };
-  const roleBadgeClass = {
-    'STUDENT':           'rb-student',
-    'PRE_FYDP_STUDENT':  'rb-prefydp',
-    'SUPERVISOR':        'rb-supervisor',
-    'COURSE_TEACHER':    'rb-teacher',
-  };
-  const roleAvatarBg = {
-    'STUDENT':           'linear-gradient(135deg,#6366f1,#818cf8)',
-    'PRE_FYDP_STUDENT':  'linear-gradient(135deg,#ec4899,#f472b6)',
-    'SUPERVISOR':        'linear-gradient(135deg,#22c55e,#4ade80)',
-    'COURSE_TEACHER':    'linear-gradient(135deg,#f59e0b,#fbbf24)',
-  };
-
-  function getInitialsFrom(name) {
-    if (!name) return '?';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  }
-
-  function formatLoginTime(isoStr) {
-    if (!isoStr) return '';
-    const d = new Date(isoStr);
-    return d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-  }
-
-  function toggleLoginPanel() {
-    const panel = document.getElementById('liveLoginPanel');
-    panel.classList.toggle('show');
-    if (panel.classList.contains('show')) {
-      // Reset badge when panel opened
-      loginCount = 0;
-      const badge = document.getElementById('loginAlertBadge');
-      badge.style.display = 'none';
-      badge.textContent = '';
-    }
-  }
-
-  function showLoginToast(u) {
-    const roleLabel = roleLabels[u.role] || u.role;
-    const initials  = getInitialsFrom(u.full_name);
-    const bg        = roleAvatarBg[u.role] || 'linear-gradient(135deg,#6366f1,#818cf8)';
-    const metaParts = [u.department, u.batch ? 'Batch ' + u.batch : null].filter(Boolean);
-
-    const toast = document.createElement('div');
-    toast.className = 'login-toast';
-    toast.innerHTML = `
-      <div class="lt-icon" style="background:${bg}">${initials}</div>
-      <div class="lt-text">
-        <div class="lt-title">🟢 User Just Logged In</div>
-        <div class="lt-name">${escapeHtml(u.full_name)}</div>
-        <div class="lt-sub">${escapeHtml(roleLabel)}${metaParts.length ? ' · ' + escapeHtml(metaParts.join(' · ')) : ''}</div>
-      </div>
-      <button class="lt-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
-    `;
-    toast.addEventListener('click', (e) => {
-      if (e.target.closest('.lt-close')) return;
-      toggleLoginPanel();
-      toast.remove();
-    });
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      if (!toast.parentElement) return;
-      toast.classList.add('removing');
-      setTimeout(() => toast.remove(), 300);
-    }, 7000);
-  }
-
-  function addLoginCard(u) {
-    loginHistory.unshift(u);
-    if (loginHistory.length > MAX_HISTORY) loginHistory.pop();
-
-    const body = document.getElementById('llpBody');
-    // Remove empty state
-    body.querySelector('.llp-empty')?.remove();
-
-    const roleLabel    = roleLabels[u.role] || u.role;
-    const avatarClass  = roleAvatarClass[u.role] || 'role-student';
-    const badgeClass   = roleBadgeClass[u.role] || 'rb-student';
-    const initials     = getInitialsFrom(u.full_name);
-    const metaParts    = [u.department, u.batch ? 'Batch ' + u.batch : null, u.university_id].filter(Boolean);
-    const timeStr      = formatLoginTime(u.login_time);
-
-    const card = document.createElement('div');
-    card.className = 'llp-card';
-    card.innerHTML = `
-      <div class="llp-avatar ${avatarClass}">${initials}</div>
-      <div class="llp-info">
-        <div class="llp-name">${escapeHtml(u.full_name)}</div>
-        <div class="llp-meta">${escapeHtml(u.email)}</div>
-        ${metaParts.length ? `<div class="llp-meta">${escapeHtml(metaParts.join(' · '))}</div>` : ''}
-        <span class="llp-role-badge ${badgeClass}">${escapeHtml(roleLabel)}</span>
-      </div>
-      <div style="text-align:right;flex-shrink:0;">
-        <div class="llp-time"><i class="fas fa-clock" style="margin-right:3px;"></i>${timeStr}</div>
-        <a href="/admin/users" style="font-size:0.62rem;color:#6366f1;text-decoration:none;margin-top:6px;display:inline-block;" title="View in Users"><i class="fas fa-arrow-right"></i> Manage</a>
-      </div>
-    `;
-    body.insertBefore(card, body.firstChild);
-  }
-
-  function updateLoginBadge() {
-    loginCount++;
-    const badge = document.getElementById('loginAlertBadge');
-    badge.textContent = loginCount > 99 ? '99+' : loginCount;
-    badge.style.display = 'flex';
-    // Bounce animation
-    badge.style.animation = 'none';
-    void badge.offsetWidth; // reflow
-    badge.style.animation = 'popIn 0.3s cubic-bezier(0.34,1.56,0.64,1)';
-  }
-
-  // ── Socket.IO Setup ──
-  document.addEventListener('DOMContentLoaded', async () => {
-    // Date
-    const now = new Date();
-    const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    document.getElementById('dashDate').textContent =
-      `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
-
-    // Load user
-    const user = await getCurrentUser();
-    if (user) {
-      document.getElementById('userName').textContent = user.full_name;
-      document.getElementById('userAvatar').textContent = getInitials(user.full_name);
-    }
-
-    loadStats();
-
-    // Connect Socket.IO and join admin_room for real-time login alerts
-    const socket = io();
-    socket.emit('join_admin');
-
-    socket.on('user_login', (u) => {
-      showLoginToast(u);
-      addLoginCard(u);
-      // Only bump badge if panel is closed
-      const panel = document.getElementById('liveLoginPanel');
-      if (!panel.classList.contains('show')) {
-        updateLoginBadge();
+      // Load user
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
       }
+
+      loadStats();
     });
-  });
 
-  async function loadStats() {
-    try {
-      const data = await apiFetch('/api/admin/stats');
+    async function loadStats() {
+      try {
+        const data = await apiFetch('/api/admin/stats');
 
-      document.getElementById('statStudents').textContent    = data.students;
-      document.getElementById('statSupervisors').textContent = data.supervisors;
-      document.getElementById('statTeachers').textContent    = data.courseTeachers;
-      document.getElementById('statGroups').textContent      = data.activeGroups;
-      document.getElementById('statPending').textContent     = data.pendingReports;
+        document.getElementById('statStudents').textContent = data.students;
+        document.getElementById('statSupervisors').textContent = data.supervisors;
+        document.getElementById('statTeachers').textContent = data.courseTeachers;
+        document.getElementById('statGroups').textContent = data.activeGroups;
+        document.getElementById('statPending').textContent = data.pendingReports;
 
-      // Stage rows
-      const stageMap = { 'FYDP-1': ['cnt1','bar1'], 'FYDP-2': ['cnt2','bar2'], 'FYDP-3': ['cnt3','bar3'] };
-      const total = data.stageGroups.reduce((s, x) => s + Number(x.count), 0) || 1;
-      data.stageGroups.forEach(s => {
-        const [cid, bid] = stageMap[s.stage_name] || [];
-        if (!cid) return;
-        document.getElementById(cid).textContent = s.count;
-        document.getElementById(bid).style.width = Math.round((s.count / total) * 100) + '%';
-      });
+        // Stage rows
+        const stageMap = { 'FYDP-1': ['cnt1', 'bar1'], 'FYDP-2': ['cnt2', 'bar2'], 'FYDP-3': ['cnt3', 'bar3'] };
+        const total = data.stageGroups.reduce((s, x) => s + Number(x.count), 0) || 1;
+        data.stageGroups.forEach(s => {
+          const [cid, bid] = stageMap[s.stage_name] || [];
+          if (!cid) return;
+          document.getElementById(cid).textContent = s.count;
+          document.getElementById(bid).style.width = Math.round((s.count / total) * 100) + '%';
+        });
 
-      // Task card counts
-      document.getElementById('taskSupCount').innerHTML =
-        `<i class="fas fa-circle" style="font-size:6px;"></i> ${data.supervisors} Supervisors Active`;
-      document.getElementById('taskGrpCount').innerHTML =
-        `<i class="fas fa-circle" style="font-size:6px;"></i> ${data.activeGroups} Groups Total`;
-      document.getElementById('taskTchCount').innerHTML =
-        `<i class="fas fa-circle" style="font-size:6px;"></i> ${data.courseTeachers} Teachers Assigned`;
+        // Task card counts
+        document.getElementById('taskSupCount').innerHTML =
+          `<i class="fas fa-circle" style="font-size:6px;"></i> ${data.supervisors} Supervisors Active`;
+        document.getElementById('taskGrpCount').innerHTML =
+          `<i class="fas fa-circle" style="font-size:6px;"></i> ${data.activeGroups} Groups Total`;
+        document.getElementById('taskTchCount').innerHTML =
+          `<i class="fas fa-circle" style="font-size:6px;"></i> ${data.courseTeachers} Teachers Assigned`;
 
-      // Audit log
-      const tbody = document.getElementById('auditBody');
-      if (!data.recentAudit || data.recentAudit.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#475569;padding:20px;">No audit entries</td></tr>';
-      } else {
-        const opColor = { INSERT: 'ab-green', UPDATE: 'ab-blue', DELETE: 'ab-red' };
-        tbody.innerHTML = data.recentAudit.map(a => `
+        // Audit log
+        const tbody = document.getElementById('auditBody');
+        if (!data.recentAudit || data.recentAudit.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#475569;padding:20px;">No audit entries</td></tr>';
+        } else {
+          const opColor = { INSERT: 'ab-green', UPDATE: 'ab-blue', DELETE: 'ab-red' };
+          tbody.innerHTML = data.recentAudit.map(a => `
           <tr>
             <td><span class="ab ab-indigo">${escapeHtml(a.table_name)}</span></td>
             <td><span class="ab ${opColor[a.operation] || 'ab-amber'}">${a.operation}</span></td>
@@ -661,12 +339,13 @@
             <td style="color:#475569;white-space:nowrap;">${formatTimeAgo(a.changed_at)}</td>
           </tr>
         `).join('');
-      }
+        }
 
-    } catch (err) {
-      console.error(err);
+      } catch (err) {
+        console.error(err);
+      }
     }
-  }
-</script>
+  </script>
 </body>
+
 </html>
