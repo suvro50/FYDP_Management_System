@@ -660,22 +660,39 @@ router.get('/groups-by-stage', async (req, res) => {
       g.submitted_count = g.approved_count; // teacher sees only approved
     }
 
+    // All assigned sections for this teacher
+    const [assignedSections] = await db.query(
+      `SELECT cts.section_id, cts.assigned_stage_id, s.section_code
+       FROM course_teacher_sections cts
+       JOIN sections s ON s.section_id = cts.section_id
+       WHERE cts.course_teacher_id = ?`,
+      [teacherId]
+    );
+
     // Build stage → section → groups hierarchy
     const stageData = stages.map(s => {
       const stageGroups = groups.filter(g => g.stage_name === s.stage_name);
-      // Group by section
+      
+      // Initialize sectionMap with all assigned sections for THIS stage
       const sectionMap = {};
+      const stageSections = assignedSections.filter(sec => sec.assigned_stage_id === s.stage_id);
+      stageSections.forEach(sec => {
+        sectionMap[sec.section_code] = { section_code: sec.section_code, groups: [] };
+      });
+
+      // Group by section
       stageGroups.forEach(g => {
         if (!sectionMap[g.section_code]) {
           sectionMap[g.section_code] = { section_code: g.section_code, groups: [] };
         }
         sectionMap[g.section_code].groups.push(g);
       });
+
       return {
         stage_id: s.stage_id,
         stage_name: s.stage_name,
         stage_order: s.stage_order,
-        sections: Object.values(sectionMap),
+        sections: Object.values(sectionMap).sort((a, b) => a.section_code.localeCompare(b.section_code)),
         total_groups: stageGroups.length,
         total_sections: Object.keys(sectionMap).length
       };

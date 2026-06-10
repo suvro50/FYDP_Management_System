@@ -34,6 +34,11 @@ io.on('connection', (socket) => {
     const room = `dm_${Math.min(u1, u2)}_${Math.max(u1, u2)}`;
     socket.join(room);
   });
+  // Admin joins the admin_room to receive real-time login alerts
+  socket.on('join_admin', () => {
+    socket.join('admin_room');
+    console.log(`Admin socket ${socket.id} joined admin_room`);
+  });
 });
 
 // ── Middleware ──────────────────────────────────────────────────────────────
@@ -47,7 +52,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    httpOnly: true
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 8 * 60 * 60 * 1000, // 8 hours
+    sameSite: 'lax'
   }
 }));
 
@@ -97,9 +105,6 @@ app.get('/admin/users', isAuth, requireRole('ADMIN'), (req, res) => {
 });
 app.get('/admin/groups', isAuth, requireRole('ADMIN'), (req, res) => {
   res.sendFile(path.join(__dirname, 'views/admin/groups.html'));
-});
-app.get('/admin/import', isAuth, requireRole('ADMIN'), (req, res) => {
-  res.sendFile(path.join(__dirname, 'views/admin/import.html'));
 });
 app.get('/admin/assign-supervisor', isAuth, requireRole('ADMIN'), (req, res) => {
   res.sendFile(path.join(__dirname, 'views/admin/assign_supervisor.html'));

@@ -94,6 +94,22 @@ router.post("/login", async (req, res) => {
       profile_photo: user.profile_photo,
     };
 
+    // 🔔 Real-time admin notification: broadcast login event to all connected admins
+    const io = req.app.get('io');
+    if (io && user.role !== 'ADMIN') {
+      io.to('admin_room').emit('user_login', {
+        user_id:       user.user_id,
+        full_name:     user.full_name,
+        email:         user.email,
+        role:          user.role,
+        university_id: user.university_id,
+        department:    user.department,
+        batch:         user.batch,
+        phone:         user.phone,
+        login_time:    new Date().toISOString(),
+      });
+    }
+
     res.json({
       success: true,
       redirect: getDashboardUrl(user.role),

@@ -3,294 +3,531 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Groups — FYDP System</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <title>Manage Groups — FYDP Admin</title>
+  <link rel="stylesheet" href="/css/admin-dark.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ── Page-specific styles ── */
+    .filter-bar {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+    }
+    .fi {
+      background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 7px 12px; font-size: 0.8rem;
+    }
+    .fi:focus { outline: none; border-color: var(--accent); }
+    .fi-select {
+      background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 7px 12px; font-size: 0.8rem; cursor: pointer;
+    }
+    .fi-select:focus { outline: none; border-color: var(--accent); }
+
+    /* Buttons */
+    .btn-view {
+      padding: 5px 10px; border-radius: 7px; font-size: 0.72rem; font-weight: 700;
+      background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-view:hover { background: rgba(99,102,241,0.2); }
+    .btn-promote {
+      padding: 5px 10px; border-radius: 7px; font-size: 0.72rem; font-weight: 700;
+      background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2);
+      cursor: pointer; transition: all 0.15s; margin-left: 4px;
+    }
+    .btn-promote:hover { background: rgba(16,185,129,0.2); }
+    .btn-export {
+      padding: 8px 16px; border-radius: 10px; font-size: 0.78rem; font-weight: 700;
+      background: var(--card2); border: 1px solid var(--border); color: var(--text2);
+      cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-export:hover { border-color: var(--accent); color: var(--accent2); }
+    .btn-outline-sm {
+      padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 600;
+      background: var(--card2); border: 1px solid var(--border); color: var(--text2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-outline-sm:hover { border-color: var(--text3); color: var(--text); }
+
+    /* Stage badges */
+    .stage-badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; white-space:nowrap; }
+    .stg-1 { background:rgba(99,102,241,0.1); color:#818cf8; border:1px solid rgba(99,102,241,0.2); }
+    .stg-2 { background:rgba(245,158,11,0.1); color:#f59e0b; border:1px solid rgba(245,158,11,0.2); }
+    .stg-3 { background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.2); }
+
+    /* Status badges */
+    .st-badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; }
+    .st-active    { background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.2); }
+    .st-completed { background:rgba(59,130,246,0.1); color:#60a5fa; border:1px solid rgba(59,130,246,0.2); }
+    .st-dropped   { background:rgba(239,68,68,0.1);  color:#ef4444; border:1px solid rgba(239,68,68,0.2); }
+
+    /* Pagination */
+    .pg-bar { display:flex; gap:4px; align-items:center; justify-content:center; padding:16px; }
+    .pg-bar button {
+      padding: 6px 12px; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+      background: var(--card2); border: 1px solid var(--border); color: var(--text2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .pg-bar button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent2); }
+    .pg-bar button.pg-active { background: rgba(99,102,241,0.15); color: #818cf8; border-color: rgba(99,102,241,0.3); }
+    .pg-bar button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── Modal ── */
+    .modal-ov {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: none; align-items: center; justify-content: center; z-index: 999;
+    }
+    .modal-ov.open { display: flex; }
+    .modal-box {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-head {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-head h3 { font-size: 1rem; font-weight: 800; color: #fff; }
+    .modal-close-btn {
+      width: 30px; height: 30px; border-radius: 8px; background: var(--card2);
+      border: 1px solid var(--border); color: var(--text2); cursor: pointer; font-size: 1rem;
+    }
+    .modal-body { padding: 20px; }
+    .modal-foot {
+      padding: 14px 20px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 10px;
+    }
+    .fg { margin-bottom: 14px; }
+    .fg label { font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 5px; }
+    .fg input, .fg select, .fg textarea {
+      width: 100%; background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0;
+      border-radius: 8px; padding: 9px 12px; font-size: 0.83rem; transition: border-color .15s;
+      font-family: 'Inter', sans-serif;
+    }
+    .fg input:focus, .fg select:focus, .fg textarea:focus { outline: none; border-color: #6366f1; }
+    .btn-save {
+      padding: 9px 20px; border-radius: 10px; font-size: 0.83rem; font-weight: 700;
+      background: linear-gradient(135deg,#10b981,#059669); color: #fff; border: none;
+      cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-save:hover { opacity: 0.85; }
+    .btn-cancel {
+      padding: 9px 20px; border-radius: 10px; font-size: 0.83rem; font-weight: 600;
+      background: var(--card2); border: 1px solid var(--border); color: var(--text2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-cancel:hover { border-color: var(--text3); color: var(--text); }
+
+    /* Members list */
+    .member-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .member-row:last-child { border-bottom: none; }
+    .mem-av {
+      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+      background: linear-gradient(135deg,#6366f1,#4f46e5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 800; color: #fff;
+    }
+
+    .sp { padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
+  </style>
 </head>
 <body>
-  <div class="app-layout">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="brand">
-          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
-          <div class="brand-text"><h3>FYDP System</h3><p>Admin Panel</p></div>
-        </div>
+<div class="adm-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="adm-sidebar">
+    <div class="adm-logo">
+      <div class="adm-logo-icon"><i class="fas fa-shield-alt"></i></div>
+      <div><h2>FYDP System</h2><span>Admin Panel</span></div>
+    </div>
+    <nav class="adm-nav">
+      <div class="adm-nav-label">Overview</div>
+      <a href="/admin/dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
+      <div class="adm-nav-label">Assignments</div>
+      <a href="/admin/assign-supervisor"><i class="fas fa-user-tie"></i> Supervisor Assign</a>
+      <a href="/admin/assign-groups"><i class="fas fa-layer-group"></i> FYDP Group Assign</a>
+      <a href="/admin/assign-teacher"><i class="fas fa-chalkboard-teacher"></i> Course Teacher Assign</a>
+      <div class="adm-nav-label">Management</div>
+      <a href="/admin/users"><i class="fas fa-users"></i> Manage Users</a>
+      <a href="/admin/groups" class="active"><i class="fas fa-folder-open"></i> Manage Groups</a>
+    </nav>
+    <div class="adm-sidebar-foot">
+      <div class="adm-user-av" id="userAvatar">AD</div>
+      <div class="adm-user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
+      <button class="adm-logout-btn" onclick="logout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="adm-main">
+    <header class="adm-topbar">
+      <div class="adm-breadcrumb">
+        <i class="fas fa-home"></i> Admin /
+        <a href="/admin/dashboard" style="color:var(--text2);text-decoration:none;">Dashboard</a> /
+        <span>Manage Groups</span>
       </div>
-      <nav class="sidebar-nav">
-        <div class="nav-label">Overview</div>
-        <a href="/admin/dashboard"><i class="fas fa-th-large" style="width:20px;text-align:center;"></i> Dashboard</a>
-
-        <div class="nav-label">Assignments</div>
-        <a href="/admin/assign-supervisor"><i class="fas fa-user-tie" style="width:20px;text-align:center;"></i> Supervisor Assign</a>
-        <a href="/admin/assign-groups"><i class="fas fa-layer-group" style="width:20px;text-align:center;"></i> FYDP Group Assign</a>
-        <a href="/admin/assign-teacher"><i class="fas fa-chalkboard-teacher" style="width:20px;text-align:center;"></i> Course Teacher Assign</a>
-
-        <div class="nav-label">Management</div>
-        <a href="/admin/users"><i class="fas fa-users" style="width:20px;text-align:center;"></i> Manage Users</a>
-        <a href="/admin/groups" class="active"><i class="fas fa-folder-open" style="width:20px;text-align:center;"></i> Manage Groups</a>
-        <a href="/admin/import"><i class="fas fa-file-import" style="width:20px;text-align:center;"></i> Bulk Import</a>
-      </nav>
-      <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="user-avatar" id="userAvatar">AD</div>
-          <div class="user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
-        </div>
+      <div class="adm-topbar-right">
+        <button class="adm-bell-btn" onclick="window.location.href='/notifications'">
+          <i class="fas fa-bell"></i>
+        </button>
       </div>
-    </aside>
+    </header>
 
-    <div class="main-content">
-      <header class="top-header">
-        <div class="breadcrumb"><i class="fas fa-home"></i> Admin / <span>Manage Groups</span></div>
-        <div class="header-actions">
-          <button class="notification-bell"><i class="fas fa-bell"></i><span class="badge" style="display:none">0</span></button>
-          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
-        </div>
-      </header>
+    <div class="adm-page">
 
-      <div class="page-content">
-        <div class="page-title">
-          <h1>📁 Manage Groups</h1>
-          <p>View project groups, promote stages, and manage assignments</p>
-        </div>
-
-        <!-- Filters -->
-        <div class="card" style="margin-bottom:20px;">
-          <div class="card-body" style="padding:16px 24px;">
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-              <input type="text" class="form-control" id="searchInput" placeholder="🔍 Search group code or title..." style="max-width:250px;" oninput="debounceSearch()">
-              <select class="form-control" id="filterStage" style="max-width:140px;" onchange="loadGroups()">
-                <option value="">All Stages</option>
-                <option value="FYDP-1">FYDP-1</option>
-                <option value="FYDP-2">FYDP-2</option>
-                <option value="FYDP-3">FYDP-3</option>
-              </select>
-              <select class="form-control" id="filterStatus" style="max-width:140px;" onchange="loadGroups()">
-                <option value="">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="DROPPED">Dropped</option>
-              </select>
-            </div>
+      <!-- Page Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px;flex-wrap:nowrap;">
+        <div style="display:flex;align-items:center;gap:14px;min-width:0;flex:1;">
+          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-folder-open" style="color:#fff;font-size:1.1rem;"></i>
+          </div>
+          <div style="min-width:0;">
+            <h1 style="font-size:1.3rem;font-weight:900;color:#fff;margin:0;white-space:nowrap;">Manage Groups</h1>
+            <p style="color:#64748b;font-size:0.78rem;margin:3px 0 0;white-space:nowrap;">View project groups, promote stages, and manage assignments</p>
           </div>
         </div>
-
-        <!-- Groups Table -->
-        <div class="card">
-          <div class="card-body" style="padding:0;">
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Group Code</th>
-                    <th>Project Title</th>
-                    <th>Domain</th>
-                    <th>Stage</th>
-                    <th>Supervisor</th>
-                    <th>Members</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="groupsTableBody">
-                  <tr><td colspan="8" style="text-align:center;color:#999;padding:40px;">Loading...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
+          <span class="sp" style="background:rgba(245,158,11,0.1);color:#f59e0b;white-space:nowrap;" id="pillTotal">0 Groups</span>
+          <button class="btn-export" onclick="exportCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
         </div>
-        <div class="pagination" id="pagination"></div>
       </div>
+
+      <!-- Groups Card -->
+      <div class="adm-card">
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <input type="text" class="fi" id="searchInput" placeholder="🔍 Search group code or title..." oninput="debounceSearch()" style="flex:1;min-width:180px;">
+          <select class="fi-select" id="filterStage" onchange="resetAndLoad()">
+            <option value="">All Stages</option>
+            <option value="FYDP-1">FYDP-1</option>
+            <option value="FYDP-2">FYDP-2</option>
+            <option value="FYDP-3">FYDP-3</option>
+          </select>
+          <select class="fi-select" id="filterStatus" onchange="resetAndLoad()">
+            <option value="">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="DROPPED">Dropped</option>
+          </select>
+          <button class="btn-outline-sm" onclick="resetFilters()"><i class="fas fa-undo"></i> Reset</button>
+        </div>
+
+        <!-- Table -->
+        <div style="overflow-x:auto;">
+          <table class="adm-table">
+            <thead>
+              <tr>
+                <th style="white-space:nowrap;">Group Code</th>
+                <th>Project Title</th>
+                <th style="white-space:nowrap;">Domain</th>
+                <th style="white-space:nowrap;">Stage</th>
+                <th style="white-space:nowrap;">Supervisor</th>
+                <th style="white-space:nowrap;">Members</th>
+                <th style="white-space:nowrap;">Status</th>
+                <th style="white-space:nowrap;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="groupsTableBody">
+              <tr><td colspan="8" style="text-align:center;color:#475569;padding:40px;">
+                <i class="fas fa-spinner fa-spin"></i> Loading groups...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pg-bar" id="pagination"></div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Promote Modal -->
+<div class="modal-ov" id="promoteModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>⬆️ Promote Group Stage</h3>
+      <button class="modal-close-btn" onclick="closePromote()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="promoteInfo" style="margin-bottom:16px;color:var(--text2);font-size:0.85rem;"></p>
+      <div class="fg">
+        <label>Target Stage *</label>
+        <select id="promoteStage"></select>
+      </div>
+      <div class="fg">
+        <label>New Domain (optional)</label>
+        <select id="promoteDomain">
+          <option value="">— Keep Current —</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>New Project Title (optional)</label>
+        <input type="text" id="promoteTitle">
+      </div>
+      <div class="fg">
+        <label>Change Reason *</label>
+        <textarea id="promoteReason" placeholder="Reason for promotion..." rows="3"></textarea>
+      </div>
+      <input type="hidden" id="promoteGroupId">
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closePromote()">Cancel</button>
+      <button class="btn-save" onclick="promoteGroup()"><i class="fas fa-arrow-up"></i> Promote</button>
     </div>
   </div>
+</div>
 
-  <!-- Promote Modal -->
-  <div class="modal-overlay" id="promoteModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>⬆️ Promote Group Stage</h3>
-        <button class="modal-close" onclick="closePromote()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p id="promoteInfo" style="margin-bottom:16px;color:#666;"></p>
-        <div class="form-group">
-          <label>Target Stage *</label>
-          <select class="form-control" id="promoteStage"></select>
-        </div>
-        <div class="form-group">
-          <label>New Project Title (optional)</label>
-          <input type="text" class="form-control" id="promoteTitle">
-        </div>
-        <div class="form-group">
-          <label>Change Reason *</label>
-          <textarea class="form-control" id="promoteReason" placeholder="Reason for promotion..."></textarea>
-        </div>
-        <input type="hidden" id="promoteGroupId">
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closePromote()">Cancel</button>
-        <button class="btn btn-success" onclick="promoteGroup()"><i class="fas fa-arrow-up"></i> Promote</button>
-      </div>
+<!-- Members Modal -->
+<div class="modal-ov" id="membersModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="membersTitle">Group Members</h3>
+      <button class="modal-close-btn" onclick="closeMembersModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="membersList"></div>
     </div>
   </div>
+</div>
 
-  <!-- Members Modal -->
-  <div class="modal-overlay" id="membersModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="membersTitle">Group Members</h3>
-        <button class="modal-close" onclick="closeMembersModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="membersList"></div>
-      </div>
-    </div>
-  </div>
+<script src="/js/main.js"></script>
+<script>
+  let currentPage = 1;
+  let searchTimer = null;
+  let stages = [];
+  let domains = [];
 
-  <script src="/js/main.js"></script>
-  <script>
-    let currentPage = 1;
-    let searchTimer = null;
-    let stages = [];
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const user = await getCurrentUser();
-      if (user) {
-        document.getElementById('userName').textContent = user.full_name;
-        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
-      }
-      const stageData = await apiFetch('/api/admin/stages');
-      stages = stageData.stages;
-      loadGroups();
-      updateNotificationCount();
-    });
-
-    function debounceSearch() {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => { currentPage = 1; loadGroups(); }, 300);
+  document.addEventListener('DOMContentLoaded', async () => {
+    const user = await getCurrentUser();
+    if (user) {
+      document.getElementById('userName').textContent = user.full_name;
+      document.getElementById('userAvatar').textContent = getInitials(user.full_name);
     }
+    // Load stages and domains for promote modal
+    const [stageData, domainData] = await Promise.all([
+      apiFetch('/api/admin/stages'),
+      apiFetch('/api/admin/domains')
+    ]);
+    stages = stageData.stages;
+    domains = domainData.domains;
+    loadGroups();
+  });
 
-    async function loadGroups() {
-      try {
-        const search = document.getElementById('searchInput').value;
-        const stage = document.getElementById('filterStage').value;
-        const status = document.getElementById('filterStatus').value;
-        let url = `/api/admin/groups?page=${currentPage}&limit=10`;
-        if (search) url += `&search=${encodeURIComponent(search)}`;
-        if (stage) url += `&stage=${stage}`;
-        if (status) url += `&status=${status}`;
+  function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { currentPage = 1; loadGroups(); }, 300);
+  }
 
-        const data = await apiFetch(url);
-        renderGroups(data.groups);
-        renderPagination(data.pagination);
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
+  function resetAndLoad() { currentPage = 1; loadGroups(); }
+
+  function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterStage').value = '';
+    document.getElementById('filterStatus').value = '';
+    currentPage = 1;
+    loadGroups();
+  }
+
+  async function loadGroups() {
+    try {
+      const search = document.getElementById('searchInput').value;
+      const stage = document.getElementById('filterStage').value;
+      const status = document.getElementById('filterStatus').value;
+      let url = `/api/admin/groups?page=${currentPage}&limit=10`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (stage) url += `&stage=${stage}`;
+      if (status) url += `&status=${status}`;
+
+      const data = await apiFetch(url);
+      renderGroups(data.groups);
+      renderPagination(data.pagination);
+      document.getElementById('pillTotal').textContent = `${data.pagination.total} Groups`;
+    } catch (err) {
+      showToast(err.message, 'error');
     }
+  }
 
-    function renderGroups(groups) {
-      const tbody = document.getElementById('groupsTableBody');
-      if (groups.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:40px;">No groups found</td></tr>';
-        return;
-      }
-      const stageBadge = s => {
-        const colors = {'FYDP-1':'badge-blue','FYDP-2':'badge-green','FYDP-3':'badge-purple'};
-        return `<span class="badge ${colors[s]||'badge-gray'}">${s}</span>`;
-      };
-      tbody.innerHTML = groups.map(g => `
-        <tr>
-          <td><strong>${escapeHtml(g.group_code)}</strong></td>
-          <td style="max-width:200px;">${escapeHtml(g.project_title)}</td>
-          <td><span class="badge badge-blue">${escapeHtml(g.domain_name)}</span></td>
-          <td>${stageBadge(g.stage_name)}</td>
-          <td>${escapeHtml(g.supervisor_name)}</td>
-          <td><span class="badge badge-gray">${g.member_count} 👤</span></td>
-          <td>${getStatusBadge(g.project_status)}</td>
-          <td>
-            <button class="btn btn-outline btn-sm" onclick="viewMembers(${g.group_id},'${escapeHtml(g.group_code)}')" title="View Members">
-              <i class="fas fa-users"></i>
+  function getStageBadge(stage) {
+    const map = {
+      'FYDP-1': '<span class="stage-badge stg-1">FYDP-1</span>',
+      'FYDP-2': '<span class="stage-badge stg-2">FYDP-2</span>',
+      'FYDP-3': '<span class="stage-badge stg-3">FYDP-3</span>'
+    };
+    return map[stage] || `<span class="stage-badge">${stage}</span>`;
+  }
+
+  function getGroupStatusBadge(status) {
+    const map = {
+      'ACTIVE': '<span class="st-badge st-active">Active</span>',
+      'COMPLETED': '<span class="st-badge st-completed">Completed</span>',
+      'DROPPED': '<span class="st-badge st-dropped">Dropped</span>'
+    };
+    return map[status] || `<span class="st-badge">${status}</span>`;
+  }
+
+  function renderGroups(groups) {
+    const tbody = document.getElementById('groupsTableBody');
+    if (groups.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#475569;padding:40px;">No groups found</td></tr>';
+      return;
+    }
+    tbody.innerHTML = groups.map(g => `
+      <tr>
+        <td><strong style="color:#818cf8;">${escapeHtml(g.group_code)}</strong></td>
+        <td style="max-width:200px;font-size:0.82rem;">${escapeHtml(g.project_title)}</td>
+        <td><span class="ab ab-blue">${escapeHtml(g.domain_name)}</span></td>
+        <td style="white-space:nowrap;">${getStageBadge(g.stage_name)}</td>
+        <td style="font-size:0.82rem;">${escapeHtml(g.supervisor_name)}</td>
+        <td><span class="ab ab-indigo">${g.member_count} 👤</span></td>
+        <td>${getGroupStatusBadge(g.project_status)}</td>
+        <td>
+          <button class="btn-view" onclick="viewMembers(${g.group_id},'${escapeHtml(g.group_code)}')" title="View Members">
+            <i class="fas fa-users"></i>
+          </button>
+          ${g.project_status === 'ACTIVE' ? `
+            <button class="btn-promote" onclick="openPromote(${g.group_id},'${escapeHtml(g.group_code)}','${g.stage_name}')" title="Promote" style="margin-left:4px;">
+              <i class="fas fa-arrow-up"></i>
             </button>
-            ${g.project_status === 'ACTIVE' ? `
-              <button class="btn btn-success btn-sm" onclick="openPromote(${g.group_id},'${escapeHtml(g.group_code)}','${g.stage_name}')" title="Promote" style="margin-left:4px;">
-                <i class="fas fa-arrow-up"></i>
-              </button>
-            ` : ''}
-          </td>
-        </tr>
-      `).join('');
-    }
+          ` : ''}
+        </td>
+      </tr>
+    `).join('');
+  }
 
-    function renderPagination(p) {
-      const el = document.getElementById('pagination');
-      if (p.totalPages <= 1) { el.innerHTML = ''; return; }
-      let html = `<button ${p.page<=1?'disabled':''} onclick="goToPage(${p.page-1})">«</button>`;
-      for (let i = 1; i <= p.totalPages; i++) {
-        html += `<button class="${i===p.page?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  function renderPagination(p) {
+    const el = document.getElementById('pagination');
+    if (p.totalPages <= 1) { el.innerHTML = ''; return; }
+    let html = `<button ${p.page <= 1 ? 'disabled' : ''} onclick="goToPage(${p.page - 1})">« Prev</button>`;
+    const start = Math.max(1, p.page - 2);
+    const end = Math.min(p.totalPages, p.page + 2);
+    if (start > 1) html += '<button disabled>...</button>';
+    for (let i = start; i <= end; i++) {
+      html += `<button class="${i === p.page ? 'pg-active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    }
+    if (end < p.totalPages) html += '<button disabled>...</button>';
+    html += `<button ${p.page >= p.totalPages ? 'disabled' : ''} onclick="goToPage(${p.page + 1})">Next »</button>`;
+    el.innerHTML = html;
+  }
+
+  function goToPage(page) { currentPage = page; loadGroups(); }
+
+  // ── Members Modal ─────────────────────────────────────────
+  async function viewMembers(groupId, code) {
+    try {
+      const data = await apiFetch(`/api/admin/groups/${groupId}/members`);
+      document.getElementById('membersTitle').textContent = `Members — ${code}`;
+      if (data.members.length === 0) {
+        document.getElementById('membersList').innerHTML = '<p style="color:var(--text3);text-align:center;padding:20px;">No members in this group</p>';
+      } else {
+        document.getElementById('membersList').innerHTML = data.members.map(m => `
+          <div class="member-row">
+            <div class="mem-av">${getInitials(m.full_name)}</div>
+            <div style="flex:1;">
+              <div style="font-size:0.85rem;font-weight:700;color:var(--text);">${escapeHtml(m.full_name)}</div>
+              <div style="font-size:0.72rem;color:var(--text3);">${escapeHtml(m.university_id)} · ${escapeHtml(m.email)}</div>
+            </div>
+            <span class="ab ab-indigo">${m.member_role}</span>
+          </div>
+        `).join('');
       }
-      html += `<button ${p.page>=p.totalPages?'disabled':''} onclick="goToPage(${p.page+1})">»</button>`;
-      el.innerHTML = html;
+      document.getElementById('membersModal').classList.add('open');
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  function closeMembersModal() { document.getElementById('membersModal').classList.remove('open'); }
+
+  // ── Promote Modal ─────────────────────────────────────────
+  function openPromote(groupId, code, currentStage) {
+    document.getElementById('promoteGroupId').value = groupId;
+    document.getElementById('promoteInfo').textContent = `Promoting ${code} from ${currentStage}`;
+    document.getElementById('promoteTitle').value = '';
+    document.getElementById('promoteReason').value = '';
+
+    const currentOrder = stages.find(s => s.stage_name === currentStage)?.stage_order || 0;
+    const select = document.getElementById('promoteStage');
+    select.innerHTML = stages.filter(s => s.stage_order > currentOrder)
+      .map(s => `<option value="${s.stage_id}">${s.stage_name}</option>`).join('');
+
+    if (select.options.length === 0) {
+      showToast('This group is already at the highest stage', 'warning');
+      return;
     }
 
-    function goToPage(page) { currentPage = page; loadGroups(); }
+    // Populate domain dropdown
+    const domSelect = document.getElementById('promoteDomain');
+    domSelect.innerHTML = '<option value="">— Keep Current —</option>' +
+      domains.map(d => `<option value="${d.domain_id}">${escapeHtml(d.domain_name)}</option>`).join('');
 
-    // Members modal
-    async function viewMembers(groupId, code) {
-      try {
-        const data = await apiFetch(`/api/admin/groups/${groupId}/members`);
-        document.getElementById('membersTitle').textContent = `Members — ${code}`;
-        document.getElementById('membersList').innerHTML = data.members.length === 0 ? '<p>No members</p>' :
-          '<table style="width:100%"><thead><tr><th>ID</th><th>Name</th><th>Role</th></tr></thead><tbody>' +
-          data.members.map(m => `<tr><td>${escapeHtml(m.university_id)}</td><td>${escapeHtml(m.full_name)}</td><td><span class="badge badge-blue">${m.member_role}</span></td></tr>`).join('') +
-          '</tbody></table>';
-        document.getElementById('membersModal').classList.add('active');
-      } catch (err) { showToast(err.message, 'error'); }
-    }
+    document.getElementById('promoteModal').classList.add('open');
+  }
 
-    function closeMembersModal() { document.getElementById('membersModal').classList.remove('active'); }
+  function closePromote() { document.getElementById('promoteModal').classList.remove('open'); }
 
-    // Promote modal
-    function openPromote(groupId, code, currentStage) {
-      document.getElementById('promoteGroupId').value = groupId;
-      document.getElementById('promoteInfo').textContent = `Promoting ${code} from ${currentStage}`;
-      document.getElementById('promoteTitle').value = '';
-      document.getElementById('promoteReason').value = '';
+  async function promoteGroup() {
+    const reason = document.getElementById('promoteReason').value;
+    if (!reason) { showToast('Please provide a reason', 'warning'); return; }
 
-      const currentOrder = stages.find(s => s.stage_name === currentStage)?.stage_order || 0;
-      const select = document.getElementById('promoteStage');
-      select.innerHTML = stages.filter(s => s.stage_order > currentOrder)
-        .map(s => `<option value="${s.stage_id}">${s.stage_name}</option>`).join('');
+    try {
+      showLoading();
+      await apiFetch('/api/admin/promote-group', {
+        method: 'POST',
+        body: {
+          group_id: document.getElementById('promoteGroupId').value,
+          new_stage_id: document.getElementById('promoteStage').value,
+          new_domain_id: document.getElementById('promoteDomain').value || null,
+          new_project_title: document.getElementById('promoteTitle').value || null,
+          change_reason: reason
+        }
+      });
+      showToast('Group promoted successfully!', 'success');
+      closePromote();
+      loadGroups();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally { hideLoading(); }
+  }
 
-      if (select.options.length === 0) {
-        showToast('This group is already at the highest stage', 'warning');
-        return;
-      }
-      document.getElementById('promoteModal').classList.add('active');
-    }
+  // ── Export CSV ─────────────────────────────────────────────
+  async function exportCSV() {
+    try {
+      showLoading();
+      const search = document.getElementById('searchInput').value;
+      const stage = document.getElementById('filterStage').value;
+      const status = document.getElementById('filterStatus').value;
+      let url = '/api/admin/groups?page=1&limit=9999';
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (stage) url += `&stage=${stage}`;
+      if (status) url += `&status=${status}`;
 
-    function closePromote() { document.getElementById('promoteModal').classList.remove('active'); }
+      const data = await apiFetch(url);
+      const groups = data.groups;
+      if (!groups.length) { showToast('No data to export', 'warning'); hideLoading(); return; }
 
-    async function promoteGroup() {
-      const reason = document.getElementById('promoteReason').value;
-      if (!reason) { showToast('Please provide a reason', 'warning'); return; }
+      const headers = ['Group Code', 'Project Title', 'Domain', 'Stage', 'Supervisor', 'Members', 'Section', 'Status'];
+      const rows = groups.map(g => [
+        g.group_code, g.project_title, g.domain_name, g.stage_name,
+        g.supervisor_name, g.member_count, g.section_code || '', g.project_status
+      ]);
 
-      try {
-        showLoading();
-        await apiFetch('/api/admin/promote-group', {
-          method: 'POST',
-          body: {
-            group_id: document.getElementById('promoteGroupId').value,
-            new_stage_id: document.getElementById('promoteStage').value,
-            new_project_title: document.getElementById('promoteTitle').value || null,
-            change_reason: reason
-          }
-        });
-        showToast('Group promoted successfully!', 'success');
-        closePromote();
-        loadGroups();
-      } catch (err) {
-        showToast(err.message, 'error');
-      } finally { hideLoading(); }
-    }
-  </script>
+      let csv = headers.join(',') + '\n';
+      rows.forEach(row => {
+        csv += row.map(v => `"${(String(v || '')).replace(/"/g, '""')}"`).join(',') + '\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `groups_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      showToast('CSV exported successfully', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally { hideLoading(); }
+  }
+</script>
 </body>
 </html>

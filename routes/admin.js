@@ -210,9 +210,26 @@ router.post("/users", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 router.put("/users/:id", async (req, res) => {
   try {
-    const { full_name, email, role, department, batch, phone, account_status } =
+    const { full_name, email, role, department, batch, phone, account_status, new_password } =
       req.body;
     const userId = req.params.id;
+
+    // Server-side validation
+    if (!full_name || !full_name.trim()) {
+      return res.status(400).json({ error: "Full name is required" });
+    }
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+    if (!role || !['STUDENT', 'SUPERVISOR', 'COURSE_TEACHER', 'ADMIN'].includes(role)) {
+      return res.status(400).json({ error: "Invalid role specified" });
+    }
+    if (account_status && !['ACTIVE', 'SUSPENDED', 'DEACTIVATED'].includes(account_status)) {
+      return res.status(400).json({ error: "Invalid account status" });
+    }
 
     // Resolve department name/short_code to department_id
     let departmentId = null;
@@ -231,16 +248,27 @@ router.put("/users/:id", async (req, res) => {
       `UPDATE users SET full_name=?, email=?, role=?, department_id=COALESCE(?, department_id), batch=?, phone=?, account_status=?
        WHERE user_id=?`,
       [
-        full_name,
-        email,
+        full_name.trim(),
+        email.trim(),
         role,
         departmentId,
         batch || null,
         phone || null,
-        account_status,
+        account_status || 'ACTIVE',
         userId,
       ],
     );
+
+    // Handle password reset if new_password is provided
+    if (new_password && new_password.trim()) {
+      if (new_password.length < 4) {
+        return res.status(400).json({ error: "Password must be at least 4 characters" });
+      }
+      await db.query(
+        `UPDATE users SET password_hash = SHA2(?, 256) WHERE user_id = ?`,
+        [new_password, userId]
+      );
+    }
 
     res.json({ success: true, message: "User updated successfully" });
   } catch (err) {
@@ -259,10 +287,18 @@ router.put("/users/:id", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 router.delete("/users/:id", async (req, res) => {
   try {
+    const targetId = parseInt(req.params.id);
+    const currentUserId = req.session?.user?.user_id;
+
+    // Prevent self-deactivation
+    if (targetId === currentUserId) {
+      return res.status(400).json({ error: "You cannot deactivate your own account" });
+    }
+
     await db.query(
       `UPDATE users SET is_active = 0, deleted_at = NOW(), account_status = 'DEACTIVATED'
        WHERE user_id = ?`,
-      [req.params.id],
+      [targetId],
     );
     res.json({ success: true, message: "User deactivated successfully" });
   } catch (err) {

@@ -1,362 +1,563 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Users — FYDP System</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <title>Manage Users — FYDP Admin</title>
+  <link rel="stylesheet" href="/css/admin-dark.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ── Page-specific styles ── */
+    .filter-bar {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+    }
+    .fi {
+      background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 7px 12px; font-size: 0.8rem;
+    }
+    .fi:focus { outline: none; border-color: var(--accent); }
+    .fi-select {
+      background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 7px 12px; font-size: 0.8rem; cursor: pointer;
+    }
+    .fi-select:focus { outline: none; border-color: var(--accent); }
+
+    /* Buttons */
+    .btn-add {
+      padding: 8px 18px; border-radius: 10px; font-size: 0.82rem; font-weight: 700;
+      background: linear-gradient(135deg,#6366f1,#4f46e5); color: #fff; border: none;
+      cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; gap: 7px;
+    }
+    .btn-add:hover { opacity: 0.85; }
+    .btn-export {
+      padding: 8px 16px; border-radius: 10px; font-size: 0.78rem; font-weight: 700;
+      background: var(--card2); border: 1px solid var(--border); color: var(--text2);
+      cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-export:hover { border-color: var(--accent); color: var(--accent2); }
+    .btn-edit {
+      padding: 5px 10px; border-radius: 7px; font-size: 0.72rem; font-weight: 700;
+      background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-edit:hover { background: rgba(99,102,241,0.2); }
+    .btn-del {
+      padding: 5px 10px; border-radius: 7px; font-size: 0.72rem; font-weight: 700;
+      background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2);
+      cursor: pointer; transition: all 0.15s; margin-left: 4px;
+    }
+    .btn-del:hover { background: rgba(239,68,68,0.2); }
+    .btn-reset {
+      padding: 5px 10px; border-radius: 7px; font-size: 0.72rem; font-weight: 700;
+      background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2);
+      cursor: pointer; transition: all 0.15s; margin-left: 4px;
+    }
+    .btn-reset:hover { background: rgba(245,158,11,0.2); }
+    .btn-outline-sm {
+      padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 600;
+      background: var(--card2); border: 1px solid var(--border); color: var(--text2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-outline-sm:hover { border-color: var(--text3); color: var(--text); }
+
+    /* Role badges for dark theme */
+    .role-badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; }
+    .rb-admin   { background:rgba(168,85,247,0.1); color:#c084fc; border:1px solid rgba(168,85,247,0.2); }
+    .rb-supervisor { background:rgba(59,130,246,0.1); color:#60a5fa; border:1px solid rgba(59,130,246,0.2); }
+    .rb-teacher { background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.2); }
+    .rb-student { background:rgba(245,158,11,0.1); color:#f59e0b; border:1px solid rgba(245,158,11,0.2); }
+
+    /* Status badges */
+    .sb { display:inline-block; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; }
+    .sb-active    { background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.2); }
+    .sb-suspended { background:rgba(239,68,68,0.1);  color:#ef4444; border:1px solid rgba(239,68,68,0.2); }
+    .sb-deactivated { background:rgba(100,116,139,0.1); color:#94a3b8; border:1px solid rgba(100,116,139,0.2); }
+
+    /* Pagination */
+    .pg-bar { display:flex; gap:4px; align-items:center; justify-content:center; padding:16px; }
+    .pg-bar button {
+      padding: 6px 12px; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+      background: var(--card2); border: 1px solid var(--border); color: var(--text2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .pg-bar button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent2); }
+    .pg-bar button.pg-active { background: rgba(99,102,241,0.15); color: #818cf8; border-color: rgba(99,102,241,0.3); }
+    .pg-bar button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── Modal ── */
+    .modal-ov {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: none; align-items: center; justify-content: center; z-index: 999;
+    }
+    .modal-ov.open { display: flex; }
+    .modal-box {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      width: 580px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-head {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-head h3 { font-size: 1rem; font-weight: 800; color: #fff; }
+    .modal-close-btn {
+      width: 30px; height: 30px; border-radius: 8px; background: var(--card2);
+      border: 1px solid var(--border); color: var(--text2); cursor: pointer; font-size: 1rem;
+    }
+    .modal-body { padding: 20px; }
+    .modal-foot {
+      padding: 14px 20px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 10px;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .fg { margin-bottom: 0; }
+    .fg label { font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 5px; }
+    .fg input, .fg select {
+      width: 100%; background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0;
+      border-radius: 8px; padding: 9px 12px; font-size: 0.83rem; transition: border-color .15s;
+    }
+    .fg input:focus, .fg select:focus { outline: none; border-color: #6366f1; }
+    .btn-save {
+      padding: 9px 20px; border-radius: 10px; font-size: 0.83rem; font-weight: 700;
+      background: linear-gradient(135deg,#6366f1,#4f46e5); color: #fff; border: none;
+      cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-save:hover { opacity: 0.85; }
+    .btn-cancel {
+      padding: 9px 20px; border-radius: 10px; font-size: 0.83rem; font-weight: 600;
+      background: var(--card2); border: 1px solid var(--border); color: var(--text2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-cancel:hover { border-color: var(--text3); color: var(--text); }
+
+    /* Confirm modal */
+    .confirm-body { text-align: center; padding: 10px 0; }
+    .confirm-body i { font-size: 2.5rem; color: #ef4444; margin-bottom: 14px; display: block; }
+    .confirm-body h4 { font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    .confirm-body p { font-size: 0.85rem; color: var(--text2); line-height: 1.6; }
+    .btn-danger {
+      padding: 9px 20px; border-radius: 10px; font-size: 0.83rem; font-weight: 700;
+      background: linear-gradient(135deg,#ef4444,#dc2626); color: #fff; border: none;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-danger:hover { opacity: 0.85; }
+
+    /* Stat pills row */
+    .stat-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .sp { padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
+  </style>
 </head>
-
 <body>
-  <div class="app-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="brand">
-          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
-          <div class="brand-text">
-            <h3>FYDP System</h3>
-            <p>Admin Panel</p>
-          </div>
-        </div>
-      </div>
-      <nav class="sidebar-nav">
-        <div class="nav-label">Overview</div>
-        <a href="/admin/dashboard"><i class="fas fa-th-large" style="width:20px;text-align:center;"></i> Dashboard</a>
+<div class="adm-layout">
 
-        <div class="nav-label">Assignments</div>
-        <a href="/admin/assign-supervisor"><i class="fas fa-user-tie" style="width:20px;text-align:center;"></i>
-          Supervisor Assign</a>
-        <a href="/admin/assign-groups"><i class="fas fa-layer-group" style="width:20px;text-align:center;"></i> FYDP
-          Group Assign</a>
-        <a href="/admin/assign-teacher"><i class="fas fa-chalkboard-teacher" style="width:20px;text-align:center;"></i>
-          Course Teacher Assign</a>
-
-        <div class="nav-label">Management</div>
-        <a href="/admin/users" class="active"><i class="fas fa-users" style="width:20px;text-align:center;"></i> Manage
-          Users</a>
-        <a href="/admin/groups"><i class="fas fa-folder-open" style="width:20px;text-align:center;"></i> Manage
-          Groups</a>
-        <a href="/admin/import"><i class="fas fa-file-import" style="width:20px;text-align:center;"></i> Bulk Import</a>
-      </nav>
-      <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="user-avatar" id="userAvatar">AD</div>
-          <div class="user-info">
-            <h4 id="userName">Admin</h4>
-            <p>Administrator</p>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main -->
-    <div class="main-content">
-      <header class="top-header">
-        <div class="breadcrumb"><i class="fas fa-home"></i> Admin / <span>Manage Users</span></div>
-        <div class="header-actions">
-          <button class="notification-bell"><i class="fas fa-bell"></i><span class="badge"
-              style="display:none">0</span></button>
-          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
-        </div>
-      </header>
-
-      <div class="page-content">
-        <div class="page-title" style="display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <h1>👥 Manage Users</h1>
-            <p>View, add, edit, and manage all system users</p>
-          </div>
-          <button class="btn btn-primary" onclick="openAddModal()">
-            <i class="fas fa-plus"></i> Add User
-          </button>
-        </div>
-
-        <!-- Filters -->
-        <div class="card" style="margin-bottom:20px;">
-          <div class="card-body" style="padding:16px 24px;">
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-              <input type="text" class="form-control" id="searchInput" placeholder="🔍 Search by name, ID, or email..."
-                style="max-width:280px;" oninput="debounceSearch()">
-              <select class="form-control" id="filterRole" style="max-width:160px;" onchange="loadUsers()">
-                <option value="">All Roles</option>
-                <option value="STUDENT">Student</option>
-                <option value="SUPERVISOR">Supervisor</option>
-                <option value="COURSE_TEACHER">Course Teacher</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-              <select class="form-control" id="filterStatus" style="max-width:160px;" onchange="loadUsers()">
-                <option value="">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="SUSPENDED">Suspended</option>
-                <option value="DEACTIVATED">Deactivated</option>
-              </select>
-              <button class="btn btn-outline btn-sm" onclick="resetFilters()">Reset</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Users Table -->
-        <div class="card">
-          <div class="card-body" style="padding:0;">
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>University ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Department</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="usersTableBody">
-                  <tr>
-                    <td colspan="7" style="text-align:center;color:#999;padding:40px;">Loading users...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div class="pagination" id="pagination"></div>
-      </div>
+  <!-- SIDEBAR -->
+  <aside class="adm-sidebar">
+    <div class="adm-logo">
+      <div class="adm-logo-icon"><i class="fas fa-shield-alt"></i></div>
+      <div><h2>FYDP System</h2><span>Admin Panel</span></div>
     </div>
-  </div>
+    <nav class="adm-nav">
+      <div class="adm-nav-label">Overview</div>
+      <a href="/admin/dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
+      <div class="adm-nav-label">Assignments</div>
+      <a href="/admin/assign-supervisor"><i class="fas fa-user-tie"></i> Supervisor Assign</a>
+      <a href="/admin/assign-groups"><i class="fas fa-layer-group"></i> FYDP Group Assign</a>
+      <a href="/admin/assign-teacher"><i class="fas fa-chalkboard-teacher"></i> Course Teacher Assign</a>
+      <div class="adm-nav-label">Management</div>
+      <a href="/admin/users" class="active"><i class="fas fa-users"></i> Manage Users</a>
+      <a href="/admin/groups"><i class="fas fa-folder-open"></i> Manage Groups</a>
+    </nav>
+    <div class="adm-sidebar-foot">
+      <div class="adm-user-av" id="userAvatar">AD</div>
+      <div class="adm-user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
+      <button class="adm-logout-btn" onclick="logout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </aside>
 
-  <!-- Add/Edit User Modal -->
-  <div class="modal-overlay" id="userModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="modalTitle">Add New User</h3>
-        <button class="modal-close" onclick="closeModal()">&times;</button>
+  <!-- MAIN -->
+  <main class="adm-main">
+    <header class="adm-topbar">
+      <div class="adm-breadcrumb">
+        <i class="fas fa-home"></i> Admin /
+        <a href="/admin/dashboard" style="color:var(--text2);text-decoration:none;">Dashboard</a> /
+        <span>Manage Users</span>
       </div>
-      <div class="modal-body">
-        <form id="userForm">
-          <input type="hidden" id="editUserId">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-            <div class="form-group">
-              <label>University ID *</label>
-              <input type="text" class="form-control" id="formUniId" required>
-            </div>
-            <div class="form-group">
-              <label>Full Name *</label>
-              <input type="text" class="form-control" id="formName" required>
-            </div>
-            <div class="form-group">
-              <label>Email *</label>
-              <input type="email" class="form-control" id="formEmail" required>
-            </div>
-            <div class="form-group" id="passwordGroup">
-              <label>Password *</label>
-              <input type="password" class="form-control" id="formPassword">
-            </div>
-            <div class="form-group">
-              <label>Role *</label>
-              <select class="form-control" id="formRole" required>
-                <option value="STUDENT">Student</option>
-                <option value="SUPERVISOR">Supervisor</option>
-                <option value="COURSE_TEACHER">Course Teacher</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Department *</label>
-              <input type="text" class="form-control" id="formDept" value="CSE" required>
-            </div>
-            <div class="form-group">
-              <label>Batch</label>
-              <input type="text" class="form-control" id="formBatch" placeholder="e.g. B.Sc 57">
-            </div>
-            <div class="form-group">
-              <label>Phone</label>
-              <input type="text" class="form-control" id="formPhone">
-            </div>
-            <div class="form-group" id="statusGroup" style="display:none;">
-              <label>Account Status</label>
-              <select class="form-control" id="formStatus">
-                <option value="ACTIVE">Active</option>
-                <option value="SUSPENDED">Suspended</option>
-                <option value="DEACTIVATED">Deactivated</option>
-              </select>
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" id="saveBtn" onclick="saveUser()">
-          <i class="fas fa-save"></i> Save User
+      <div class="adm-topbar-right">
+        <button class="adm-bell-btn" onclick="window.location.href='/notifications'">
+          <i class="fas fa-bell"></i>
         </button>
       </div>
+    </header>
+
+    <div class="adm-page">
+
+      <!-- Page Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px;flex-wrap:nowrap;">
+        <div style="display:flex;align-items:center;gap:14px;min-width:0;flex:1;">
+          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-users" style="color:#fff;font-size:1.1rem;"></i>
+          </div>
+          <div style="min-width:0;">
+            <h1 style="font-size:1.3rem;font-weight:900;color:#fff;margin:0;white-space:nowrap;">Manage Users</h1>
+            <p style="color:#64748b;font-size:0.78rem;margin:3px 0 0;white-space:nowrap;">View, add, edit, and manage all system users</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
+          <div class="stat-pills" id="statPills">
+            <span class="sp" style="background:rgba(99,102,241,0.1);color:#818cf8;white-space:nowrap;" id="pillTotal">0 Total</span>
+          </div>
+          <button class="btn-export" onclick="exportCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
+          <button class="btn-add" onclick="openAddModal()"><i class="fas fa-plus"></i> Add User</button>
+        </div>
+      </div>
+
+      <!-- Users Card -->
+      <div class="adm-card">
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <input type="text" class="fi" id="searchInput" placeholder="🔍 Search by name, ID, or email..." oninput="debounceSearch()" style="flex:1;min-width:180px;">
+          <select class="fi-select" id="filterRole" onchange="resetAndLoad()">
+            <option value="">All Roles</option>
+            <option value="STUDENT">Student</option>
+            <option value="SUPERVISOR">Supervisor</option>
+            <option value="COURSE_TEACHER">Course Teacher</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+          <select class="fi-select" id="filterStatus" onchange="resetAndLoad()">
+            <option value="">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="SUSPENDED">Suspended</option>
+            <option value="DEACTIVATED">Deactivated</option>
+          </select>
+          <button class="btn-outline-sm" onclick="resetFilters()"><i class="fas fa-undo"></i> Reset</button>
+        </div>
+
+        <!-- Table -->
+        <div style="overflow-x:auto;">
+          <table class="adm-table">
+            <thead>
+              <tr>
+                <th>University ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr><td colspan="7" style="text-align:center;color:#475569;padding:40px;">
+                <i class="fas fa-spinner fa-spin"></i> Loading users...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pg-bar" id="pagination"></div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit User Modal -->
+<div class="modal-ov" id="userModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalTitle">Add New User</h3>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="userForm" onsubmit="return false;">
+        <input type="hidden" id="editUserId">
+        <div class="form-grid">
+          <div class="fg">
+            <label>University ID *</label>
+            <input type="text" id="formUniId" required>
+          </div>
+          <div class="fg">
+            <label>Full Name *</label>
+            <input type="text" id="formName" required>
+          </div>
+          <div class="fg">
+            <label>Email *</label>
+            <input type="email" id="formEmail" required>
+          </div>
+          <div class="fg" id="passwordGroup">
+            <label>Password *</label>
+            <input type="password" id="formPassword">
+          </div>
+          <div class="fg">
+            <label>Role *</label>
+            <select id="formRole" required>
+              <option value="STUDENT">Student</option>
+              <option value="SUPERVISOR">Supervisor</option>
+              <option value="COURSE_TEACHER">Course Teacher</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Department *</label>
+            <input type="text" id="formDept" value="CSE" required>
+          </div>
+          <div class="fg">
+            <label>Batch</label>
+            <input type="text" id="formBatch" placeholder="e.g. B.Sc 57">
+          </div>
+          <div class="fg">
+            <label>Phone</label>
+            <input type="text" id="formPhone">
+          </div>
+          <div class="fg" id="statusGroup" style="display:none;">
+            <label>Account Status</label>
+            <select id="formStatus">
+              <option value="ACTIVE">Active</option>
+              <option value="SUSPENDED">Suspended</option>
+              <option value="DEACTIVATED">Deactivated</option>
+            </select>
+          </div>
+          <div class="fg" id="resetPwGroup" style="display:none;">
+            <label>Reset Password</label>
+            <input type="password" id="formResetPw" placeholder="Leave blank to keep current">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveUser()"><i class="fas fa-save"></i> Save User</button>
     </div>
   </div>
+</div>
 
-  <script src="/js/main.js"></script>
-  <script>
-    let currentPage = 1;
-    let searchTimer = null;
+<!-- Confirm Delete Modal -->
+<div class="modal-ov" id="confirmModal">
+  <div class="modal-box" style="width:420px;">
+    <div class="modal-head">
+      <h3>Confirm Action</h3>
+      <button class="modal-close-btn" onclick="closeConfirm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-body">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h4 id="confirmTitle">Are you sure?</h4>
+        <p id="confirmMsg">This action cannot be undone.</p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-danger" id="confirmBtn" onclick="confirmAction()"><i class="fas fa-trash"></i> Deactivate</button>
+    </div>
+  </div>
+</div>
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      const user = await getCurrentUser();
-      if (user) {
-        document.getElementById('userName').textContent = user.full_name;
-        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
-      }
-      loadUsers();
-      updateNotificationCount();
-    });
+<script src="/js/main.js"></script>
+<script>
+  let currentPage = 1;
+  let searchTimer = null;
+  let currentUserId = null; // logged-in admin's user_id
+  let pendingConfirmAction = null;
 
-    function debounceSearch() {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => { currentPage = 1; loadUsers(); }, 300);
+  document.addEventListener('DOMContentLoaded', async () => {
+    const user = await getCurrentUser();
+    if (user) {
+      currentUserId = user.user_id;
+      document.getElementById('userName').textContent = user.full_name;
+      document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+    }
+    loadUsers();
+  });
+
+  function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { currentPage = 1; loadUsers(); }, 300);
+  }
+
+  function resetAndLoad() { currentPage = 1; loadUsers(); }
+
+  function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterRole').value = '';
+    document.getElementById('filterStatus').value = '';
+    currentPage = 1;
+    loadUsers();
+  }
+
+  async function loadUsers() {
+    try {
+      const search = document.getElementById('searchInput').value;
+      const role = document.getElementById('filterRole').value;
+      const status = document.getElementById('filterStatus').value;
+
+      let url = `/api/admin/users?page=${currentPage}&limit=10`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (role) url += `&role=${role}`;
+      if (status) url += `&status=${status}`;
+
+      const data = await apiFetch(url);
+      renderUsers(data.users);
+      renderPagination(data.pagination);
+      document.getElementById('pillTotal').textContent = `${data.pagination.total} Total`;
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  function getDarkRoleBadge(role) {
+    const map = {
+      'ADMIN': '<span class="role-badge rb-admin">ADMIN</span>',
+      'SUPERVISOR': '<span class="role-badge rb-supervisor">SUPERVISOR</span>',
+      'COURSE_TEACHER': '<span class="role-badge rb-teacher">COURSE TEACHER</span>',
+      'STUDENT': '<span class="role-badge rb-student">STUDENT</span>'
+    };
+    return map[role] || `<span class="role-badge">${role}</span>`;
+  }
+
+  function getDarkStatusBadge(status) {
+    const map = {
+      'ACTIVE': '<span class="sb sb-active">Active</span>',
+      'SUSPENDED': '<span class="sb sb-suspended">Suspended</span>',
+      'DEACTIVATED': '<span class="sb sb-deactivated">Deactivated</span>'
+    };
+    return map[status] || `<span class="sb">${status}</span>`;
+  }
+
+  function renderUsers(users) {
+    const tbody = document.getElementById('usersTableBody');
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#475569;padding:40px;">No users found</td></tr>';
+      return;
+    }
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td><strong style="color:#818cf8;">${escapeHtml(u.university_id)}</strong></td>
+        <td style="font-weight:600;">${escapeHtml(u.full_name)}</td>
+        <td style="font-size:0.78rem;color:var(--text2);">${escapeHtml(u.email)}</td>
+        <td>${getDarkRoleBadge(u.role)}</td>
+        <td style="font-size:0.8rem;">${escapeHtml(u.department || '—')}</td>
+        <td>${getDarkStatusBadge(u.account_status)}</td>
+        <td>
+          <button class="btn-edit" onclick='editUser(${JSON.stringify(u)})' title="Edit">
+            <i class="fas fa-edit"></i>
+          </button>
+          ${u.role !== 'ADMIN' || u.user_id !== currentUserId ? `
+            ${u.role !== 'ADMIN' ? `<button class="btn-del" onclick="deleteUser(${u.user_id},'${escapeHtml(u.full_name)}')" title="Deactivate">
+              <i class="fas fa-trash"></i>
+            </button>` : ''}
+          ` : ''}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderPagination(p) {
+    const el = document.getElementById('pagination');
+    if (p.totalPages <= 1) { el.innerHTML = ''; return; }
+    let html = `<button ${p.page <= 1 ? 'disabled' : ''} onclick="goToPage(${p.page - 1})">« Prev</button>`;
+    const start = Math.max(1, p.page - 2);
+    const end = Math.min(p.totalPages, p.page + 2);
+    if (start > 1) html += '<button disabled>...</button>';
+    for (let i = start; i <= end; i++) {
+      html += `<button class="${i === p.page ? 'pg-active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    }
+    if (end < p.totalPages) html += '<button disabled>...</button>';
+    html += `<button ${p.page >= p.totalPages ? 'disabled' : ''} onclick="goToPage(${p.page + 1})">Next »</button>`;
+    el.innerHTML = html;
+  }
+
+  function goToPage(page) { currentPage = page; loadUsers(); }
+
+  // ── Modal Functions ─────────────────────────────────────────
+  function openAddModal() {
+    document.getElementById('modalTitle').textContent = 'Add New User';
+    document.getElementById('editUserId').value = '';
+    document.getElementById('userForm').reset();
+    document.getElementById('formDept').value = 'CSE';
+    document.getElementById('passwordGroup').style.display = '';
+    document.getElementById('statusGroup').style.display = 'none';
+    document.getElementById('resetPwGroup').style.display = 'none';
+    document.getElementById('userModal').classList.add('open');
+  }
+
+  function editUser(u) {
+    document.getElementById('modalTitle').textContent = 'Edit User';
+    document.getElementById('editUserId').value = u.user_id;
+    document.getElementById('formUniId').value = u.university_id;
+    document.getElementById('formName').value = u.full_name;
+    document.getElementById('formEmail').value = u.email;
+    document.getElementById('formRole').value = u.role;
+    document.getElementById('formDept').value = u.department || 'CSE';
+    document.getElementById('formBatch').value = u.batch || '';
+    document.getElementById('formPhone').value = u.phone || '';
+    document.getElementById('formStatus').value = u.account_status;
+    document.getElementById('formResetPw').value = '';
+    document.getElementById('passwordGroup').style.display = 'none';
+    document.getElementById('statusGroup').style.display = '';
+    document.getElementById('resetPwGroup').style.display = '';
+    document.getElementById('userModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('userModal').classList.remove('open');
+  }
+
+  async function saveUser() {
+    const userId = document.getElementById('editUserId').value;
+    const userData = {
+      university_id: document.getElementById('formUniId').value.trim(),
+      full_name: document.getElementById('formName').value.trim(),
+      email: document.getElementById('formEmail').value.trim(),
+      role: document.getElementById('formRole').value,
+      department: document.getElementById('formDept').value.trim(),
+      batch: document.getElementById('formBatch').value.trim(),
+      phone: document.getElementById('formPhone').value.trim()
+    };
+
+    if (!userData.university_id || !userData.full_name || !userData.email || !userData.department) {
+      showToast('Please fill all required fields', 'warning');
+      return;
     }
 
-    function resetFilters() {
-      document.getElementById('searchInput').value = '';
-      document.getElementById('filterRole').value = '';
-      document.getElementById('filterStatus').value = '';
-      currentPage = 1;
-      loadUsers();
-    }
-
-    async function loadUsers() {
-      try {
-        const search = document.getElementById('searchInput').value;
-        const role = document.getElementById('filterRole').value;
-        const status = document.getElementById('filterStatus').value;
-
-        let url = `/api/admin/users?page=${currentPage}&limit=10`;
-        if (search) url += `&search=${encodeURIComponent(search)}`;
-        if (role) url += `&role=${role}`;
-        if (status) url += `&status=${status}`;
-
-        const data = await apiFetch(url);
-        renderUsers(data.users);
-        renderPagination(data.pagination);
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    }
-
-    function renderUsers(users) {
-      const tbody = document.getElementById('usersTableBody');
-      if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:40px;">No users found</td></tr>';
-        return;
-      }
-      tbody.innerHTML = users.map(u => `
-        <tr>
-          <td><strong>${escapeHtml(u.university_id)}</strong></td>
-          <td>${escapeHtml(u.full_name)}</td>
-          <td style="font-size:0.8rem;">${escapeHtml(u.email)}</td>
-          <td><span class="badge ${getRoleBadgeClass(u.role)}">${u.role}</span></td>
-          <td>${escapeHtml(u.department)}</td>
-          <td>${getStatusBadge(u.account_status)}</td>
-          <td>
-            <button class="btn btn-outline btn-sm" onclick='editUser(${JSON.stringify(u)})' title="Edit">
-              <i class="fas fa-edit"></i>
-            </button>
-            ${u.role !== 'ADMIN' ? `
-              <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.user_id},'${escapeHtml(u.full_name)}')" title="Deactivate" style="margin-left:4px;">
-                <i class="fas fa-trash"></i>
-              </button>
-            ` : ''}
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    function renderPagination(p) {
-      const el = document.getElementById('pagination');
-      if (p.totalPages <= 1) { el.innerHTML = ''; return; }
-      let html = `<button ${p.page <= 1 ? 'disabled' : ''} onclick="goToPage(${p.page - 1})">« Prev</button>`;
-      for (let i = 1; i <= p.totalPages; i++) {
-        html += `<button class="${i === p.page ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
-      }
-      html += `<button ${p.page >= p.totalPages ? 'disabled' : ''} onclick="goToPage(${p.page + 1})">Next »</button>`;
-      el.innerHTML = html;
-    }
-
-    function goToPage(page) { currentPage = page; loadUsers(); }
-
-    // ── Modal Functions ──────────────────────────────────────
-    function openAddModal() {
-      document.getElementById('modalTitle').textContent = 'Add New User';
-      document.getElementById('editUserId').value = '';
-      document.getElementById('userForm').reset();
-      document.getElementById('formDept').value = 'CSE';
-      document.getElementById('passwordGroup').style.display = '';
-      document.getElementById('statusGroup').style.display = 'none';
-      document.getElementById('userModal').classList.add('active');
-    }
-
-    function editUser(u) {
-      document.getElementById('modalTitle').textContent = 'Edit User';
-      document.getElementById('editUserId').value = u.user_id;
-      document.getElementById('formUniId').value = u.university_id;
-      document.getElementById('formName').value = u.full_name;
-      document.getElementById('formEmail').value = u.email;
-      document.getElementById('formRole').value = u.role;
-      document.getElementById('formDept').value = u.department;
-      document.getElementById('formBatch').value = u.batch || '';
-      document.getElementById('formPhone').value = u.phone || '';
-      document.getElementById('formStatus').value = u.account_status;
-      document.getElementById('passwordGroup').style.display = 'none';
-      document.getElementById('statusGroup').style.display = '';
-      document.getElementById('userModal').classList.add('active');
-    }
-
-    function closeModal() {
-      document.getElementById('userModal').classList.remove('active');
-    }
-
-    async function saveUser() {
-      const userId = document.getElementById('editUserId').value;
-      const userData = {
-        university_id: document.getElementById('formUniId').value,
-        full_name: document.getElementById('formName').value,
-        email: document.getElementById('formEmail').value,
-        role: document.getElementById('formRole').value,
-        department: document.getElementById('formDept').value,
-        batch: document.getElementById('formBatch').value,
-        phone: document.getElementById('formPhone').value
-      };
-
-      if (!userData.university_id || !userData.full_name || !userData.email || !userData.department) {
-        showToast('Please fill all required fields', 'warning');
-        return;
-      }
-
-      try {
-        showLoading();
-        if (userId) {
-          // Edit
-          userData.account_status = document.getElementById('formStatus').value;
-          await apiFetch(`/api/admin/users/${userId}`, { method: 'PUT', body: userData });
-          showToast('User updated successfully', 'success');
-        } else {
-          // Add
-          userData.password = document.getElementById('formPassword').value;
-          if (!userData.password) { showToast('Password is required', 'warning'); hideLoading(); return; }
-          await apiFetch('/api/admin/users', { method: 'POST', body: userData });
-          showToast('User created successfully', 'success');
+    try {
+      showLoading();
+      if (userId) {
+        // Edit
+        userData.account_status = document.getElementById('formStatus').value;
+        const resetPw = document.getElementById('formResetPw').value;
+        if (resetPw) {
+          userData.new_password = resetPw;
         }
-        closeModal();
-        loadUsers();
-      } catch (err) {
-        showToast(err.message, 'error');
-      } finally {
-        hideLoading();
+        await apiFetch(`/api/admin/users/${userId}`, { method: 'PUT', body: userData });
+        showToast('User updated successfully', 'success');
+      } else {
+        // Add
+        userData.password = document.getElementById('formPassword').value;
+        if (!userData.password) { showToast('Password is required', 'warning'); hideLoading(); return; }
+        await apiFetch('/api/admin/users', { method: 'POST', body: userData });
+        showToast('User created successfully', 'success');
       }
+      closeModal();
+      loadUsers();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      hideLoading();
     }
+  }
 
-    async function deleteUser(id, name) {
-      if (!confirm(`Are you sure you want to deactivate "${name}"?`)) return;
+  // ── Custom Confirm Modal ────────────────────────────────────
+  function deleteUser(id, name) {
+    // Prevent self-delete
+    if (id === currentUserId) {
+      showToast('You cannot deactivate your own account', 'warning');
+      return;
+    }
+    document.getElementById('confirmTitle').textContent = 'Deactivate User?';
+    document.getElementById('confirmMsg').textContent = `Are you sure you want to deactivate "${name}"? The user will be unable to log in.`;
+    document.getElementById('confirmBtn').innerHTML = '<i class="fas fa-trash"></i> Deactivate';
+    pendingConfirmAction = async () => {
       try {
         showLoading();
         await apiFetch(`/api/admin/users/${id}`, { method: 'DELETE' });
@@ -367,8 +568,61 @@
       } finally {
         hideLoading();
       }
-    }
-  </script>
-</body>
+    };
+    document.getElementById('confirmModal').classList.add('open');
+  }
 
+  function closeConfirm() {
+    document.getElementById('confirmModal').classList.remove('open');
+    pendingConfirmAction = null;
+  }
+
+  function confirmAction() {
+    closeConfirm();
+    if (pendingConfirmAction) pendingConfirmAction();
+  }
+
+  // ── Export CSV ─────────────────────────────────────────────
+  async function exportCSV() {
+    try {
+      showLoading();
+      const search = document.getElementById('searchInput').value;
+      const role = document.getElementById('filterRole').value;
+      const status = document.getElementById('filterStatus').value;
+
+      let url = '/api/admin/users?page=1&limit=9999';
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (role) url += `&role=${role}`;
+      if (status) url += `&status=${status}`;
+
+      const data = await apiFetch(url);
+      const users = data.users;
+
+      if (!users.length) { showToast('No data to export', 'warning'); hideLoading(); return; }
+
+      const headers = ['University ID', 'Full Name', 'Email', 'Role', 'Department', 'Batch', 'Phone', 'Status'];
+      const rows = users.map(u => [
+        u.university_id, u.full_name, u.email, u.role,
+        u.department || '', u.batch || '', u.phone || '', u.account_status
+      ]);
+
+      let csv = headers.join(',') + '\n';
+      rows.forEach(row => {
+        csv += row.map(v => `"${(v || '').replace(/"/g, '""')}"`).join(',') + '\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `users_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      showToast('CSV exported successfully', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      hideLoading();
+    }
+  }
+</script>
+</body>
 </html>

@@ -1,151 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bulk Import — FYDP System</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <title>Bulk Import — FYDP Admin</title>
+  <link rel="stylesheet" href="/css/admin-dark.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-</head>
-
-<body>
-  <div class="app-layout">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="brand">
-          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
-          <div class="brand-text">
-            <h3>FYDP System</h3>
-            <p>Admin Panel</p>
-          </div>
-        </div>
-      </div>
-      <nav class="sidebar-nav">
-        <div class="nav-label">Overview</div>
-        <a href="/admin/dashboard"><span class="nav-icon">📊</span> Dashboard</a>
-
-        <div class="nav-label">Assignments</div>
-        <a href="/admin/assign-supervisor"><span class="nav-icon">👔</span> Supervisor Assign</a>
-        <a href="/admin/assign-groups"><span class="nav-icon">🎓</span> FYDP Group Assign</a>
-        <a href="/admin/assign-teacher"><span class="nav-icon">👨‍🏫</span> Course Teacher Assign</a>
-
-        <div class="nav-label">Management</div>
-        <a href="/admin/users"><span class="nav-icon">👥</span> Manage Users</a>
-        <a href="/admin/groups"><span class="nav-icon">📁</span> Manage Groups</a>
-
-        <div class="nav-label">Operations</div>
-        <a href="/admin/import" class="active"><span class="nav-icon">📥</span> Bulk Import</a>
-      </nav>
-      <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="user-avatar" id="userAvatar">AD</div>
-          <div class="user-info">
-            <h4 id="userName">Admin</h4>
-            <p>Administrator</p>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <div class="main-content">
-      <header class="top-header">
-        <div class="breadcrumb"><i class="fas fa-home"></i> Admin / <span>Bulk Import</span></div>
-        <div class="header-actions">
-          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
-        </div>
-      </header>
-
-      <div class="page-content">
-        <div class="page-title">
-          <h1>📥 UCAM Bulk Import</h1>
-          <p>Import groups from UCAM CSV data using stored procedure</p>
-        </div>
-
-        <div class="card" style="margin-bottom:20px;">
-          <div class="card-header">
-            <h3>ℹ️ How It Works</h3>
-          </div>
-          <div class="card-body">
-            <p style="color:#666;line-height:1.8;">
-              This feature demonstrates the <strong>sp_bulk_import_ucam_groups</strong> stored procedure.
-              The procedure processes rows from the <code>ucam_import_staging</code> table, validates each row
-              (student exists, supervisor exists, stage valid, domain valid), creates groups and memberships,
-              and logs failures to <code>import_error_logs</code>.
-            </p>
-            <div style="margin-top:16px;padding:12px 16px;background:#e3f2fd;border-radius:8px;font-size:0.85rem;">
-              <strong>📋 Expected CSV Format:</strong><br>
-              <code>student_university_id, group_code, supervisor_university_id, stage_name, project_title, domain_name</code>
-            </div>
-          </div>
-        </div>
-
-        <!-- Import Error Logs -->
-        <div class="card">
-          <div class="card-header">
-            <h3>📜 Import Error Logs</h3>
-            <button class="btn btn-outline btn-sm" onclick="loadErrors()"><i class="fas fa-refresh"></i>
-              Refresh</button>
-          </div>
-          <div class="card-body" style="padding:0;">
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Row</th>
-                    <th>Error Message</th>
-                    <th>Raw Data</th>
-                    <th>Time</th>
-                  </tr>
-                </thead>
-                <tbody id="errorsBody">
-                  <tr>
-                    <td colspan="4" style="text-align:center;color:#999;padding:30px;">Loading...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="/js/main.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const user = await getCurrentUser();
-      if (user) {
-        document.getElementById('userName').textContent = user.full_name;
-        document.getElementById('userAvatar').textContent = getInitials(user.full_name);
-      }
-      loadErrors();
-    });
-
-    async function loadErrors() {
-      try {
-        const data = await apiFetch('/api/admin/audit-logs?limit=50');
-        // Use import_error_logs from a separate query
-        const errData = await apiFetch('/api/admin/import-errors');
-        const tbody = document.getElementById('errorsBody');
-        if (errData.errors.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">No import errors recorded</td></tr>';
-        } else {
-          tbody.innerHTML = errData.errors.map(e => `
-            <tr>
-              <td>${e.error_row}</td>
-              <td style="color:#b71c1c;font-size:0.85rem;">${escapeHtml(e.error_message)}</td>
-              <td style="font-size:0.8rem;">${escapeHtml(e.raw_data || '—')}</td>
-              <td style="font-size:0.8rem;">${formatDateTime(e.logged_at)}</td>
-            </tr>
-          `).join('');
-        }
-      } catch (err) {
-        document.getElementById('errorsBody').innerHTML =
-          '<tr><td colspan="4" style="text-align:center;color:#999;padding:30px;">No import errors yet</td></tr>';
-      }
+  <style>
+    .info-card {
+      background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.15);
+      border-radius: 12px; padding: 18px 22px; margin-bottom: 18px;
     }
-  </script>
-</body>
+    .info-card h4 { font-size: 0.9rem; font-weight: 800; color: #818cf8; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .info-card p { font-size: 0.82rem; color: var(--text2); line-height: 1.7; }
+    .info-card code { background: rgba(99,102,241,0.12); color: #a5b4fc; padding: 2px 7px; border-radius: 5px; font-size: 0.78rem; }
 
+    .csv-format {
+      margin-top: 14px; padding: 12px 16px; background: var(--bg2);
+      border: 1px solid var(--border); border-radius: 10px;
+      font-size: 0.78rem; color: var(--text2); font-family: 'JetBrains Mono', monospace;
+    }
+    .csv-format strong { color: #f59e0b; font-weight: 700; }
+
+    .btn-refresh {
+      padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 600;
+      background: var(--card2); border: 1px solid var(--border); color: var(--text2);
+      cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px;
+    }
+    .btn-refresh:hover { border-color: var(--accent); color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="adm-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="adm-sidebar">
+    <div class="adm-logo">
+      <div class="adm-logo-icon"><i class="fas fa-shield-alt"></i></div>
+      <div><h2>FYDP System</h2><span>Admin Panel</span></div>
+    </div>
+    <nav class="adm-nav">
+      <div class="adm-nav-label">Overview</div>
+      <a href="/admin/dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
+      <div class="adm-nav-label">Assignments</div>
+      <a href="/admin/assign-supervisor"><i class="fas fa-user-tie"></i> Supervisor Assign</a>
+      <a href="/admin/assign-groups"><i class="fas fa-layer-group"></i> FYDP Group Assign</a>
+      <a href="/admin/assign-teacher"><i class="fas fa-chalkboard-teacher"></i> Course Teacher Assign</a>
+      <div class="adm-nav-label">Management</div>
+      <a href="/admin/users"><i class="fas fa-users"></i> Manage Users</a>
+      <a href="/admin/groups"><i class="fas fa-folder-open"></i> Manage Groups</a>
+      <a href="/admin/import" class="active"><i class="fas fa-file-import"></i> Bulk Import</a>
+    </nav>
+    <div class="adm-sidebar-foot">
+      <div class="adm-user-av" id="userAvatar">AD</div>
+      <div class="adm-user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
+      <button class="adm-logout-btn" onclick="logout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="adm-main">
+    <header class="adm-topbar">
+      <div class="adm-breadcrumb">
+        <i class="fas fa-home"></i> Admin /
+        <a href="/admin/dashboard" style="color:var(--text2);text-decoration:none;">Dashboard</a> /
+        <span>Bulk Import</span>
+      </div>
+      <div class="adm-topbar-right">
+        <button class="adm-bell-btn" onclick="window.location.href='/notifications'">
+          <i class="fas fa-bell"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="adm-page">
+
+      <!-- Page Header -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#06b6d4,#0891b2);display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-file-import" style="color:#fff;font-size:1.1rem;"></i>
+        </div>
+        <div>
+          <h1 style="font-size:1.3rem;font-weight:900;color:#fff;margin:0;">UCAM Bulk Import</h1>
+          <p style="color:#64748b;font-size:0.78rem;margin:3px 0 0;">Import groups from UCAM CSV data using stored procedure</p>
+        </div>
+      </div>
+
+      <!-- How It Works -->
+      <div class="info-card">
+        <h4><i class="fas fa-info-circle"></i> How It Works</h4>
+        <p>
+          This feature demonstrates the <code>sp_bulk_import_ucam_groups</code> stored procedure.
+          The procedure processes rows from the <code>ucam_import_staging</code> table, validates each row
+          (student exists, supervisor exists, stage valid, domain valid), creates groups and memberships,
+          and logs failures to <code>import_error_logs</code>.
+        </p>
+        <div class="csv-format">
+          <strong>📋 Expected CSV Format:</strong><br>
+          <code>student_university_id, group_code, supervisor_university_id, stage_name, project_title, domain_name</code>
+        </div>
+      </div>
+
+      <!-- Import Error Logs -->
+      <div class="adm-card">
+        <div class="adm-card-head">
+          <h3><i class="fas fa-scroll" style="color:#f59e0b;margin-right:8px;"></i>Import Error Logs</h3>
+          <button class="btn-refresh" onclick="loadErrors()"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="adm-table">
+            <thead>
+              <tr>
+                <th>Row #</th>
+                <th>Error Message</th>
+                <th>Raw Data</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="errorsBody">
+              <tr><td colspan="4" style="text-align:center;color:#475569;padding:40px;">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="/js/main.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const user = await getCurrentUser();
+    if (user) {
+      document.getElementById('userName').textContent = user.full_name;
+      document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+    }
+    loadErrors();
+  });
+
+  async function loadErrors() {
+    const tbody = document.getElementById('errorsBody');
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#475569;padding:30px;"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    try {
+      const errData = await apiFetch('/api/admin/import-errors');
+      if (errData.errors.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#475569;padding:40px;"><i class="fas fa-check-circle" style="color:#10b981;font-size:1.5rem;display:block;margin-bottom:8px;"></i>No import errors recorded</td></tr>';
+      } else {
+        tbody.innerHTML = errData.errors.map(e => `
+          <tr>
+            <td><span class="ab ab-indigo">#${e.error_row}</span></td>
+            <td style="color:#ef4444;font-size:0.8rem;">${escapeHtml(e.error_message)}</td>
+            <td style="font-size:0.75rem;color:var(--text3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(e.raw_data || '—')}</td>
+            <td style="color:#475569;white-space:nowrap;">${formatTimeAgo(e.logged_at)}</td>
+          </tr>
+        `).join('');
+      }
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#475569;padding:40px;">No import errors yet</td></tr>';
+    }
+  }
+</script>
+</body>
 </html>

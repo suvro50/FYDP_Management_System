@@ -7,6 +7,192 @@
   <link rel="stylesheet" href="/css/admin-dark.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    /* ── Live Login Notification Panel ── */
+    #liveLoginPanel {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      width: 360px;
+      max-height: 520px;
+      background: #0f172a;
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15);
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideInPanel 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #liveLoginPanel.show { display: flex; }
+    @keyframes slideInPanel {
+      from { opacity:0; transform: translateY(-10px) scale(0.95); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+    .llp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.15));
+      border-bottom: 1px solid rgba(99,102,241,0.2);
+    }
+    .llp-header h4 {
+      margin: 0;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .llp-header h4 .live-dot {
+      width: 8px; height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse-dot 1.5s infinite;
+      display: inline-block;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    .llp-close {
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .llp-close:hover { color: #e2e8f0; background: rgba(255,255,255,0.08); }
+    .llp-body {
+      overflow-y: auto;
+      flex: 1;
+      padding: 10px;
+    }
+    .llp-body::-webkit-scrollbar { width: 4px; }
+    .llp-body::-webkit-scrollbar-track { background: transparent; }
+    .llp-body::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 2px; }
+    .llp-empty {
+      text-align: center;
+      color: #475569;
+      font-size: 0.8rem;
+      padding: 40px 20px;
+    }
+    .llp-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(99,102,241,0.15);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      transition: background 0.2s;
+      animation: slideInCard 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes slideInCard {
+      from { opacity:0; transform: translateX(20px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+    .llp-card:hover { background: rgba(255,255,255,0.07); }
+    .llp-avatar {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; font-weight: 800;
+      flex-shrink: 0;
+      color: #fff;
+    }
+    .llp-avatar.role-student    { background: linear-gradient(135deg,#6366f1,#818cf8); }
+    .llp-avatar.role-supervisor { background: linear-gradient(135deg,#22c55e,#4ade80); }
+    .llp-avatar.role-teacher    { background: linear-gradient(135deg,#f59e0b,#fbbf24); }
+    .llp-avatar.role-prefydp   { background: linear-gradient(135deg,#ec4899,#f472b6); }
+    .llp-info { flex: 1; min-width: 0; }
+    .llp-name {
+      font-size: 0.82rem; font-weight: 700; color: #e2e8f0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .llp-meta {
+      font-size: 0.71rem; color: #64748b; margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .llp-role-badge {
+      font-size: 0.62rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 20px; display: inline-block; margin-top: 4px;
+    }
+    .rb-student    { background:rgba(99,102,241,0.2); color:#818cf8; border:1px solid rgba(99,102,241,0.3); }
+    .rb-supervisor { background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
+    .rb-teacher    { background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+    .rb-prefydp   { background:rgba(236,72,153,0.15); color:#f472b6; border:1px solid rgba(236,72,153,0.3); }
+    .llp-time {
+      font-size: 0.65rem; color: #334155; white-space: nowrap; margin-top: 3px;
+    }
+    /* Bell badge for live logins */
+    .adm-bell-btn { position: relative; }
+    #loginAlertBadge {
+      position: absolute;
+      top: -4px; right: -4px;
+      background: #22c55e;
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 800;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #0f172a;
+      animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes popIn {
+      from { transform: scale(0); }
+      to   { transform: scale(1); }
+    }
+    /* Login toast */
+    .login-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid rgba(34,197,94,0.4);
+      border-left: 4px solid #22c55e;
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 300px;
+      max-width: 380px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      z-index: 10000;
+      cursor: pointer;
+      animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    @keyframes toastIn {
+      from { opacity:0; transform: translateX(60px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+    .login-toast.removing { opacity:0; transform: translateX(60px); }
+    .lt-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.95rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .lt-text { flex: 1; min-width: 0; }
+    .lt-title { font-size: 0.75rem; font-weight: 700; color: #22c55e; margin-bottom: 2px; }
+    .lt-name  { font-size: 0.85rem; font-weight: 800; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lt-sub   { font-size: 0.7rem; color: #64748b; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lt-close { color: #334155; background: none; border: none; cursor: pointer; font-size: 1rem; flex-shrink: 0; transition: color 0.2s; }
+    .lt-close:hover { color: #e2e8f0; }
+  </style>
 </head>
 <body>
 <div class="adm-layout">
@@ -33,7 +219,6 @@
       <div class="adm-nav-label">Management</div>
       <a href="/admin/users"><i class="fas fa-users"></i> Manage Users</a>
       <a href="/admin/groups"><i class="fas fa-folder-open"></i> Manage Groups</a>
-      <a href="/admin/import"><i class="fas fa-file-import"></i> Bulk Import</a>
     </nav>
 
     <div class="adm-sidebar-foot">
@@ -61,6 +246,11 @@
           <div style="font-size:0.8rem;font-weight:700;color:#e2e8f0;" id="dashDate">—</div>
           <div style="font-size:0.68rem;color:#475569;">Spring 2026</div>
         </div>
+        <!-- Live Login Alert Bell -->
+        <button class="adm-bell-btn" id="loginAlertBell" onclick="toggleLoginPanel()" title="Live User Login Activity" style="position:relative;">
+          <i class="fas fa-user-clock"></i>
+          <span id="loginAlertBadge" style="display:none;"></span>
+        </button>
         <button class="adm-bell-btn" onclick="window.location.href='/notifications'">
           <i class="fas fa-bell"></i>
         </button>
@@ -118,7 +308,10 @@
             <div class="adm-stat-label">Active Groups</div>
           </div>
         </div>
-        <div class="adm-stat purple">
+      </div>
+      <!-- Needs review — second row, compact -->
+      <div class="adm-stat-row2">
+        <div class="adm-stat purple needs-review">
           <div class="adm-stat-icon"><i class="fas fa-clock"></i></div>
           <div class="adm-stat-body">
             <div class="adm-stat-trend" style="color:#f59e0b;">Needs review</div>
@@ -182,14 +375,10 @@
       </div>
 
       <!-- ── QUICK LINKS ── -->
-      <div class="adm-quick-grid" style="margin-bottom:20px;">
+      <div class="adm-quick-grid" style="margin-bottom:20px;grid-template-columns:1fr;">
         <a href="/admin/users" class="adm-quick-link">
           <i class="fas fa-users" style="background:rgba(99,102,241,0.12);color:#818cf8;"></i>
           Manage All Users
-        </a>
-        <a href="/admin/import" class="adm-quick-link">
-          <i class="fas fa-file-import" style="background:rgba(6,182,212,0.12);color:#06b6d4;"></i>
-          Bulk Import Data
         </a>
       </div>
 
@@ -257,12 +446,151 @@
   </main>
 </div>
 
+<!-- ── Live Login Activity Panel ── -->
+<div id="liveLoginPanel">
+  <div class="llp-header">
+    <h4><span class="live-dot"></span> Live Login Activity</h4>
+    <button class="llp-close" onclick="toggleLoginPanel()" title="Close"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="llp-body" id="llpBody">
+    <div class="llp-empty"><i class="fas fa-satellite-dish" style="font-size:2rem;margin-bottom:10px;color:#334155;"></i><br>Waiting for logins...</div>
+  </div>
+</div>
+
 <script src="/js/main.js"></script>
 <script>
+  // ── Live Login Notification System ──
+  let loginCount = 0;
+  let loginHistory = [];
+  const MAX_HISTORY = 30;
+
+  const roleLabels = {
+    'STUDENT':        'Student',
+    'PRE_FYDP_STUDENT': 'Pre-FYDP Student',
+    'SUPERVISOR':     'Supervisor',
+    'COURSE_TEACHER': 'Course Teacher',
+  };
+  const roleAvatarClass = {
+    'STUDENT':           'role-student',
+    'PRE_FYDP_STUDENT':  'role-prefydp',
+    'SUPERVISOR':        'role-supervisor',
+    'COURSE_TEACHER':    'role-teacher',
+  };
+  const roleBadgeClass = {
+    'STUDENT':           'rb-student',
+    'PRE_FYDP_STUDENT':  'rb-prefydp',
+    'SUPERVISOR':        'rb-supervisor',
+    'COURSE_TEACHER':    'rb-teacher',
+  };
+  const roleAvatarBg = {
+    'STUDENT':           'linear-gradient(135deg,#6366f1,#818cf8)',
+    'PRE_FYDP_STUDENT':  'linear-gradient(135deg,#ec4899,#f472b6)',
+    'SUPERVISOR':        'linear-gradient(135deg,#22c55e,#4ade80)',
+    'COURSE_TEACHER':    'linear-gradient(135deg,#f59e0b,#fbbf24)',
+  };
+
+  function getInitialsFrom(name) {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  function formatLoginTime(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+
+  function toggleLoginPanel() {
+    const panel = document.getElementById('liveLoginPanel');
+    panel.classList.toggle('show');
+    if (panel.classList.contains('show')) {
+      // Reset badge when panel opened
+      loginCount = 0;
+      const badge = document.getElementById('loginAlertBadge');
+      badge.style.display = 'none';
+      badge.textContent = '';
+    }
+  }
+
+  function showLoginToast(u) {
+    const roleLabel = roleLabels[u.role] || u.role;
+    const initials  = getInitialsFrom(u.full_name);
+    const bg        = roleAvatarBg[u.role] || 'linear-gradient(135deg,#6366f1,#818cf8)';
+    const metaParts = [u.department, u.batch ? 'Batch ' + u.batch : null].filter(Boolean);
+
+    const toast = document.createElement('div');
+    toast.className = 'login-toast';
+    toast.innerHTML = `
+      <div class="lt-icon" style="background:${bg}">${initials}</div>
+      <div class="lt-text">
+        <div class="lt-title">🟢 User Just Logged In</div>
+        <div class="lt-name">${escapeHtml(u.full_name)}</div>
+        <div class="lt-sub">${escapeHtml(roleLabel)}${metaParts.length ? ' · ' + escapeHtml(metaParts.join(' · ')) : ''}</div>
+      </div>
+      <button class="lt-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+    `;
+    toast.addEventListener('click', (e) => {
+      if (e.target.closest('.lt-close')) return;
+      toggleLoginPanel();
+      toast.remove();
+    });
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      if (!toast.parentElement) return;
+      toast.classList.add('removing');
+      setTimeout(() => toast.remove(), 300);
+    }, 7000);
+  }
+
+  function addLoginCard(u) {
+    loginHistory.unshift(u);
+    if (loginHistory.length > MAX_HISTORY) loginHistory.pop();
+
+    const body = document.getElementById('llpBody');
+    // Remove empty state
+    body.querySelector('.llp-empty')?.remove();
+
+    const roleLabel    = roleLabels[u.role] || u.role;
+    const avatarClass  = roleAvatarClass[u.role] || 'role-student';
+    const badgeClass   = roleBadgeClass[u.role] || 'rb-student';
+    const initials     = getInitialsFrom(u.full_name);
+    const metaParts    = [u.department, u.batch ? 'Batch ' + u.batch : null, u.university_id].filter(Boolean);
+    const timeStr      = formatLoginTime(u.login_time);
+
+    const card = document.createElement('div');
+    card.className = 'llp-card';
+    card.innerHTML = `
+      <div class="llp-avatar ${avatarClass}">${initials}</div>
+      <div class="llp-info">
+        <div class="llp-name">${escapeHtml(u.full_name)}</div>
+        <div class="llp-meta">${escapeHtml(u.email)}</div>
+        ${metaParts.length ? `<div class="llp-meta">${escapeHtml(metaParts.join(' · '))}</div>` : ''}
+        <span class="llp-role-badge ${badgeClass}">${escapeHtml(roleLabel)}</span>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="llp-time"><i class="fas fa-clock" style="margin-right:3px;"></i>${timeStr}</div>
+        <a href="/admin/users" style="font-size:0.62rem;color:#6366f1;text-decoration:none;margin-top:6px;display:inline-block;" title="View in Users"><i class="fas fa-arrow-right"></i> Manage</a>
+      </div>
+    `;
+    body.insertBefore(card, body.firstChild);
+  }
+
+  function updateLoginBadge() {
+    loginCount++;
+    const badge = document.getElementById('loginAlertBadge');
+    badge.textContent = loginCount > 99 ? '99+' : loginCount;
+    badge.style.display = 'flex';
+    // Bounce animation
+    badge.style.animation = 'none';
+    void badge.offsetWidth; // reflow
+    badge.style.animation = 'popIn 0.3s cubic-bezier(0.34,1.56,0.64,1)';
+  }
+
+  // ── Socket.IO Setup ──
   document.addEventListener('DOMContentLoaded', async () => {
-    // Set date
+    // Date
     const now = new Date();
-    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     document.getElementById('dashDate').textContent =
       `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
@@ -275,6 +603,20 @@
     }
 
     loadStats();
+
+    // Connect Socket.IO and join admin_room for real-time login alerts
+    const socket = io();
+    socket.emit('join_admin');
+
+    socket.on('user_login', (u) => {
+      showLoginToast(u);
+      addLoginCard(u);
+      // Only bump badge if panel is closed
+      const panel = document.getElementById('liveLoginPanel');
+      if (!panel.classList.contains('show')) {
+        updateLoginBadge();
+      }
+    });
   });
 
   async function loadStats() {

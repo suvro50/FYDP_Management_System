@@ -3,61 +3,434 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Course Teacher Assignment — Admin</title>
+  <title>Course Teacher Assignment — Admin | FYDP System</title>
+  <meta name="description" content="Assign course teachers to sections and FYDP stages in the admin panel.">
   <link rel="stylesheet" href="/css/admin-dark.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    /* ── Layout ─────────────────────────────────── */
-    .ct-split { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    @media(max-width:900px){ .ct-split { grid-template-columns:1fr; } }
+    /* ════════════════════════════════════════════
+       COURSE TEACHER ASSIGNMENT — Page Styles
+       ════════════════════════════════════════════ */
 
-    /* ── Form card ──────────────────────────────── */
-    .assign-form { display:flex; flex-direction:column; gap:12px; padding:20px; }
-    .form-group label { font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.04em; display:block; margin-bottom:5px; }
-    .form-select {
-      width:100%; background:#0f172a; border:1px solid #1e293b; color:#e2e8f0;
-      border-radius:8px; padding:10px 13px; font-size:0.83rem; transition:border-color .15s;
+    /* ── Page Header ─────────────────────────────────────── */
+    .ct-page-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
     }
-    .form-select:focus { outline:none; border-color:#6366f1; }
-    .btn-assign {
-      padding:11px; border-radius:10px; font-size:0.85rem; font-weight:800;
-      background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; border:none;
-      cursor:pointer; transition:opacity .15s; display:flex; align-items:center; justify-content:center; gap:7px;
+    .ct-page-icon {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.05rem; color: #fff;
+      box-shadow: 0 3px 12px rgba(245,158,11,0.3);
+      flex-shrink: 0;
     }
-    .btn-assign:hover { opacity:.85; }
-    .btn-assign:disabled { opacity:.4; cursor:not-allowed; }
-
-    /* ── Mapping table ──────────────────────────── */
-    .map-table { width:100%; border-collapse:collapse; font-size:0.8rem; }
-    .map-table th { padding:10px 14px; background:#0f172a; color:#475569; font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; text-align:left; }
-    .map-table td { padding:11px 14px; border-bottom:1px solid #1e293b; color:#cbd5e1; vertical-align:middle; }
-    .map-table tr:hover td { background:rgba(99,102,241,.04); }
-    .map-table tr:last-child td { border-bottom:none; }
-    .btn-remove {
-      padding:4px 10px; border-radius:6px; font-size:0.68rem; font-weight:700;
-      background:rgba(239,68,68,.1); color:#ef4444; border:1px solid rgba(239,68,68,.2);
-      cursor:pointer; transition:all .15s;
+    .ct-page-title h1 {
+      font-size: 1.15rem; font-weight: 900; color: #fff; margin: 0; line-height: 1.2;
     }
-    .btn-remove:hover { background:rgba(239,68,68,.2); }
-    .empty-row td { text-align:center; padding:30px; color:#334155; }
+    .ct-page-title p {
+      font-size: 0.72rem; color: #64748b; margin: 3px 0 0;
+    }
 
-    /* ── Section pills ──────────────────────────── */
-    .sec-pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.7rem; font-weight:700; background:rgba(99,102,241,.1); color:#818cf8; }
-    .stage-pill-1 { background:rgba(99,102,241,.1); color:#818cf8; }
-    .stage-pill-2 { background:rgba(245,158,11,.1); color:#f59e0b; }
-    .stage-pill-3 { background:rgba(16,185,129,.1); color:#10b981; }
+    /* ── Stat Cards Row ──────────────────────────────────── */
+    .ct-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media(max-width:720px){ .ct-stats { grid-template-columns: 1fr 1fr; } }
 
-    /* ── Summary cards ──────────────────────────── */
-    .summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px; }
-    @media(max-width:700px){ .summary-grid { grid-template-columns:1fr 1fr; } }
-    .sum-card { background:#0f172a; border:1px solid #1e293b; border-radius:12px; padding:14px; text-align:center; }
-    .sum-card .num { font-size:1.6rem; font-weight:900; color:#818cf8; }
-    .sum-card .lbl { font-size:0.68rem; color:#475569; font-weight:700; text-transform:uppercase; margin-top:3px; }
+    .ct-stat {
+      background: #111425;
+      border: 1px solid #1e2240;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: transform 0.18s, box-shadow 0.18s;
+      cursor: default;
+    }
+    .ct-stat:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.45); }
+
+    .ct-stat-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.95rem; flex-shrink: 0;
+    }
+    .ct-stat-icon.amber  { background: rgba(245,158,11,0.13); color: #f59e0b;  border: 1px solid rgba(245,158,11,0.22); }
+    .ct-stat-icon.indigo { background: rgba(99,102,241,0.13);  color: #818cf8; border: 1px solid rgba(99,102,241,0.22); }
+    .ct-stat-icon.green  { background: rgba(16,185,129,0.13);  color: #10b981; border: 1px solid rgba(16,185,129,0.22); }
+
+    .ct-stat-body .ct-num {
+      font-size: 1.5rem; font-weight: 900; color: #fff; line-height: 1;
+    }
+    .ct-stat-body .ct-lbl {
+      font-size: 0.62rem; color: #475569; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em; margin-top: 3px;
+    }
+
+    /* ── Split Layout ────────────────────────────────────── */
+    .ct-split {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media(max-width:980px)  { .ct-split { grid-template-columns: 240px 1fr; } }
+    @media(max-width:820px)  { .ct-split { grid-template-columns: 1fr; } }
+
+    /* ── LEFT: Form Card ─────────────────────────────────── */
+    .ct-form-card {
+      background: #111425;
+      border: 1px solid #1e2240;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .ct-form-head {
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid #1e2240;
+    }
+    .ct-form-head-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: #fff; flex-shrink: 0;
+    }
+    .ct-form-head h3 { font-size: 0.88rem; font-weight: 800; color: #fff; margin: 0; }
+    .ct-form-head p  { font-size: 0.65rem; color: #475569; margin: 1px 0 0; }
+
+    .ct-form-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── Form Fields ─────────────────────────────────────── */
+    .ct-field { display: flex; flex-direction: column; gap: 5px; }
+
+    .ct-field-label {
+      font-size: 0.63rem; font-weight: 800; color: #475569;
+      text-transform: uppercase; letter-spacing: .07em;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .ct-field-label i { font-size: 0.65rem; }
+
+    /* Custom select */
+    .ct-sel-wrap { position: relative; }
+    .ct-sel-wrap::after {
+      content: '\f078';
+      font-family: 'Font Awesome 6 Free'; font-weight: 900;
+      position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+      color: #334155; font-size: 0.65rem; pointer-events: none;
+      transition: color 0.15s;
+    }
+    .ct-sel-wrap:focus-within::after { color: #818cf8; }
+
+    .ct-select {
+      width: 100%;
+      background: #0d0f1e;
+      border: 1px solid #1e2240;
+      color: #94a3b8;
+      border-radius: 8px;
+      padding: 9px 32px 9px 12px;
+      font-size: 0.78rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      appearance: none; -webkit-appearance: none;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, color 0.15s;
+      outline: none;
+    }
+    .ct-select:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.14);
+      color: #e2e8f0;
+    }
+    .ct-select option {
+      background: #0d0f1e;
+      color: #e2e8f0;
+    }
+    .ct-select option:disabled { color: #334155; }
+
+    /* shimmer skeleton while loading */
+    .ct-sel-skeleton {
+      height: 38px; border-radius: 8px;
+      border: 1px solid #1e2240;
+      background: linear-gradient(90deg, #1a1d35 25%, #20234a 50%, #1a1d35 75%);
+      background-size: 200% 100%;
+      animation: ctShimmer 1.3s infinite;
+    }
+    @keyframes ctShimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Divider ─────────────────────────────────────────── */
+    .ct-divider { border: none; border-top: 1px solid #1e2240; margin: 4px 0; }
+
+    /* ── Assign Button ───────────────────────────────────── */
+    .ct-btn-assign {
+      width: 100%; padding: 10px;
+      border-radius: 10px;
+      font-size: 0.8rem; font-weight: 800;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: .02em;
+      box-shadow: 0 3px 14px rgba(99,102,241,0.28);
+      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+    .ct-btn-assign:hover:not(:disabled) {
+      opacity: 0.9; transform: translateY(-1px);
+      box-shadow: 0 7px 24px rgba(99,102,241,0.38);
+    }
+    .ct-btn-assign:active:not(:disabled) { transform: translateY(0); }
+    .ct-btn-assign:disabled { opacity: 0.38; cursor: not-allowed; box-shadow: none; }
+
+    /* ── Feedback ────────────────────────────────────────── */
+    .ct-feedback {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 12px; border-radius: 8px;
+      font-size: 0.73rem; font-weight: 600;
+      min-height: 32px;
+      transition: all 0.22s;
+    }
+    .ct-feedback.hidden  { opacity: 0; pointer-events: none; }
+    .ct-feedback.success { background: rgba(16,185,129,0.09);  color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+    .ct-feedback.error   { background: rgba(239,68,68,0.09);   color: #ef4444; border: 1px solid rgba(239,68,68,0.2);  }
+    .ct-feedback.warn    { background: rgba(245,158,11,0.09);  color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+
+    /* ── RIGHT: Table Card ───────────────────────────────── */
+    .ct-map-card {
+      background: #111425;
+      border: 1px solid #1e2240;
+      border-radius: 14px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .ct-map-head {
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+      border-bottom: 1px solid #1e2240;
+    }
+    .ct-map-head-left { display: flex; align-items: center; gap: 10px; }
+    .ct-map-head-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: #fff;
+    }
+    .ct-map-head h3 { font-size: 0.88rem; font-weight: 800; color: #fff; margin: 0; }
+
+    /* Search input */
+    .ct-search {
+      position: relative;
+    }
+    .ct-search i {
+      position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+      color: #334155; font-size: 0.65rem; pointer-events: none;
+    }
+    .ct-search input {
+      background: #0d0f1e; border: 1px solid #1e2240;
+      color: #e2e8f0; border-radius: 7px;
+      padding: 6px 10px 6px 26px;
+      font-size: 0.72rem; font-family: 'Inter', sans-serif;
+      width: 160px; outline: none;
+      transition: border-color 0.15s, width 0.22s;
+    }
+    .ct-search input:focus { border-color: #6366f1; width: 190px; }
+    .ct-search input::placeholder { color: #334155; }
+
+    /* ── Filter Tabs ─────────────────────────────────────── */
+    .ct-tabs {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 16px;
+      border-bottom: 1px solid #1e2240;
+      overflow-x: auto;
+    }
+    .ct-tabs::-webkit-scrollbar { height: 0; }
+    .ct-tab {
+      padding: 4px 12px; border-radius: 16px;
+      font-size: 0.68rem; font-weight: 700;
+      border: 1px solid transparent;
+      background: transparent; color: #475569;
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.14s;
+    }
+    .ct-tab:hover   { color: #94a3b8; background: rgba(255,255,255,0.04); }
+    .ct-tab.active  {
+      background: rgba(99,102,241,0.12);
+      color: #818cf8;
+      border-color: rgba(99,102,241,0.25);
+    }
+
+    /* ── Table ───────────────────────────────────────────── */
+    .ct-tbl-wrap {
+      overflow-x: auto;
+      max-height: 490px; overflow-y: auto;
+    }
+    .ct-tbl-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+    .ct-tbl-wrap::-webkit-scrollbar-track { background: transparent; }
+    .ct-tbl-wrap::-webkit-scrollbar-thumb { background: #1e2240; border-radius: 6px; }
+
+    .ct-tbl {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.76rem;
+      table-layout: fixed;
+    }
+    .ct-tbl thead { position: sticky; top: 0; z-index: 2; }
+    .ct-tbl th {
+      padding: 7px 10px;
+      background: #0d0f1e;
+      color: #334155;
+      font-size: 0.58rem; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .07em;
+      text-align: left; white-space: nowrap;
+      border-bottom: 1px solid #1e2240;
+      overflow: hidden;
+    }
+    .ct-tbl th.center { text-align: center; }
+    .ct-tbl th.right  { text-align: right; }
+
+    .ct-tbl td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(30,34,64,0.55);
+      color: #cbd5e1;
+      vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ct-tbl tbody tr { transition: background 0.11s; }
+    .ct-tbl tbody tr:hover td { background: rgba(99,102,241,0.04); }
+    .ct-tbl tr:last-child td  { border-bottom: none; }
+
+    /* Teacher cell */
+    .ct-tname { font-weight: 700; color: #e2e8f0; font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ct-tdept { font-size: 0.6rem; color: #475569; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Pill badges */
+    .ct-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 16px;
+      font-size: 0.64rem; font-weight: 700;
+      white-space: nowrap;
+    }
+    .ct-pill-sec { background: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.22); }
+    .ct-pill-1   { background: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.22); }
+    .ct-pill-2   { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.22); }
+    .ct-pill-3   { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.22); }
+
+    /* Group count badge */
+    .ct-gc {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 24px; height: 24px; border-radius: 6px;
+      font-size: 0.75rem; font-weight: 800;
+      background: rgba(255,255,255,0.04); color: #64748b;
+    }
+
+    /* Remove button */
+    .ct-btn-rm {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 6px;
+      font-size: 0.64rem; font-weight: 700;
+      background: rgba(239,68,68,0.09);
+      color: #ef4444;
+      border: 1px solid rgba(239,68,68,0.18);
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.14s;
+    }
+    .ct-btn-rm:hover    { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.32); }
+    .ct-btn-rm:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    /* Empty / Loading states */
+    .ct-empty-cell { text-align: center; padding: 36px 16px !important; }
+    .ct-empty-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .ct-empty-ico  {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: #1e2240;
+    }
+    .ct-empty-wrap h4 { font-size: 0.8rem; font-weight: 700; color: #334155; margin: 0; }
+    .ct-empty-wrap p  { font-size: 0.68rem; color: #1e2240; margin: 0; }
+
+    /* ── Table Footer ────────────────────────────────────── */
+    .ct-tbl-foot {
+      padding: 7px 16px;
+      border-top: 1px solid #1e2240;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ct-tbl-foot span { font-size: 0.65rem; color: #334155; }
+
+    /* ── Toast ───────────────────────────────────────────── */
+    #ctToast {
+      position: fixed; bottom: 26px; right: 26px;
+      padding: 11px 18px; border-radius: 12px;
+      font-size: 0.82rem; font-weight: 700;
+      display: flex; align-items: center; gap: 9px;
+      z-index: 9999;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.65);
+      transform: translateY(80px); opacity: 0;
+      transition: transform 0.32s cubic-bezier(.34,1.56,.64,1), opacity 0.22s;
+      pointer-events: none;
+    }
+    #ctToast.show { transform: translateY(0); opacity: 1; pointer-events: all; }
+    #ctToast.success { background: #0a1f13; color: #10b981; border: 1px solid rgba(16,185,129,0.28); }
+    #ctToast.error   { background: #1f0a0a; color: #ef4444; border: 1px solid rgba(239,68,68,0.28); }
+
+    /* ── Confirm Dialog ──────────────────────────────────── */
+    .ct-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(5px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9000;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .ct-overlay.show { opacity: 1; pointer-events: all; }
+    .ct-confirm {
+      background: #111425; border: 1px solid #1e2240;
+      border-radius: 18px; padding: 28px 28px 24px;
+      max-width: 370px; width: 90%;
+      transform: scale(0.88);
+      transition: transform 0.26s cubic-bezier(.34,1.56,.64,1);
+    }
+    .ct-overlay.show .ct-confirm { transform: scale(1); }
+    .ct-confirm-ico {
+      width: 48px; height: 48px; border-radius: 13px;
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.15rem; color: #ef4444; margin-bottom: 14px;
+    }
+    .ct-confirm h3  { font-size: 1rem; font-weight: 800; color: #fff; margin: 0 0 8px; }
+    .ct-confirm p   { font-size: 0.79rem; color: #64748b; margin: 0 0 20px; line-height: 1.6; }
+    .ct-confirm-row { display: flex; gap: 10px; }
+    .ct-btn-cancel {
+      flex: 1; padding: 10px; border-radius: 10px;
+      background: rgba(255,255,255,0.05); border: 1px solid #1e2240;
+      color: #94a3b8; font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; transition: background 0.14s;
+    }
+    .ct-btn-cancel:hover { background: rgba(255,255,255,0.1); }
+    .ct-btn-delete {
+      flex: 1; padding: 10px; border-radius: 10px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      border: none; color: #fff;
+      font-size: 0.85rem; font-weight: 800;
+      cursor: pointer; transition: opacity 0.14s;
+    }
+    .ct-btn-delete:hover { opacity: 0.88; }
   </style>
 </head>
 <body>
 <div class="adm-layout">
 
+  <!-- ════════════ SIDEBAR ════════════ -->
   <aside class="adm-sidebar">
     <div class="adm-logo">
       <div class="adm-logo-icon"><i class="fas fa-shield-alt"></i></div>
@@ -77,11 +450,14 @@
     <div class="adm-sidebar-foot">
       <div class="adm-user-av" id="userAvatar">AD</div>
       <div class="adm-user-info"><h4 id="userName">Admin</h4><p>Administrator</p></div>
-      <button class="adm-logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+      <button class="adm-logout-btn" onclick="logout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
     </div>
   </aside>
 
+  <!-- ════════════ MAIN ════════════ -->
   <main class="adm-main">
+
+    <!-- Top Bar -->
     <header class="adm-topbar">
       <div class="adm-breadcrumb">
         <i class="fas fa-home"></i> Admin /
@@ -89,100 +465,497 @@
         <span>Course Teacher Assign</span>
       </div>
       <div class="adm-topbar-right">
-        <button class="adm-bell-btn" onclick="window.location.href='/notifications'">
+        <button class="adm-bell-btn" onclick="window.location.href='/notifications'" title="Notifications">
           <i class="fas fa-bell"></i>
         </button>
       </div>
     </header>
 
     <div class="adm-page">
-      <!-- Page Header -->
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
-        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;">
-          <i class="fas fa-chalkboard-teacher" style="color:#fff;font-size:1.1rem;"></i>
-        </div>
-        <div>
-          <h1 style="font-size:1.3rem;font-weight:900;color:#fff;margin:0;">Course Teacher Assignment</h1>
-          <p style="color:#64748b;font-size:0.78rem;margin:3px 0 0;">Assign course teachers to sections and FYDP stages</p>
+
+      <!-- ── Page Header ── -->
+      <div class="ct-page-header">
+        <div class="ct-page-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+        <div class="ct-page-title">
+          <h1>Course Teacher Assignment</h1>
+          <p>Assign course teachers to sections and FYDP stages with ease</p>
         </div>
       </div>
 
-      <!-- Summary -->
-      <div class="summary-grid">
-        <div class="sum-card"><div class="num" id="sumTeachers">—</div><div class="lbl">Course Teachers</div></div>
-        <div class="sum-card"><div class="num" id="sumMappings">—</div><div class="lbl">Active Mappings</div></div>
-        <div class="sum-card"><div class="num" id="sumSections">—</div><div class="lbl">Sections Covered</div></div>
+      <!-- ── Stat Cards ── -->
+      <div class="ct-stats">
+        <div class="ct-stat">
+          <div class="ct-stat-icon amber"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div class="ct-stat-body">
+            <div class="ct-num" id="sumTeachers">—</div>
+            <div class="ct-lbl">Course Teachers</div>
+          </div>
+        </div>
+        <div class="ct-stat">
+          <div class="ct-stat-icon indigo"><i class="fas fa-link"></i></div>
+          <div class="ct-stat-body">
+            <div class="ct-num" id="sumMappings">—</div>
+            <div class="ct-lbl">Active Mappings</div>
+          </div>
+        </div>
+        <div class="ct-stat">
+          <div class="ct-stat-icon green"><i class="fas fa-layer-group"></i></div>
+          <div class="ct-stat-body">
+            <div class="ct-num" id="sumSections">—</div>
+            <div class="ct-lbl">Sections Covered</div>
+          </div>
+        </div>
       </div>
 
-      <!-- Split Layout -->
+      <!-- ── Main Split ── -->
       <div class="ct-split">
 
         <!-- LEFT: Assign Form -->
-        <div class="adm-card" style="padding:0;">
-          <div style="padding:16px 20px;border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:10px;">
-            <i class="fas fa-plus-circle" style="color:#6366f1;"></i>
-            <h3 style="font-size:0.95rem;font-weight:800;color:#fff;margin:0;">New Assignment</h3>
+        <div class="ct-form-card">
+          <div class="ct-form-head">
+            <div class="ct-form-head-icon"><i class="fas fa-plus"></i></div>
+            <div>
+              <h3>New Assignment</h3>
+              <p>Link a teacher to a section &amp; stage</p>
+            </div>
           </div>
-          <div class="assign-form">
-            <div class="form-group">
-              <label>Course Teacher</label>
-              <select class="form-select" id="selTeacher">
-                <option value="">— Select Teacher —</option>
-              </select>
+
+          <div class="ct-form-body">
+
+            <!-- Course Teacher -->
+            <div class="ct-field">
+              <div class="ct-field-label">
+                <i class="fas fa-user-tie" style="color:#818cf8;"></i> Course Teacher
+              </div>
+              <div class="ct-sel-wrap">
+                <div class="ct-sel-skeleton" id="skTeacher"></div>
+                <select class="ct-select" id="selTeacher" style="display:none;">
+                  <option value="" disabled selected>— Select a Teacher —</option>
+                </select>
+              </div>
             </div>
-            <div class="form-group">
-              <label>Section Code</label>
-              <select class="form-select" id="selSection">
-                <option value="">— Select Section —</option>
-              </select>
+
+            <!-- Section Code -->
+            <div class="ct-field">
+              <div class="ct-field-label">
+                <i class="fas fa-layer-group" style="color:#f59e0b;"></i> Section Code
+              </div>
+              <div class="ct-sel-wrap">
+                <div class="ct-sel-skeleton" id="skSection"></div>
+                <select class="ct-select" id="selSection" style="display:none;">
+                  <option value="" disabled selected>— Select a Section —</option>
+                </select>
+              </div>
             </div>
-            <div class="form-group">
-              <label>FYDP Stage</label>
-              <select class="form-select" id="selStage">
-                <option value="">— Select Stage —</option>
-              </select>
+
+            <!-- FYDP Stage -->
+            <div class="ct-field">
+              <div class="ct-field-label">
+                <i class="fas fa-flag" style="color:#10b981;"></i> FYDP Stage
+              </div>
+              <div class="ct-sel-wrap">
+                <div class="ct-sel-skeleton" id="skStage"></div>
+                <select class="ct-select" id="selStage" style="display:none;">
+                  <option value="" disabled selected>— Select a Stage —</option>
+                </select>
+              </div>
             </div>
-            <button class="btn-assign" id="btnAssign" onclick="doAssign()">
+
+            <hr class="ct-divider">
+
+            <!-- Submit -->
+            <button class="ct-btn-assign" id="btnAssign" onclick="doAssign()">
               <i class="fas fa-link"></i> Assign Teacher to Section
             </button>
-            <div id="assignFeedback" style="text-align:center;font-size:0.8rem;min-height:20px;"></div>
-          </div>
-        </div>
 
-        <!-- RIGHT: Current Mappings -->
-        <div class="adm-card" style="padding:0;">
-          <div style="padding:14px 20px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <i class="fas fa-table" style="color:#f59e0b;"></i>
-              <h3 style="font-size:0.95rem;font-weight:800;color:#fff;margin:0;">Current Assignments</h3>
-            </div>
-            <input type="text" id="mapSearch" placeholder="Filter..." oninput="filterTable()"
-              style="background:#0f172a;border:1px solid #1e293b;color:#e2e8f0;border-radius:7px;padding:5px 10px;font-size:0.75rem;width:130px;">
+            <!-- Feedback -->
+            <div class="ct-feedback hidden" id="ctFeedback"></div>
+
           </div>
-          <div style="overflow-x:auto;max-height:420px;overflow-y:auto;">
-            <table class="map-table">
+        </div><!-- /ct-form-card -->
+
+        <!-- RIGHT: Current Assignments Table -->
+        <div class="ct-map-card">
+
+          <!-- Header -->
+          <div class="ct-map-head">
+            <div class="ct-map-head-left">
+              <div class="ct-map-head-icon"><i class="fas fa-table"></i></div>
+              <h3>Current Assignments</h3>
+            </div>
+            <div class="ct-search">
+              <i class="fas fa-search"></i>
+              <input type="text" id="mapSearch" placeholder="Search teacher, section…"
+                     oninput="filterTable()" autocomplete="off">
+            </div>
+          </div>
+
+          <!-- Stage Filter Tabs -->
+          <div class="ct-tabs" id="ctTabs">
+            <button class="ct-tab active" data-stage="ALL" onclick="setFilter('ALL',this)">All Stages</button>
+            <!-- JS populates FYDP-1, FYDP-2, FYDP-3 -->
+          </div>
+
+          <!-- Table -->
+          <div class="ct-tbl-wrap">
+            <table class="ct-tbl">
               <thead>
                 <tr>
-                  <th>Teacher</th>
-                  <th>Section</th>
-                  <th>Stage</th>
-                  <th>Groups</th>
-                  <th></th>
+                  <th style="width:28%;"><i class="fas fa-user" style="margin-right:4px;opacity:.6;"></i>Teacher</th>
+                  <th style="width:16%;"><i class="fas fa-layer-group" style="margin-right:4px;opacity:.6;"></i>Section</th>
+                  <th style="width:18%;"><i class="fas fa-flag" style="margin-right:4px;opacity:.6;"></i>Stage</th>
+                  <th class="center" style="width:14%;text-align:center;"><i class="fas fa-users" style="margin-right:4px;opacity:.6;"></i>Groups</th>
+                  <th class="right" style="width:24%;text-align:right;">Action</th>
                 </tr>
               </thead>
               <tbody id="mapTableBody">
-                <tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                <tr>
+                  <td colspan="5" class="ct-empty-cell" style="text-align:center;color:#334155;">
+                    <i class="fas fa-circle-notch fa-spin" style="margin-right:8px;"></i>Loading assignments…
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
 
-    </div>
+          <!-- Footer -->
+          <div class="ct-tbl-foot">
+            <span id="tableCount"></span>
+            <span>Course Teacher Assignments</span>
+          </div>
+
+        </div><!-- /ct-map-card -->
+
+      </div><!-- /ct-split -->
+    </div><!-- /adm-page -->
   </main>
 </div>
 
+<!-- Toast -->
+<div id="ctToast">
+  <i id="ctToastIcon"></i>
+  <span id="ctToastMsg"></span>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="ct-overlay" id="ctOverlay">
+  <div class="ct-confirm">
+    <div class="ct-confirm-ico"><i class="fas fa-unlink"></i></div>
+    <h3>Remove Assignment</h3>
+    <p id="ctConfirmText">Are you sure you want to remove this assignment?</p>
+    <div class="ct-confirm-row">
+      <button class="ct-btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="ct-btn-delete" id="btnConfirmOk">Remove</button>
+    </div>
+  </div>
+</div>
+
 <script src="/js/main.js"></script>
-<script src="/js/admin_assign_teacher.js"></script>
+<script>
+/* ════════════════════════════════════════════════════════
+   Course Teacher Assignment — Page Logic
+   ════════════════════════════════════════════════════════ */
+let mappingsCache  = [];
+let activeFilter   = 'ALL';
+let pendingConfirm = null;
+let toastTimer;
+
+/* ─── Boot ─────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = await getCurrentUser().catch(() => null);
+  if (user) {
+    document.getElementById('userName').textContent   = user.full_name;
+    document.getElementById('userAvatar').textContent = getInitials(user.full_name);
+  }
+  await Promise.all([loadDropdowns(), loadMappings()]);
+});
+
+/* ─── Load Dropdowns ────────────────────────────────────── */
+async function loadDropdowns() {
+  try {
+    const [tRes, sRes, stRes] = await Promise.all([
+      apiFetch('/api/admin/course-teachers'),
+      apiFetch('/api/admin/sections'),
+      apiFetch('/api/admin/stages')
+    ]);
+
+    // Teachers
+    const teachers = tRes.teachers || [];
+    const selT = document.getElementById('selTeacher');
+    teachers.forEach(u => {
+      const o = document.createElement('option');
+      o.value = u.user_id;
+      const suf = u.assigned_sections > 0 ? ` · ${u.assigned_sections} section${u.assigned_sections > 1 ? 's' : ''}` : '';
+      o.textContent = `${u.full_name}${u.department ? ' (' + u.department + ')' : ''}${suf}`;
+      selT.appendChild(o);
+    });
+    revealSelect('skTeacher', 'selTeacher', teachers.length === 0 ? '— No teachers available —' : null);
+
+    // Sections
+    const sections = sRes.sections || [];
+    const selS = document.getElementById('selSection');
+    sections.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.section_code;
+      o.textContent = `Section ${s.section_code}`;
+      selS.appendChild(o);
+    });
+    revealSelect('skSection', 'selSection', sections.length === 0 ? '— No sections available —' : null);
+
+    // Stages
+    const stages = stRes.stages || [];
+    const selSt = document.getElementById('selStage');
+    stages.forEach(st => {
+      const o = document.createElement('option');
+      o.value = st.stage_id;
+      o.textContent = st.stage_name;
+      selSt.appendChild(o);
+    });
+    revealSelect('skStage', 'selStage', stages.length === 0 ? '— No stages available —' : null);
+
+    // Build filter tabs
+    buildTabs(stages);
+
+  } catch (err) {
+    console.error('Dropdown load error:', err);
+    ['skTeacher','skSection','skStage'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.cssText = 'height:44px;border-radius:10px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.06);display:flex;align-items:center;padding:0 14px;';
+      el.innerHTML = '<span style="color:#ef4444;font-size:0.77rem;"><i class="fas fa-exclamation-triangle" style="margin-right:7px;"></i>Failed to load</span>';
+      el.style.animation = 'none';
+    });
+  }
+}
+
+function revealSelect(skId, selId, emptyMsg) {
+  const sk  = document.getElementById(skId);
+  const sel = document.getElementById(selId);
+  if (sk)  sk.style.display  = 'none';
+  if (sel) sel.style.display = '';
+  if (emptyMsg && sel) sel.options[0].textContent = emptyMsg;
+}
+
+function buildTabs(stages) {
+  const bar = document.getElementById('ctTabs');
+  stages.forEach(st => {
+    const btn = document.createElement('button');
+    btn.className    = 'ct-tab';
+    btn.dataset.stage = st.stage_name;
+    btn.textContent  = st.stage_name;
+    btn.onclick = function() { setFilter(st.stage_name, this); };
+    bar.appendChild(btn);
+  });
+}
+
+/* ─── Load Mappings ─────────────────────────────────────── */
+async function loadMappings() {
+  const tbody = document.getElementById('mapTableBody');
+  tbody.innerHTML = `<tr><td colspan="5" class="ct-empty-cell" style="text-align:center;color:#334155;">
+    <i class="fas fa-circle-notch fa-spin" style="margin-right:8px;"></i>Loading assignments…
+  </td></tr>`;
+
+  try {
+    const data = await apiFetch('/api/admin/teacher-sections');
+    mappingsCache = data.mappings || [];
+    renderTable();
+    updateStats(mappingsCache);
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5" class="ct-empty-cell" style="text-align:center;color:#ef4444;">
+      <i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>${escapeHtml(err.message)}
+    </td></tr>`;
+  }
+}
+
+/* ─── Render Table ──────────────────────────────────────── */
+function renderTable() {
+  const tbody   = document.getElementById('mapTableBody');
+  const countEl = document.getElementById('tableCount');
+  const q       = (document.getElementById('mapSearch').value || '').trim().toLowerCase();
+
+  let rows = mappingsCache;
+  if (activeFilter !== 'ALL') rows = rows.filter(r => r.stage_name === activeFilter);
+  if (q) rows = rows.filter(m =>
+    (m.teacher_name  || '').toLowerCase().includes(q) ||
+    (m.section_code  || '').toLowerCase().includes(q) ||
+    (m.stage_name    || '').toLowerCase().includes(q) ||
+    (m.department    || '').toLowerCase().includes(q)
+  );
+
+  const total = mappingsCache.length;
+  countEl.textContent = rows.length > 0
+    ? `Showing ${rows.length} of ${total} assignment${total !== 1 ? 's' : ''}`
+    : '';
+
+  if (!rows.length) {
+    const msg = q || activeFilter !== 'ALL'
+      ? 'No assignments match your filter.'
+      : 'No assignments yet. Create one using the form.';
+    tbody.innerHTML = `<tr><td colspan="5" class="ct-empty-cell">
+      <div class="ct-empty-wrap">
+        <div class="ct-empty-ico"><i class="fas fa-inbox"></i></div>
+        <h4>${q || activeFilter !== 'ALL' ? 'No Results' : 'No Assignments Yet'}</h4>
+        <p>${msg}</p>
+      </div>
+    </td></tr>`;
+    return;
+  }
+
+  const stageClass = { 'FYDP-1': 'ct-pill-1', 'FYDP-2': 'ct-pill-2', 'FYDP-3': 'ct-pill-3' };
+
+  tbody.innerHTML = rows.map(m => `
+    <tr data-id="${m.mapping_id}">
+      <td>
+        <div class="ct-tname">${escapeHtml(m.teacher_name || '—')}</div>
+        <div class="ct-tdept">${escapeHtml(m.department || '')}</div>
+      </td>
+      <td>
+        <span class="ct-pill ct-pill-sec">
+          <i class="fas fa-layer-group" style="font-size:0.58rem;"></i>
+          ${escapeHtml(m.section_code)}
+        </span>
+      </td>
+      <td>
+        <span class="ct-pill ${stageClass[m.stage_name] || 'ct-pill-1'}">
+          <i class="fas fa-flag" style="font-size:0.58rem;"></i>
+          ${escapeHtml(m.stage_name)}
+        </span>
+      </td>
+      <td class="center" style="text-align:center;">
+        <span class="ct-gc">${m.group_count}</span>
+      </td>
+      <td style="text-align:right;">
+        <button class="ct-btn-rm"
+          onclick="askRemove(${m.mapping_id},'${escapeHtml(m.teacher_name)}','${escapeHtml(m.section_code)}',this)">
+          <i class="fas fa-unlink"></i> Remove
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+/* ─── Filters ───────────────────────────────────────────── */
+function setFilter(stage, btn) {
+  activeFilter = stage;
+  document.querySelectorAll('.ct-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function filterTable() { renderTable(); }
+
+/* ─── Stats ─────────────────────────────────────────────── */
+function updateStats(rows) {
+  const teachers = new Set(rows.map(r => r.course_teacher_id));
+  const sections = new Set(rows.map(r => r.section_code));
+  countUp('sumTeachers', teachers.size);
+  countUp('sumMappings', rows.length);
+  countUp('sumSections', sections.size);
+}
+
+function countUp(id, target) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  let cur = 0;
+  const step  = Math.max(1, Math.ceil(target / 20));
+  const timer = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    el.textContent = cur;
+    if (cur >= target) clearInterval(timer);
+  }, 28);
+}
+
+/* ─── Assign ────────────────────────────────────────────── */
+async function doAssign() {
+  const teacher_id   = document.getElementById('selTeacher').value;
+  const section_code = document.getElementById('selSection').value;
+  const stage_id     = document.getElementById('selStage').value;
+
+  if (!teacher_id || !section_code || !stage_id) {
+    showFb('warn', 'fa-exclamation-triangle', 'Please select all three fields.');
+    return;
+  }
+
+  const btn = document.getElementById('btnAssign');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Assigning…';
+  hideFb();
+
+  try {
+    await apiFetch('/api/admin/assign-teacher', {
+      method: 'POST',
+      body: { teacher_id, section_code, stage_id }
+    });
+    showFb('success', 'fa-check-circle', 'Teacher assigned successfully!');
+    document.getElementById('selTeacher').value = '';
+    document.getElementById('selSection').value = '';
+    document.getElementById('selStage').value   = '';
+    await loadMappings();
+    setTimeout(hideFb, 4000);
+  } catch (err) {
+    showFb('error', 'fa-times-circle', err.message || 'Assignment failed.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-link"></i> Assign Teacher to Section';
+  }
+}
+
+function showFb(type, icon, msg) {
+  const el = document.getElementById('ctFeedback');
+  el.className = `ct-feedback ${type}`;
+  el.innerHTML = `<i class="fas ${icon}"></i> ${msg}`;
+}
+function hideFb() {
+  const el = document.getElementById('ctFeedback');
+  el.className = 'ct-feedback hidden';
+  el.innerHTML = '';
+}
+
+/* ─── Remove Confirm ────────────────────────────────────── */
+function askRemove(id, teacher, section, rowBtn) {
+  document.getElementById('ctConfirmText').textContent =
+    `Remove ${teacher} from Section ${section}? This cannot be undone.`;
+
+  const overlay = document.getElementById('ctOverlay');
+  overlay.classList.add('show');
+
+  pendingConfirm = async () => {
+    closeConfirm();
+    rowBtn.disabled = true;
+    rowBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    try {
+      await apiFetch(`/api/admin/teacher-sections/${id}`, { method: 'DELETE' });
+      toast('Assignment removed', 'success');
+      await loadMappings();
+    } catch (err) {
+      toast(err.message || 'Failed to remove', 'error');
+      rowBtn.disabled = false;
+      rowBtn.innerHTML = '<i class="fas fa-unlink"></i> Remove';
+    }
+  };
+
+  document.getElementById('btnConfirmOk').onclick = pendingConfirm;
+}
+
+function closeConfirm() {
+  document.getElementById('ctOverlay').classList.remove('show');
+  pendingConfirm = null;
+}
+
+document.getElementById('ctOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('ctOverlay')) closeConfirm();
+});
+
+/* ─── Toast ─────────────────────────────────────────────── */
+function toast(msg, type) {
+  const el  = document.getElementById('ctToast');
+  const ico = document.getElementById('ctToastIcon');
+  const txt = document.getElementById('ctToastMsg');
+  el.className = `show ${type}`;
+  ico.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-times-circle';
+  txt.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3500);
+}
+</script>
 </body>
 </html>
