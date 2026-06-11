@@ -245,6 +245,8 @@
     .week-card.all-approved { border-color:rgba(16,185,129,0.4); background:rgba(16,185,129,0.05); }
     .week-card.has-pending { border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.05); }
     .week-card.no-sub { opacity:0.5; }
+    .week-card.active-week { border-color:#3b82f6; box-shadow:0 0 12px rgba(59,130,246,0.25); opacity:1; }
+    .active-badge { position:absolute; top:-10px; right:-10px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; font-size:0.65rem; font-weight:700; padding:3px 8px; border-radius:12px; box-shadow:0 2px 8px rgba(59,130,246,0.4); }
     .wk-label { font-size:0.6rem; font-weight:700; letter-spacing:1px; color:#475569; text-transform:uppercase; }
     .wk-num { font-size:1.5rem; font-weight:800; color:#fff; line-height:1; margin:4px 0; }
     .wk-num.all-approved { color:#10b981; }
@@ -347,6 +349,7 @@
         <a href="/teacher/inbox"><span class="nav-icon"><i class="fas fa-clock"></i></span><span>Pending Approvals</span></a>
         <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span><span>Student Messages</span></a>
         <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span><span>Chat with Supervisors</span></a>
+        <a href="/teacher/group-requests"><span class="nav-icon"><i class="fas fa-user-plus"></i></span><span>Group Requests</span></a>
         <div class="nav-label">Account</div>
         <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span><span>My Profile</span></a>
         <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span><span>Notifications</span></a>
@@ -820,11 +823,12 @@
           else if (submitted > 0) { cls = 'has-pending'; numCls = 'has-pending'; }
           const dotCls = cls === 'all-approved' ? 'green' : cls === 'has-pending' ? 'yellow' : 'gray';
           html += `
-            <div class="week-card ${cls}" onclick="${submitted>0?`openWeekDetail(${groupId},${wk})`:''}">
+            <div class="week-card ${cls} ${wk === data.active_week ? 'active-week' : ''}" onclick="openWeekDetail(${groupId},${wk})">
               <div class="wk-label">WEEK</div>
               <div class="wk-num ${numCls}">${wk}</div>
               <div class="wk-stats">${submitted}/${total}<br>${approved}✓</div>
               <div class="wk-dot ${dotCls}"></div>
+              ${wk === data.active_week ? '<div class="active-badge">Active</div>' : ''}
             </div>`;
         }
         grid.innerHTML = html;

@@ -355,6 +355,11 @@ async function loadNavUnreadBadges(user) {
       _setNavBadge('/supervisor/groups', grpData.unread_count);
       totalUnread += (grpData.unread_count || 0);
 
+      // 2d. Pending FYDP-1 group requests
+      const reqData = await apiFetch('/api/supervisor/fydp1-request-stats').catch(() => ({ pending_count: 0 }));
+      _setNavBadge('/supervisor/requests', reqData.pending_count);
+      totalUnread += (reqData.pending_count || 0);
+
     } else if (user.role === 'STUDENT' || user.role === 'PRE_FYDP_STUDENT') {
       // Supervisor & Teacher DM unread
       const dmStats = await apiFetch('/api/chat/unread-count').catch(() => ({ supervisor_unread: 0, teacher_unread: 0, unread_count: 0 }));
@@ -483,27 +488,39 @@ async function loadNotifDropdown() {
     const user = await getCurrentUser();
     if (!user) return;
     const [nd, dm, grp, st, pf] = await Promise.allSettled([
-      apiFetch('/api/notifications?limit=8'),
-      apiFetch('/api/chat/unread-count'),
-      apiFetch('/api/chat/group-unread-count'),
+      user.role === 'PRE_FYDP_STUDENT' ? Promise.resolve({ notifications: [] }) : apiFetch('/api/notifications?limit=8'),
+      user.role === 'PRE_FYDP_STUDENT' ? Promise.resolve(null) : apiFetch('/api/chat/unread-count'),
+      user.role === 'PRE_FYDP_STUDENT' ? Promise.resolve(null) : apiFetch('/api/chat/group-unread-count'),
       user.role === 'SUPERVISOR' ? apiFetch('/api/supervisor/stats') : 
       user.role === 'COURSE_TEACHER' ? apiFetch('/api/teacher/stats') : Promise.resolve(null),
       (user.role === 'STUDENT' || user.role === 'PRE_FYDP_STUDENT') ? apiFetch('/api/pre-fydp/dashboard-stats') : Promise.resolve(null)
     ]);
 
-    let notifs = (nd.status === 'fulfilled' && nd.value && nd.value.notifications) ? nd.value.notifications : [];
+    // PRE_FYDP_STUDENT: always start with empty list — old FYDP notifications are not relevant here
+    let notifs = user.role === 'PRE_FYDP_STUDENT' ? [] : ((nd.status === 'fulfilled' && nd.value && nd.value.notifications) ? nd.value.notifications : []);
 
     // Inject dynamic summary items at the top
-    if (grp.status === 'fulfilled' && grp.value && grp.value.unread_count > 0) {
-      const link = (user.role === 'SUPERVISOR' || user.role === 'COURSE_TEACHER') ? (user.role === 'SUPERVISOR' ? '/supervisor/groups' : '/teacher/groups') : '/student/my-group-chat';
-      notifs.unshift({ notification_id: 'grp', is_read: 0, title: '👥 Group Chats', message: `You have ${grp.value.unread_count} unread group message(s).`, created_at: new Date().toISOString(), link });
-    }
-    if (dm.status === 'fulfilled' && dm.value && dm.value.unread_count > 0) {
-      const link = user.role === 'SUPERVISOR' ? '/supervisor/student-inbox' : user.role === 'COURSE_TEACHER' ? '/teacher/student-inbox' : '/student/supervisor-chat';
-      notifs.unshift({ notification_id: 'dm', is_read: 0, title: '💬 Direct Messages', message: `You have ${dm.value.unread_count} unread direct message(s).`, created_at: new Date().toISOString(), link });
+    // PRE_FYDP_STUDENT users do not have chat routes — skip group/DM virtual items to avoid 403 blank pages
+    if (user.role !== 'PRE_FYDP_STUDENT') {
+      if (grp.status === 'fulfilled' && grp.value && grp.value.unread_count > 0) {
+        const link = (user.role === 'SUPERVISOR' || user.role === 'COURSE_TEACHER') ? (user.role === 'SUPERVISOR' ? '/supervisor/groups' : '/teacher/groups') : '/student/my-group-chat';
+        notifs.unshift({ notification_id: 'grp', is_read: 0, title: '👥 Group Chats', message: `You have ${grp.value.unread_count} unread group message(s).`, created_at: new Date().toISOString(), link });
+      }
+      if (dm.status === 'fulfilled' && dm.value && dm.value.unread_count > 0) {
+        const link = user.role === 'SUPERVISOR' ? '/supervisor/student-inbox' : user.role === 'COURSE_TEACHER' ? '/teacher/student-inbox' : '/student/supervisor-chat';
+        notifs.unshift({ notification_id: 'dm', is_read: 0, title: '💬 Direct Messages', message: `You have ${dm.value.unread_count} unread direct message(s).`, created_at: new Date().toISOString(), link });
+      }
     }
     if (user.role === 'SUPERVISOR' && st.status === 'fulfilled' && st.value && st.value.pendingReports > 0) {
       notifs.unshift({ notification_id: 'appr', is_read: 0, title: '⏳ Pending Reports', message: `You have ${st.value.pendingReports} report(s) waiting for review.`, created_at: new Date().toISOString(), link: '/supervisor/approvals' });
+    }
+    if (user.role === 'SUPERVISOR') {
+      try {
+        const reqStats = await apiFetch('/api/supervisor/fydp1-request-stats');
+        if (reqStats && reqStats.pending_count > 0) {
+          notifs.unshift({ notification_id: 'fydp1req', is_read: 0, title: '📋 Group Requests', message: `You have ${reqStats.pending_count} pending FYDP-1 group request(s) from Pre-FYDP students.`, created_at: new Date().toISOString(), link: '/supervisor/requests' });
+        }
+      } catch(e) { /* silent */ }
     }
     if (user.role === 'COURSE_TEACHER' && st.status === 'fulfilled' && st.value && st.value.pendingInbox > 0) {
       notifs.unshift({ notification_id: 'inbox', is_read: 0, title: '📥 Escalated Inbox', message: `You have ${st.value.pendingInbox} escalated package(s) waiting for review.`, created_at: new Date().toISOString(), link: '/teacher/inbox' });

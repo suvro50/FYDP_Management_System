@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Group Requests — Course Teacher | FYDP System</title>
+  <meta name="description" content="Review and manage FYDP-1 group supervisor requests from Pre-FYDP students">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       GROUP REQUESTS — TEACHER PANEL (Professional Dark Theme)
+       ═══════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      background: #0b0e1a !important;
+      color: #e2e8f0 !important;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    .main-content { background: #0b0e1a !important; }
+    .page-content { background: transparent !important; padding: 24px 28px !important; }
+    .top-header {
+      background: rgba(11,14,26,0.92) !important;
+      border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+      backdrop-filter: blur(20px);
+    }
+
+    /* ── Animated background ── */
+    .page-content::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 230px; right: 0; bottom: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 10%, rgba(245,158,11,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 20% 80%, rgba(139,92,246,0.03) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+    .page-content > * { position: relative; z-index: 1; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      background: linear-gradient(180deg, #0d1025 0%, #0f1229 50%, #0d1025 100%) !important;
+      border-right: 1px solid rgba(255,255,255,0.06) !important;
+      position: fixed !important;
+      transition: width 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+      width: 230px !important;
+    }
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; width: 1px; height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(139,92,246,0.15), transparent);
+    }
+    .sidebar-header { padding: 16px !important; }
+    .sidebar-nav { padding: 8px 10px !important; }
+    .sidebar-nav .nav-label {
+      padding: 8px 10px 4px !important; font-size: 0.62rem !important;
+      text-transform: uppercase; letter-spacing: 0.1em; color: #475569;
+    }
+    .sidebar-nav a {
+      padding: 9px 12px !important; margin-bottom: 1px !important; font-size: 0.83rem !important;
+      white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;
+      display: flex !important; align-items: center !important; gap: 10px !important;
+      border-radius: 10px !important; transition: all 0.2s ease !important;
+    }
+    .sidebar-nav a:hover {
+      background: rgba(139,92,246,0.08) !important;
+      transform: translateX(2px);
+    }
+    .sidebar-nav a.active {
+      background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(234,88,12,0.1)) !important;
+      border: 1px solid rgba(245,158,11,0.25) !important;
+      color: #fbbf24 !important;
+    }
+    .sidebar-nav a .nav-icon { font-size: 16px !important; width: 18px !important; flex-shrink: 0 !important; }
+    .sidebar-footer { padding: 12px 14px !important; }
+    .main-content { margin-left: 230px !important; width: calc(100% - 230px) !important; }
+    .sidebar.sidebar-collapsed { width: 64px !important; }
+    .sidebar.sidebar-collapsed .brand-text, .sidebar.sidebar-collapsed .nav-label,
+    .sidebar.sidebar-collapsed .sidebar-user .user-info,
+    .sidebar.sidebar-collapsed a span:last-child { display: none !important; }
+    .sidebar.sidebar-collapsed .sidebar-nav a { justify-content: center; padding: 12px 0; }
+    .sidebar.sidebar-collapsed .brand { justify-content: center; }
+    .sidebar.sidebar-collapsed + .main-content { margin-left: 64px !important; width: calc(100% - 64px) !important; }
+
+    /* ── Page Hero ── */
+    .gr-hero {
+      position: relative;
+      border-radius: 18px;
+      padding: 24px 30px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1200 0%, #2a1b00 30%, #1f1600 60%, #1a1200 100%);
+      border: 1px solid rgba(245,158,11,0.12);
+    }
+    .gr-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%; right: -20%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%);
+      animation: heroGlow 8s ease-in-out infinite alternate;
+    }
+    @keyframes heroGlow {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, -20px) scale(1.1); }
+    }
+    .gr-hero-content {
+      position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .gr-hero-left { display: flex; align-items: center; gap: 18px; }
+    .gr-hero-icon {
+      width: 52px; height: 52px; border-radius: 16px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 28px rgba(245,158,11,0.3);
+      animation: iconFloat 3s ease-in-out infinite;
+    }
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .gr-hero-icon i { color: #fff; font-size: 1.3rem; }
+    .gr-hero-title {
+      font-size: 1.5rem; font-weight: 900; margin: 0;
+      background: linear-gradient(135deg, #ffffff, #fbbf24);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .gr-hero-sub { color: #94a3b8; font-size: 0.85rem; margin: 4px 0 0; }
+    .gr-hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(245,158,11,0.15); color: #f59e0b;
+      border: 1px solid rgba(245,158,11,0.3);
+      padding: 4px 14px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700;
+      margin-left: 12px;
+      animation: badgePulse 2s ease-in-out infinite;
+    }
+    @keyframes badgePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.2); }
+      50% { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+    }
+    .gr-hero-badge .pulse-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #f59e0b;
+      animation: dotPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+    .gr-hero-right { text-align: right; }
+
+    /* ── Slot indicator ── */
+    .gr-slot-bar { display: flex; gap: 6px; margin-top: 6px; }
+    .gr-slot {
+      width: 36px; height: 7px; border-radius: 4px;
+      background: #1e2240; transition: all 0.3s;
+    }
+    .gr-slot.filled {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      box-shadow: 0 0 6px rgba(245,158,11,0.3);
+    }
+
+    /* ── Stats Row ── */
+    .gr-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+    .gr-stat-card {
+      background: rgba(15,18,30,0.7);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px; padding: 20px 22px;
+      display: flex; align-items: center; gap: 16px;
+      transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+      position: relative; overflow: hidden;
+    }
+    .gr-stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.02), transparent);
+      transition: left 0.6s ease;
+    }
+    .gr-stat-card:hover { transform: translateY(-3px); }
+    .gr-stat-card:hover::before { left: 100%; }
+    .gr-stat-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.15rem; flex-shrink: 0;
+      position: relative;
+    }
+    .gr-stat-icon::after {
+      content: '';
+      position: absolute; inset: -3px; border-radius: 18px;
+      background: inherit; opacity: 0.25; filter: blur(8px); z-index: -1;
+    }
+    .gr-stat-icon.pending { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+    .gr-stat-icon.accepted { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+    .gr-stat-icon.rejected { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+    .gr-stat-icon.slots { background: linear-gradient(135deg, #6c5ce7, #7c3aed); color: #fff; }
+    .gr-stat-value { font-size: 2rem; font-weight: 900; color: #fff; line-height: 1; }
+    .gr-stat-label { font-size: 0.78rem; color: #94a3b8; font-weight: 600; margin-top: 3px; }
+
+    /* ── Filters ── */
+    .gr-filters { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+    .gr-filter-btn {
+      background: rgba(15,18,30,0.6);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #94a3b8; padding: 8px 18px; border-radius: 10px;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      transition: all 0.25s; backdrop-filter: blur(8px);
+    }
+    .gr-filter-btn:hover { border-color: #f59e0b; color: #e2e8f0; }
+    .gr-filter-btn.active {
+      background: rgba(245,158,11,0.12);
+      border-color: rgba(245,158,11,0.4);
+      color: #fbbf24;
+    }
+
+    /* ── Request Cards ── */
+    .gr-cards { display: flex; flex-direction: column; gap: 18px; }
+    .gr-card {
+      background: rgba(15,18,30,0.7);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px; overflow: hidden;
+      transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+      backdrop-filter: blur(8px);
+    }
+    .gr-card:hover {
+      border-color: rgba(255,255,255,0.1);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+      transform: translateY(-2px);
+    }
+    .gr-card-header {
+      padding: 22px 26px 16px;
+      display: flex; align-items: flex-start; gap: 18px;
+    }
+    .gr-card-avatar {
+      width: 54px; height: 54px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.15rem; font-weight: 800; color: #fff;
+      flex-shrink: 0; position: relative;
+    }
+    .gr-card-avatar::after {
+      content: '';
+      position: absolute; inset: -3px; border-radius: 19px;
+      background: inherit; opacity: 0.2; filter: blur(6px); z-index: -1;
+    }
+    .gr-card-info { flex: 1; min-width: 0; }
+    .gr-card-name {
+      font-size: 1.1rem; font-weight: 800; color: #fff;
+      margin: 0; display: flex; align-items: center; gap: 10px;
+    }
+    .gr-card-meta { font-size: 0.8rem; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 8px; }
+    .gr-card-meta i { font-size: 0.72rem; }
+    .gr-card-status {
+      padding: 5px 14px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .gr-card-status.pending { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+    .gr-card-status.accepted { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+    .gr-card-status.rejected { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+
+    .gr-card-body { padding: 0 26px 18px; }
+
+    /* ── Proposal box ── */
+    .gr-proposal {
+      background: rgba(6,8,15,0.6);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+    .gr-proposal:hover { border-color: rgba(255,255,255,0.1); }
+    .gr-proposal-label {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #475569; font-weight: 700; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .gr-proposal-label i { font-size: 0.6rem; color: #f59e0b; }
+    .gr-proposal-title { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; margin-bottom: 6px; }
+    .gr-proposal-abstract { font-size: 0.82rem; color: #94a3b8; line-height: 1.6; }
+
+    /* ── Members list ── */
+    .gr-members { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .gr-member {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(6,8,15,0.5);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px; padding: 10px 14px;
+      transition: all 0.2s;
+    }
+    .gr-member:hover { border-color: rgba(255,255,255,0.1); }
+    .gr-member-avatar {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .gr-member-name { font-size: 0.8rem; font-weight: 600; color: #e2e8f0; }
+    .gr-member-role { font-size: 0.68rem; color: #64748b; }
+    .gr-member-id { font-size: 0.65rem; color: #475569; }
+
+    /* ── Skills ── */
+    .gr-skills { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+    .gr-skill {
+      background: rgba(108,92,231,0.1); color: #a78bfa;
+      border: 1px solid rgba(108,92,231,0.2);
+      padding: 4px 12px; border-radius: 18px;
+      font-size: 0.72rem; font-weight: 600;
+    }
+
+    /* ── Info row ── */
+    .gr-info-row { display: flex; gap: 18px; margin-bottom: 16px; flex-wrap: wrap; }
+    .gr-info-item {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 0.8rem; color: #94a3b8;
+    }
+    .gr-info-item i { color: #475569; font-size: 0.75rem; }
+
+    /* ── Actions ── */
+    .gr-card-actions { padding: 0 26px 22px; display: flex; gap: 12px; }
+    .gr-btn {
+      padding: 11px 22px; border-radius: 12px;
+      font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; border: none;
+      transition: all 0.25s; display: flex; align-items: center; gap: 8px;
+    }
+    .gr-btn:hover { transform: translateY(-2px); }
+    .gr-btn.accept {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(16,185,129,0.25);
+    }
+    .gr-btn.accept:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+      box-shadow: 0 6px 20px rgba(16,185,129,0.35);
+    }
+    .gr-btn.reject {
+      background: rgba(15,18,30,0.6);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #ef4444;
+    }
+    .gr-btn.reject:hover {
+      background: rgba(239,68,68,0.1);
+      border-color: #ef4444;
+    }
+    .gr-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── Empty state ── */
+    .gr-empty { text-align: center; padding: 80px 20px; }
+    .gr-empty i { font-size: 3.5rem; color: #1e2240; margin-bottom: 18px; display: block; }
+    .gr-empty h3 { font-size: 1.15rem; font-weight: 800; color: #475569; margin: 0 0 8px; }
+    .gr-empty p { font-size: 0.85rem; color: #3d4466; max-width: 400px; margin: 0 auto; }
+
+    /* ── Rejection reason display ── */
+    .gr-rejection-box {
+      background: rgba(239,68,68,0.06);
+      border: 1px solid rgba(239,68,68,0.15);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+    }
+    .gr-rejection-label {
+      font-size: 0.72rem; color: #ef4444; font-weight: 700; margin-bottom: 4px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .gr-rejection-label i { font-size: 0.65rem; }
+    .gr-rejection-text { font-size: 0.82rem; color: #f87171; line-height: 1.5; }
+
+    /* ── Modal overlays ── */
+    .gr-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px);
+      z-index: 1000; display: none;
+      align-items: center; justify-content: center;
+    }
+    .gr-overlay.show { display: flex; }
+    .gr-modal {
+      background: rgba(15,18,30,0.95);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px; width: 100%; max-width: 500px;
+      padding: 32px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+      animation: modalIn 0.25s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .gr-modal h3 {
+      font-size: 1.15rem; font-weight: 800; color: #fff;
+      margin: 0 0 6px; display: flex; align-items: center; gap: 10px;
+    }
+    .gr-modal p { font-size: 0.85rem; color: #64748b; margin: 0 0 18px; }
+    .gr-modal textarea {
+      width: 100%;
+      background: rgba(6,8,15,0.6);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #e2e8f0; border-radius: 12px;
+      padding: 14px; font-size: 0.85rem;
+      resize: vertical; min-height: 110px;
+      outline: none; font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .gr-modal textarea:focus { border-color: rgba(108,92,231,0.5); }
+    .gr-modal-actions { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+
+    /* ── Toast animation ── */
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .gr-stats { grid-template-columns: repeat(2, 1fr); }
+      .gr-hero-content { flex-direction: column; gap: 16px; }
+      .gr-hero-right { text-align: left; }
+    }
+    @media (max-width: 600px) {
+      .gr-stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Course Teacher</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/teacher/dashboard"><span class="nav-icon"><i class="fas fa-th-large"></i></span> Dashboard</a>
+        <a href="/teacher/announcements"><span class="nav-icon"><i class="fas fa-bullhorn"></i></span> Announcements</a>
+        <a href="/teacher/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+        <a href="/teacher/students"><span class="nav-icon"><i class="fas fa-user-graduate"></i></span> Student List</a>
+        <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span> Student Messages</a>
+        <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span> Chat with Supervisors</a>
+        <a href="/teacher/group-requests" class="active">
+          <span class="nav-icon"><i class="fas fa-user-plus"></i></span> Group Requests
+          <span id="grReqBadgeSide" class="badge" style="display:none;margin-left:auto;font-size:0.65rem;padding:2px 7px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-radius:10px;font-weight:700;">0</span>
+        </a>
+        <div class="nav-label" style="margin-top:20px;">Account</div>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+        <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">CT</div>
+          <div class="user-info"><h4 id="userName">Course Teacher</h4><p>Course Teacher</p></div>
+          <button onclick="logout()" style="background:none;border:none;cursor:pointer;color:#475569;margin-left:auto;" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Teacher / <span>Group Requests</span></div>
+        <div class="header-actions">
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+
+        <!-- ═══ Page Hero ═══ -->
+        <div class="gr-hero">
+          <div class="gr-hero-content">
+            <div class="gr-hero-left">
+              <div class="gr-hero-icon"><i class="fas fa-user-plus"></i></div>
+              <div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <h1 class="gr-hero-title">Group Requests</h1>
+                  <span class="gr-hero-badge">
+                    <span class="pulse-dot"></span>
+                    <span id="liveTag">0 Pending</span>
+                  </span>
+                </div>
+                <p class="gr-hero-sub">Pre-FYDP groups requesting you as their FYDP-1 supervisor</p>
+              </div>
+            </div>
+            <div class="gr-hero-right">
+              <div style="font-size:0.85rem;color:#94a3b8;font-weight:600;">My FYDP-1 Slots</div>
+              <div class="gr-slot-bar" id="slotBar">
+                <div class="gr-slot"></div>
+                <div class="gr-slot"></div>
+                <div class="gr-slot"></div>
+              </div>
+              <div style="font-size:0.72rem;color:#475569;margin-top:4px;" id="slotText">0/3 used</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Stats ═══ -->
+        <div class="gr-stats">
+          <div class="gr-stat-card">
+            <div class="gr-stat-icon pending"><i class="fas fa-clock"></i></div>
+            <div><div class="gr-stat-value" id="statPending">0</div><div class="gr-stat-label">Pending Requests</div></div>
+          </div>
+          <div class="gr-stat-card">
+            <div class="gr-stat-icon accepted"><i class="fas fa-check-circle"></i></div>
+            <div><div class="gr-stat-value" id="statAccepted">0</div><div class="gr-stat-label">Accepted</div></div>
+          </div>
+          <div class="gr-stat-card">
+            <div class="gr-stat-icon rejected"><i class="fas fa-times-circle"></i></div>
+            <div><div class="gr-stat-value" id="statRejected">0</div><div class="gr-stat-label">Rejected</div></div>
+          </div>
+          <div class="gr-stat-card">
+            <div class="gr-stat-icon slots"><i class="fas fa-layer-group"></i></div>
+            <div><div class="gr-stat-value" id="statSlots">3</div><div class="gr-stat-label">Slots Available</div></div>
+          </div>
+        </div>
+
+        <!-- ═══ Filters ═══ -->
+        <div class="gr-filters">
+          <button class="gr-filter-btn active" onclick="filterRequests('')" data-filter="">All Requests</button>
+          <button class="gr-filter-btn" onclick="filterRequests('PENDING')" data-filter="PENDING"><i class="fas fa-clock" style="margin-right:4px;font-size:0.72rem;"></i> Pending</button>
+          <button class="gr-filter-btn" onclick="filterRequests('ACCEPTED')" data-filter="ACCEPTED"><i class="fas fa-check" style="margin-right:4px;font-size:0.72rem;"></i> Accepted</button>
+          <button class="gr-filter-btn" onclick="filterRequests('REJECTED')" data-filter="REJECTED"><i class="fas fa-times" style="margin-right:4px;font-size:0.72rem;"></i> Rejected</button>
+        </div>
+
+        <!-- ═══ Request Cards ═══ -->
+        <div class="gr-cards" id="requestCards">
+          <div class="gr-empty">
+            <i class="fas fa-spinner fa-spin"></i>
+            <h3>Loading requests...</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Reject Modal ═══ -->
+  <div class="gr-overlay" id="rejectModal">
+    <div class="gr-modal">
+      <h3><i class="fas fa-times-circle" style="color:#ef4444;"></i> Reject Request</h3>
+      <p>Please provide an optional reason for rejecting this request. The group will be notified.</p>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:0.82rem;color:#94a3b8;margin-bottom:4px;">Group: <strong id="rejectGroupName" style="color:#fff;"></strong></div>
+      </div>
+      <textarea id="rejectReason" placeholder="e.g. I am not available this semester, or your project domain doesn't match my expertise..."></textarea>
+      <div class="gr-modal-actions">
+        <button class="gr-btn" onclick="closeRejectModal()" style="background:rgba(15,18,30,0.6);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;">Cancel</button>
+        <button class="gr-btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;" onclick="confirmReject()"><i class="fas fa-times"></i> Reject</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Accept Confirm Modal ═══ -->
+  <div class="gr-overlay" id="acceptModal">
+    <div class="gr-modal">
+      <h3><i class="fas fa-check-circle" style="color:#10b981;"></i> Accept Group Request</h3>
+      <p>Are you sure you want to accept this group? This will:</p>
+      <ul style="font-size:0.82rem;color:#94a3b8;padding-left:20px;margin:14px 0;">
+        <li style="margin-bottom:6px;">Transition the group to <strong style="color:#a78bfa;">FYDP-1</strong></li>
+        <li style="margin-bottom:6px;">Assign you as their supervisor</li>
+        <li style="margin-bottom:6px;">Change all members from Pre-FYDP to FYDP Student</li>
+        <li>Auto-reject their other pending supervisor requests</li>
+      </ul>
+      <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:12px;padding:14px 18px;margin-bottom:18px;">
+        <div style="font-size:0.85rem;color:#10b981;font-weight:700;">Group: <span id="acceptGroupName"></span></div>
+        <div style="font-size:0.8rem;color:#34d399;margin-top:2px;">Project: <span id="acceptProjectTitle"></span></div>
+      </div>
+      <div class="gr-modal-actions">
+        <button class="gr-btn" onclick="closeAcceptModal()" style="background:rgba(15,18,30,0.6);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;">Cancel</button>
+        <button class="gr-btn accept" onclick="confirmAccept()"><i class="fas fa-check"></i> Accept & Assign</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    /* ═══════════════════════════════════════════════════════════
+       GROUP REQUESTS — JAVASCRIPT LOGIC
+       ═══════════════════════════════════════════════════════════ */
+    const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6','#6366f1','#d97706'];
+    function hashColor(str) {
+      let h = 0; for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+      return COLORS[Math.abs(h) % COLORS.length];
+    }
+    function getInit(name) {
+      return (name || 'G').split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+    }
+    function timeAgo(d) {
+      const diff = Date.now() - new Date(d).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'Just now';
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      const days = Math.floor(hrs / 24);
+      if (days === 1) return 'Yesterday';
+      return `${days}d ago`;
+    }
+
+    let allRequests = [];
+    let currentFilter = '';
+    let currentRejectId = null;
+    let currentAcceptId = null;
+    let myFydp1Count = 0;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInit(user.full_name);
+      }
+      loadRequests();
+    });
+
+    async function loadRequests() {
+      try {
+        const data = await apiFetch('/api/supervisor/fydp1-requests');
+        allRequests = data.requests || [];
+
+        // Compute stats
+        const pending = allRequests.filter(r => r.request_status === 'PENDING').length;
+        const accepted = allRequests.filter(r => r.request_status === 'ACCEPTED').length;
+        const rejected = allRequests.filter(r => ['REJECTED','AUTO_REJECTED'].includes(r.request_status)).length;
+
+        document.getElementById('statPending').textContent = pending;
+        document.getElementById('statAccepted').textContent = accepted;
+        document.getElementById('statRejected').textContent = rejected;
+        document.getElementById('liveTag').textContent = `${pending} Pending`;
+
+        // Load slot info
+        try {
+          const statsData = await apiFetch('/api/supervisor/stats');
+          const stageBreakdown = statsData.stageBreakdown || [];
+          const fydp1 = stageBreakdown.find(s => s.stage_name === 'FYDP-1');
+          myFydp1Count = fydp1 ? (fydp1.count || 0) : 0;
+        } catch(e) {
+          myFydp1Count = accepted; // fallback
+        }
+        const slotsUsed = myFydp1Count;
+        const slotsAvail = Math.max(0, 3 - slotsUsed);
+        document.getElementById('statSlots').textContent = slotsAvail;
+        document.getElementById('slotText').textContent = `${slotsUsed}/3 used`;
+        const slots = document.querySelectorAll('#slotBar .gr-slot');
+        slots.forEach((s, i) => {
+          if (i < slotsUsed) s.classList.add('filled');
+          else s.classList.remove('filled');
+        });
+
+        // Badge
+        const badge = document.getElementById('grReqBadgeSide');
+        if (badge && pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+        else if (badge) { badge.style.display = 'none'; }
+
+        renderRequests();
+      } catch(err) {
+        console.error('Load requests error:', err);
+        document.getElementById('requestCards').innerHTML = `
+          <div class="gr-empty">
+            <i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i>
+            <h3>Failed to load requests</h3>
+            <p>${err.message}</p>
+          </div>`;
+      }
+    }
+
+    function filterRequests(status) {
+      currentFilter = status;
+      document.querySelectorAll('.gr-filter-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.filter === status);
+      });
+      renderRequests();
+    }
+
+    function renderRequests() {
+      const container = document.getElementById('requestCards');
+      let filtered = allRequests;
+      if (currentFilter) {
+        if (currentFilter === 'REJECTED') {
+          filtered = allRequests.filter(r => ['REJECTED','AUTO_REJECTED'].includes(r.request_status));
+        } else {
+          filtered = allRequests.filter(r => r.request_status === currentFilter);
+        }
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="gr-empty">
+            <i class="fas fa-inbox"></i>
+            <h3>No ${currentFilter ? currentFilter.toLowerCase() : ''} requests found</h3>
+            <p>Pre-FYDP groups that want you as their FYDP-1 supervisor will appear here.</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(r => {
+        const color = hashColor(r.group_name || 'G');
+        const isPending = r.request_status === 'PENDING';
+        const statusClass = isPending ? 'pending' : (r.request_status === 'ACCEPTED' ? 'accepted' : 'rejected');
+        const statusLabel = r.request_status === 'AUTO_REJECTED' ? 'Auto-Rejected' : r.request_status;
+        const members = r.members || [];
+        const skills = r.required_skills || [];
+
+        const memberCards = members.map((m, i) => {
+          const mColor = hashColor(m.full_name || 'M');
+          return `<div class="gr-member">
+            <div class="gr-member-avatar" style="background:${mColor}">${getInit(m.full_name)}</div>
+            <div>
+              <div class="gr-member-name">${escapeHtml(m.full_name)}</div>
+              <div class="gr-member-role">${escapeHtml(m.member_role)} · ${escapeHtml(m.department || '')}</div>
+              <div class="gr-member-id">${escapeHtml(m.university_id || '')}</div>
+            </div>
+          </div>`;
+        }).join('');
+
+        const skillTags = skills.map(s => `<span class="gr-skill">${escapeHtml(s)}</span>`).join('');
+
+        const actions = isPending ? `
+          <div class="gr-card-actions">
+            <button class="gr-btn accept" onclick="showAcceptModal(${r.request_id}, '${escapeHtml(r.group_name).replace(/'/g, "\\'")}', '${escapeHtml(r.project_title).replace(/'/g, "\\'")}')" ${myFydp1Count >= 3 ? 'disabled title="You have reached 3 groups"' : ''}>
+              <i class="fas fa-check"></i> Accept Group
+            </button>
+            <button class="gr-btn reject" onclick="showRejectModal(${r.request_id}, '${escapeHtml(r.group_name).replace(/'/g, "\\'")}')">
+              <i class="fas fa-times"></i> Reject
+            </button>
+          </div>` : '';
+
+        const rejectionInfo = (r.request_status === 'REJECTED' || r.request_status === 'AUTO_REJECTED') && r.rejection_reason
+          ? `<div class="gr-rejection-box">
+               <div class="gr-rejection-label"><i class="fas fa-exclamation-circle"></i> Rejection Reason</div>
+               <div class="gr-rejection-text">${escapeHtml(r.rejection_reason)}</div>
+             </div>` : '';
+
+        return `
+          <div class="gr-card">
+            <div class="gr-card-header">
+              <div class="gr-card-avatar" style="background:${color}">${getInit(r.group_name)}</div>
+              <div class="gr-card-info">
+                <h3 class="gr-card-name">${escapeHtml(r.group_name)}</h3>
+                <div class="gr-card-meta">
+                  <span><i class="fas fa-user"></i> Lead: ${escapeHtml(r.leader_name || 'Unknown')} (${escapeHtml(r.leader_dept || '')})</span>
+                  <span>·</span>
+                  <span><i class="fas fa-clock"></i> ${timeAgo(r.created_at)}</span>
+                </div>
+              </div>
+              <span class="gr-card-status ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="gr-card-body">
+              <!-- Proposal -->
+              <div class="gr-proposal">
+                <div class="gr-proposal-label"><i class="fas fa-file-alt"></i> Project Proposal</div>
+                <div class="gr-proposal-title">${escapeHtml(r.project_title)}</div>
+                ${r.project_abstract ? `<div class="gr-proposal-abstract">${escapeHtml(r.project_abstract)}</div>` : ''}
+              </div>
+
+              ${rejectionInfo}
+
+              <!-- Info Row -->
+              <div class="gr-info-row">
+                <div class="gr-info-item"><i class="fas fa-layer-group"></i> ${escapeHtml(r.domain_name || '')}</div>
+                <div class="gr-info-item"><i class="fas fa-users"></i> ${r.member_count || members.length} Members</div>
+                ${r.github_url ? `<div class="gr-info-item"><i class="fab fa-github"></i> <a href="${r.github_url.startsWith('http') ? r.github_url : 'https://github.com/' + r.github_url}" target="_blank" style="color:#a78bfa;text-decoration:none;">GitHub</a></div>` : ''}
+              </div>
+
+              <!-- Skills -->
+              ${skills.length ? `<div style="margin-bottom:16px;"><div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:#475569;font-weight:700;margin-bottom:8px;">Required Skills</div><div class="gr-skills">${skillTags}</div></div>` : ''}
+
+              <!-- Members -->
+              <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:#475569;font-weight:700;margin-bottom:10px;">Team Members</div>
+              <div class="gr-members">${memberCards}</div>
+            </div>
+            ${actions}
+          </div>`;
+      }).join('');
+    }
+
+    // ── Accept Flow ──
+    function showAcceptModal(requestId, groupName, projectTitle) {
+      currentAcceptId = requestId;
+      document.getElementById('acceptGroupName').textContent = groupName;
+      document.getElementById('acceptProjectTitle').textContent = projectTitle;
+      document.getElementById('acceptModal').classList.add('show');
+    }
+    function closeAcceptModal() {
+      document.getElementById('acceptModal').classList.remove('show');
+      currentAcceptId = null;
+    }
+    async function confirmAccept() {
+      if (!currentAcceptId) return;
+      const btn = document.querySelector('#acceptModal .gr-btn.accept');
+      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      try {
+        const result = await apiFetch(`/api/supervisor/fydp1-requests/${currentAcceptId}`, {
+          method: 'PATCH',
+          body: { action: 'accept' }
+        });
+        closeAcceptModal();
+        showToast(result.message || 'Group accepted successfully!', 'success');
+        loadRequests();
+      } catch(err) {
+        showToast(err.message, 'error');
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Accept & Assign';
+      }
+    }
+
+    // ── Reject Flow ──
+    function showRejectModal(requestId, groupName) {
+      currentRejectId = requestId;
+      document.getElementById('rejectGroupName').textContent = groupName;
+      document.getElementById('rejectReason').value = '';
+      document.getElementById('rejectModal').classList.add('show');
+    }
+    function closeRejectModal() {
+      document.getElementById('rejectModal').classList.remove('show');
+      currentRejectId = null;
+    }
+    async function confirmReject() {
+      if (!currentRejectId) return;
+      const btn = document.querySelector('#rejectModal .gr-btn:last-child');
+      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rejecting...';
+      try {
+        const reason = document.getElementById('rejectReason').value.trim();
+        await apiFetch(`/api/supervisor/fydp1-requests/${currentRejectId}`, {
+          method: 'PATCH',
+          body: { action: 'reject', rejection_reason: reason || null }
+        });
+        closeRejectModal();
+        showToast('Request rejected', 'info');
+        loadRequests();
+      } catch(err) {
+        showToast(err.message, 'error');
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-times"></i> Reject';
+      }
+    }
+
+    // ── Toast ──
+    function showToast(msg, type = 'info') {
+      const t = document.createElement('div');
+      const bg = type === 'success' ? 'linear-gradient(135deg,#10b981,#059669)'
+               : type === 'error' ? 'linear-gradient(135deg,#ef4444,#dc2626)'
+               : 'linear-gradient(135deg,#6c5ce7,#7c3aed)';
+      t.style.cssText = `position:fixed;bottom:30px;right:30px;background:${bg};color:#fff;padding:14px 24px;border-radius:14px;font-size:0.88rem;font-weight:600;z-index:9999;box-shadow:0 10px 40px rgba(0,0,0,0.35);animation:slideUp 0.3s ease;max-width:400px;`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(10px)'; t.style.transition = 'all 0.3s'; }, 3500);
+      setTimeout(() => t.remove(), 4000);
+    }
+
+    // Close modals on overlay click
+    document.getElementById('rejectModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeRejectModal();
+    });
+    document.getElementById('acceptModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeAcceptModal();
+    });
+  </script>
+</body>
+</html>

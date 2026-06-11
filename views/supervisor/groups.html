@@ -219,6 +219,9 @@
     .week-card.all-approved { border-color:rgba(16,185,129,0.4); background:rgba(16,185,129,0.05); }
     .week-card.has-pending { border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.05); }
     .week-card.no-sub { opacity:0.5; }
+    .week-card.active-week { border-color:#3b82f6; box-shadow:0 0 12px rgba(59,130,246,0.25); opacity:1; }
+    .active-badge { position:absolute; top:-10px; right:-10px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; font-size:0.65rem; font-weight:700; padding:3px 8px; border-radius:12px; box-shadow:0 2px 8px rgba(59,130,246,0.4); }
+
     .wk-label { font-size:0.6rem; font-weight:700; letter-spacing:1px; color:#475569; text-transform:uppercase; }
     .wk-num { font-size:1.5rem; font-weight:800; color:#fff; line-height:1; margin:4px 0; }
     .wk-num.all-approved { color:#10b981; }
@@ -567,6 +570,7 @@
         <a href="/supervisor/groups" class="active"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
         <a href="/supervisor/approvals"><span class="nav-icon"><i class="fas fa-clipboard-check"></i></span> Pending Approvals <span class="badge badge-yellow" id="pendingBadgeSide" style="margin-left:auto;display:none"></span></a>
         <a href="/supervisor/student-inbox"><span class="nav-icon"><i class="fas fa-inbox"></i></span> Student Messages <span id="sidebarBadge" class="badge" style="display:none;margin-left:auto;font-size:0.65rem;padding:2px 6px;background:#ef4444;color:#fff;border-radius:10px;">0</span></a>
+        <a href="/supervisor/requests"><span class="nav-icon"><i class="fas fa-user-plus"></i></span> Group Requests</a>
         <a href="/supervisor/chat"><span class="nav-icon"><i class="fas fa-comments"></i></span> Chat with Teachers</a>
         <div class="nav-label" style="margin-top:20px;">Account</div>
         <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
@@ -688,6 +692,7 @@
                   <span><span class="wl-dot submitted"></span> Submitted</span>
                   <span><span class="wl-dot pending"></span> Pending</span>
                   <span><span class="wl-dot none"></span> No Submission</span>
+                  <span style="color:#334155;"><i class="fas fa-lock" style="font-size:0.65rem;margin-right:3px;"></i> Not Yet Open</span>
                 </div>
                 <div class="week-grid" id="weekGrid"></div>
               </div>
@@ -1034,7 +1039,7 @@
         const cfg = stageConfig[stage.stage_name] || { cls:'fydp1', sem:'', sub:'' };
         const totalSubmitted = stage.groups.reduce((s,g) => s + (g.submitted_count||0), 0);
         const totalApproved  = stage.groups.reduce((s,g) => s + (g.approved_count||0), 0);
-        const pills = stage.groups.map(g => `<span class="sem-group-pill">${escapeHtml(g.group_code)}</span>`).join('');
+        const pills = stage.groups.map(g => `<span class="sem-group-pill">${escapeHtml(g.group_name || g.group_code)}</span>`).join('');
         return `
           <div class="sem-card ${cfg.cls}" onclick="openStage('${stage.stage_name}')">
             <div class="sem-card-top">
@@ -1090,7 +1095,7 @@
       return `
         <div class="group-item-card" onclick="openGroupDetail(${g.group_id})">
           <div class="gic-header">
-            <div><div class="gic-title">${escapeHtml(g.group_code)}</div><div class="gic-section">Section: ${escapeHtml(g.section_code||'—')}</div></div>
+            <div><div class="gic-title">${escapeHtml(g.group_name || g.group_code)}</div><div class="gic-section">${escapeHtml(g.group_code)} · Section: ${escapeHtml(g.section_code||'—')}</div></div>
             <div class="gic-status ${statusCls}">${statusLbl}</div>
           </div>
           <div class="gic-domain">
@@ -1126,7 +1131,7 @@
         ['Supervisor','My Groups', currentStage, g.group_code],
         [() => showView('semester'), () => showView('semester'), () => openStage(currentStage), null]
       );
-      document.getElementById('gdTitle').textContent = g.group_code;
+      document.getElementById('gdTitle').textContent = g.group_name || g.group_code;
       document.getElementById('gdBadges').innerHTML = `
         <span class="gic-domain-badge">${escapeHtml((g.domain_name||'').split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,6))}</span>
         <span style="font-size:0.8rem;color:#64748b">Section: ${escapeHtml(g.section_code||'—')}</span>
@@ -1184,6 +1189,8 @@
       }
     }
 
+
+
     // ══════════════════════════════════════════
     //  LEVEL 3 — Weekly Grid
     // ══════════════════════════════════════════
@@ -1208,8 +1215,9 @@
           if (submitted > 0 && approved === submitted) { cls = 'all-approved'; numCls = 'all-approved'; }
           else if (submitted > 0) { cls = 'has-pending'; numCls = 'has-pending'; }
           const dotCls = cls === 'all-approved' ? 'green' : cls === 'has-pending' ? 'yellow' : 'gray';
+          
           html += `
-            <div class="week-card ${cls}" onclick="${submitted>0?`openWeekDetail(${groupId},${wk})`:''}">
+            <div class="week-card ${cls} ${wk === data.active_week ? 'active-week' : ''}" onclick="openWeekDetail(${groupId},${wk})">
               <div class="wk-label">WEEK</div>
               <div class="wk-num ${numCls}">${wk}</div>
               <div class="wk-stats">${submitted}/${total}<br>${approved}✓</div>

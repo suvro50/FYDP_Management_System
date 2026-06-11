@@ -3,10 +3,6 @@ const router = express.Router();
 const db = require("../config/db");
 const { sendEmail } = require("../utils/email");
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-
 // 1. Strict Faculty & Admin Check (Accepts admin.uiu.ac.bd and uiu.ac.bd)
 const isFacultyOrAdminEmail =
   /^(?!.*[0-9]{6}@)[a-zA-Z0-9._%+-]+@((cse|eee|bba|ce|ece|admin|pharmacy|bge|english|economics|env)\.)?uiu\.ac\.bd$/i;
@@ -98,15 +94,15 @@ router.post("/login", async (req, res) => {
     const io = req.app.get('io');
     if (io && user.role !== 'ADMIN') {
       io.to('admin_room').emit('user_login', {
-        user_id:       user.user_id,
-        full_name:     user.full_name,
-        email:         user.email,
-        role:          user.role,
+        user_id: user.user_id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
         university_id: user.university_id,
-        department:    user.department,
-        batch:         user.batch,
-        phone:         user.phone,
-        login_time:    new Date().toISOString(),
+        department: user.department,
+        batch: user.batch,
+        phone: user.phone,
+        login_time: new Date().toISOString(),
       });
     }
 
@@ -153,7 +149,7 @@ router.post("/signup", async (req, res) => {
     }
 
     // Validate UIU email format based on selected role and department
-    const deptMap = { 1: "cse", 2: "eee", 3: "bba", 4: "ece", 5: "ce" };
+    const deptMap = { 2: "cse", 3: "eee", 4: "bba", 5: "ce" };
     const deptName = deptMap[department_id] || "cse";
     const expectedDomain = isStudent ? `bs${deptName}.uiu.ac.bd` : `${deptName}.uiu.ac.bd`;
 
@@ -163,7 +159,7 @@ router.post("/signup", async (req, res) => {
         return res.status(400).json({ error: `Please use a valid UIU Student email matching your ID and department (e.g. 123456789@${expectedDomain}).` });
       }
     } else {
-      const facultyRegex = new RegExp(`^(?!.*[0-9]{6,9}@)[a-zA-Z0-9._%+-]+@(${expectedDomain}|uiu\\.ac\\.bd)$`, "i");
+      const facultyRegex = new RegExp(`^(?!.*[0-9]{6,9}@)[a-zA-Z0-9._%+-]+@(${expectedDomain}|uiu\.ac\.bd)$`, "i");
       if (!facultyRegex.test(email)) {
         return res.status(400).json({ error: `Please use a valid UIU Faculty email matching your department (e.g. name@${expectedDomain}).` });
       }
@@ -232,11 +228,9 @@ router.post("/signup", async (req, res) => {
         html: buildOtpEmail(full_name, otp, "signup"),
       });
     } catch (emailErr) {
-      // Roll back: delete the just-created user so they can retry
       console.error("❌ OTP email failed, rolling back user:", newUserId);
       await db.query("DELETE FROM users WHERE user_id = ?", [newUserId]);
 
-      // Return a clear, user-friendly error about the email issue
       const userMsg = emailErr.message.includes("does not appear to accept")
         ? emailErr.message
         : `We could not deliver the verification code to "${email}". Please double-check the email address and try again.`;
@@ -375,7 +369,7 @@ router.post("/resend-otp", async (req, res) => {
     if (!email) return res.status(400).json({ error: "Email is required." });
 
     const [rows] = await db.query(
-      "SELECT user_id, full_name FROM users WHERE email = ?",
+      "SELECT user_id, full_name, personal_email FROM users WHERE email = ?",
       [email],
     );
     if (rows.length === 0)

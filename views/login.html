@@ -828,7 +828,7 @@
           </div>
         </div>
 
-        <!-- Email -->
+        <!-- UIU Email -->
         <div class="form-group">
           <label>UIU Email Address</label>
           <div class="input-wrapper">
@@ -838,6 +838,7 @@
           <div class="field-msg" id="su-email-msg"></div>
         </div>
 
+
         <!-- Dept + Batch -->
         <div class="form-2col">
           <div class="form-group">
@@ -845,10 +846,9 @@
             <div class="input-wrapper has-select">
               <select id="su-dept" onchange="handleRoleChange()" required>
                 <option value="">Select</option>
-                <option value="1">CSE</option>
-                <option value="2">EEE</option>
-                <option value="3">BBA</option>
-                <option value="4">ECE</option>
+                <option value="2">CSE</option>
+                <option value="3">EEE</option>
+                <option value="4">BBA</option>
                 <option value="5">CE</option>
               </select>
               <i class="fas fa-building input-icon"></i>
@@ -1839,10 +1839,10 @@
     const uid      = document.getElementById('su-uid').value.trim();
     const role     = document.getElementById('su-role').value;
     const email    = document.getElementById('su-email').value.trim();
-    const dept     = document.getElementById('su-dept').value;
-    const batch    = document.getElementById('su-batch').value.trim();
-    const password = document.getElementById('su-pass').value;
-    const confirm  = document.getElementById('su-confirm').value;
+    const dept           = document.getElementById('su-dept').value;
+    const batch          = document.getElementById('su-batch').value.trim();
+    const password       = document.getElementById('su-pass').value;
+    const confirm        = document.getElementById('su-confirm').value;
     const isStudent = ['STUDENT','PRE_FYDP_STUDENT'].includes(role);
 
     // --- Validation rules ---
@@ -1850,11 +1850,11 @@
       { id: 'su-name',    label: 'Full Name',        ok: !!name },
       { id: 'su-uid',     label: 'University ID',     ok: !!uid },
       { id: 'su-role',    label: 'Role',              ok: !!role },
-      { id: 'su-email',   label: 'Email Address',     ok: !!email && email.includes('@') },
+      { id: 'su-email',   label: 'UIU Email',         ok: !!email && email.includes('@') },
       { id: 'su-dept',    label: 'Department',         ok: !!dept },
       ...(isStudent ? [{ id: 'su-batch', label: 'Batch', ok: !!batch }] : []),
-      { id: 'su-pass',    label: 'Password',           ok: password.length >= 8 },
-      { id: 'su-confirm', label: 'Confirm Password',   ok: !!confirm && confirm === password },
+      { id: 'su-pass',           label: 'Password',           ok: password.length >= 8 },
+      { id: 'su-confirm',        label: 'Confirm Password',   ok: !!confirm && confirm === password },
     ];
 
     // Password strength check
@@ -1916,9 +1916,9 @@
       if (data.success) {
         otpEmail   = email;
         otpContext = 'signup';
-        document.getElementById('otpEmailShow').textContent = otpEmail;
+        document.getElementById('otpEmailShow').textContent = email;
         document.getElementById('step3dot').style.display = 'none';
-        showToast('Account created! Please verify your email.', 'success');
+        showToast('Account created! Check your UIU Gmail for the OTP code.', 'success');
         checklist.classList.remove('show');
         showView('otp');
         startOTPTimer();

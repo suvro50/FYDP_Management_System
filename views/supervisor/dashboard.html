@@ -187,6 +187,7 @@
         <a href="/supervisor/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
         <a href="/supervisor/approvals"><span class="nav-icon"><i class="fas fa-clipboard-check"></i></span> Pending Approvals <span class="badge badge-yellow" id="pendingBadgeSide" style="margin-left:auto;display:none"></span></a>
         <a href="/supervisor/student-inbox"><span class="nav-icon"><i class="fas fa-inbox"></i></span> Student Messages <span id="sidebarBadge" class="badge" style="display:none;margin-left:auto;font-size:0.65rem;padding:2px 6px;background:#ef4444;color:#fff;border-radius:10px;">0</span></a>
+        <a href="/supervisor/requests"><span class="nav-icon"><i class="fas fa-user-plus"></i></span> Group Requests <span id="fydp1ReqBadge" class="badge" style="display:none;margin-left:auto;font-size:0.65rem;padding:2px 6px;background:#f59e0b;color:#fff;border-radius:10px;">0</span></a>
         <a href="/supervisor/chat"><span class="nav-icon"><i class="fas fa-comments"></i></span> Chat with Teachers</a>
         <div class="nav-label" style="margin-top:20px;">Account</div>
         <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
@@ -606,14 +607,15 @@
             `<span style="width:24px;height:24px;border-radius:50%;background:hsl(${i*60+200},60%,45%);display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;border:2px solid #161929;margin-left:${i?-6:0}px;" title="Student ${String.fromCharCode(65+i)}">${String.fromCharCode(65+i)}</span>`
           ).join('');
         }
-        const grpCode = g.group_code || g.group_name || ('GRP-' + (g.group_id?g.group_id.toString().padStart(3,'0'):'001'));
+        const grpName = g.group_name || g.group_code || ('GRP-' + (g.group_id?g.group_id.toString().padStart(3,'0'):'001'));
+        const grpCode = g.group_code || '';
         const domName = g.domain_name || g.domain || ['Web Dev','Machine Learning','IoT','App Dev'][(g.group_id||0)%4];
         const secName = g.section || g.section_code || ['CSE-A','CSE-B','CSE-C','EEE-A'][(g.group_id||0)%4];
         const wkNum = (g.latest_reports && g.latest_reports.length) ? g.latest_reports[0].week_no : (g.latest_week||1);
 
         return `<tr style="border-bottom:1px solid #1e2240;transition:background 0.15s;" onmouseover="this.style.background='#1a1d2e'" onmouseout="this.style.background=''">
           <td style="padding:12px 16px;"><span style="width:10px;height:10px;border-radius:50%;background:${dotColor};display:inline-block;"></span></td>
-          <td style="padding:12px 16px;"><a href="/supervisor/groups?group=${g.group_id}" style="color:#60a5fa;font-weight:700;text-decoration:none;font-size:0.85rem;">${escapeHtml(grpCode)}</a></td>
+          <td style="padding:12px 16px;"><a href="/supervisor/groups?group=${g.group_id}" style="color:#60a5fa;font-weight:700;text-decoration:none;font-size:0.85rem;">${escapeHtml(grpName)}</a>${g.group_name ? `<div style="font-size:0.68rem;color:#475569;margin-top:1px;">${escapeHtml(grpCode)}</div>` : ''}</td>
           <td style="padding:12px 16px;color:${sc};font-size:0.82rem;font-weight:700;text-transform:uppercase;">${escapeHtml(domName)}</td>
           <td style="padding:12px 16px;"><span style="background:${sc}20;color:${sc};border:1px solid ${sc}40;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">${escapeHtml(g.stage_name)}</span></td>
           <td style="padding:12px 16px;color:#94a3b8;font-size:0.82rem;">${escapeHtml(secName)}</td>

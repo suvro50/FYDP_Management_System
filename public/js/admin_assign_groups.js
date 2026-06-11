@@ -73,7 +73,11 @@ function renderGroups(groups) {
       <div class="grp-head">
         <div>
           <div class="grp-code-big">${escapeHtml(g.group_code)}</div>
-          <div class="grp-domain">${escapeHtml(g.domain_name || '')}</div>
+          <div class="grp-domain">
+            ${g.group_name ? `<span style="color:#e2e8f0;font-weight:700;">${escapeHtml(g.group_name)}</span> <span style="opacity:0.5;margin:0 4px;">•</span> ` : ''}
+            ${g.project_title ? `${escapeHtml(g.project_title)} <span style="opacity:0.5;margin:0 4px;">•</span> ` : ''}
+            ${escapeHtml(g.domain_name || '')}
+          </div>
         </div>
         <span style="padding:3px 10px;border-radius:20px;font-size:0.68rem;font-weight:800;background:${bg};color:${col};border:1px solid ${col}33;">
           ${g.stage_name}
@@ -142,8 +146,9 @@ async function viewGroup(groupId) {
     document.getElementById('modalGroupCode').textContent = g.group_code;
     document.getElementById('modalContent').innerHTML = `
       <div style="margin-bottom:16px;">
-        <div style="font-size:0.7rem;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px;">Project Title</div>
-        <div style="font-size:0.9rem;font-weight:700;color:#fff;">${escapeHtml(g.project_title || 'Untitled')}</div>
+        <div style="font-size:0.7rem;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px;">Group Name & Title</div>
+        <div style="font-size:0.9rem;font-weight:700;color:#fff;">${g.group_name ? escapeHtml(g.group_name) : '<span style="color:#64748b;font-style:italic;">No Name</span>'}</div>
+        <div style="font-size:0.8rem;color:#94a3b8;margin-top:2px;">${g.project_title ? escapeHtml(g.project_title) : '<span style="font-style:italic;">No Title</span>'}</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
         <div><div class="promote-label">Stage</div><span class="ab ab-indigo">${g.stage_name}</span></div>

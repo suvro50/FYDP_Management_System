@@ -245,14 +245,14 @@
     .sv-tbl th.center { text-align: center; }
     .sv-tbl th.right  { text-align: right; }
 
-    /* col widths: Group 14, Stage 14, Section 9, Members 6, Supervisor 17, AssignTo 25, Action 15 = 100% */
-    .sv-tbl th:nth-child(1) { width: 14%; }
-    .sv-tbl th:nth-child(2) { width: 14%; }
+    /* col widths: Group 16, Stage 11, Section 9, Members 6, Supervisor 17, AssignTo 18, Action 23 = 100% */
+    .sv-tbl th:nth-child(1) { width: 16%; }
+    .sv-tbl th:nth-child(2) { width: 11%; }
     .sv-tbl th:nth-child(3) { width: 9%; }
     .sv-tbl th:nth-child(4) { width: 6%; }
     .sv-tbl th:nth-child(5) { width: 17%; }
-    .sv-tbl th:nth-child(6) { width: 25%; }
-    .sv-tbl th:nth-child(7) { width: 15%; }
+    .sv-tbl th:nth-child(6) { width: 18%; }
+    .sv-tbl th:nth-child(7) { width: 23%; }
 
     .sv-tbl td {
       padding: 8px 6px;
@@ -317,10 +317,10 @@
     .sv-assign-sel option { background: #0d0f1e; color: #e2e8f0; }
     .sv-assign-sel option:disabled { color: #334155; }
 
-    /* Save button */
+    /* Save & Drop buttons */
     .sv-btn-save {
-      display: inline-flex; align-items: center; gap: 3px;
-      padding: 5px 10px; border-radius: 7px;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 8px; border-radius: 7px;
       font-size: 0.63rem; font-weight: 700;
       background: linear-gradient(135deg, #10b981, #059669);
       color: #fff; border: none; cursor: pointer;
@@ -330,6 +330,18 @@
     }
     .sv-btn-save:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
     .sv-btn-save:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    .sv-btn-drop {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 8px; border-radius: 7px;
+      font-size: 0.63rem; font-weight: 700;
+      background: rgba(239,68,68,0.15); color: #ef4444; 
+      border: 1px solid rgba(239,68,68,0.3);
+      cursor: pointer; white-space: nowrap;
+      transition: opacity 0.14s, transform 0.14s, background 0.14s;
+      margin-right: 4px;
+    }
+    .sv-btn-drop:hover { background: rgba(239,68,68,0.25); transform: translateY(-1px); }
 
     /* Members badge */
     .sv-members {
@@ -668,7 +680,11 @@ function renderGroups(groups) {
     <tr id="row-${g.group_id}">
       <td class="sv-grp-cell">
         <div class="sv-grp-code">${escapeHtml(g.group_code)}</div>
-        <div class="sv-grp-domain">${escapeHtml(g.domain_name || '')}</div>
+        <div class="sv-grp-domain">
+          ${g.group_name ? `<span style="color:#e2e8f0;font-weight:700;">${escapeHtml(g.group_name)}</span> <span style="opacity:0.5;margin:0 4px;">•</span> ` : ''}
+          ${g.project_title ? `${escapeHtml(g.project_title)} <span style="opacity:0.5;margin:0 4px;">•</span> ` : ''}
+          ${escapeHtml(g.domain_name || '')}
+        </div>
       </td>
       <td>
         <span class="sv-pill ${stagePillClass[g.stage_name] || 'sv-pill-1'}">
@@ -697,7 +713,10 @@ function renderGroups(groups) {
           </select>
         </div>
       </td>
-      <td style="text-align:right;">
+      <td style="text-align:right; white-space:nowrap; overflow:visible;">
+        <button class="sv-btn-drop" onclick="dropGroup(${g.group_id})" title="Drop Group">
+          <i class="fas fa-trash"></i> Drop
+        </button>
         <button class="sv-btn-save" id="btn-${g.group_id}" onclick="saveSupervisor(${g.group_id})">
           <i class="fas fa-save"></i> Save
         </button>
@@ -727,6 +746,24 @@ async function saveSupervisor(groupId) {
     svToast(err.message || 'Failed to save.', 'error');
     btn.disabled  = false;
     btn.innerHTML = origHtml;
+  }
+}
+
+/* ─── Drop Group ────────────────────────────────────────── */
+async function dropGroup(groupId) {
+  if (!confirm('Are you sure you want to drop this group? This action will deactivate the group.')) return;
+  
+  try {
+    const res = await fetch(`/api/admin/groups/${groupId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      svToast('Group dropped successfully', 'success');
+      loadGroups();
+    } else {
+      svToast(data.error || 'Failed to drop group', 'error');
+    }
+  } catch (err) {
+    svToast('Network error', 'error');
   }
 }
 

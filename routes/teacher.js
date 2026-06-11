@@ -639,7 +639,7 @@ router.get('/groups-by-stage', async (req, res) => {
         [g.group_id]
       );
       if (latestReports.length === 0) {
-        g.color_status = 'red';
+        g.color_status = 'green';
       } else {
         const latestWeek = latestReports[0].week_no;
         const latest = latestReports.filter(r => r.week_no === latestWeek);
@@ -647,7 +647,7 @@ router.get('/groups-by-stage', async (req, res) => {
         const somePending = latest.some(r => r.supervisor_status === 'PENDING');
         const daysSince = (Date.now() - new Date(latestReports[0].submitted_at)) / (1000*60*60*24);
         if (daysSince > 7 && somePending) g.color_status = 'red';
-        else if (allApproved && latest.length >= g.member_count) g.color_status = 'green';
+        else if (allApproved && !somePending) g.color_status = 'green';
         else g.color_status = 'yellow';
       }
 
@@ -716,7 +716,7 @@ router.get('/groups/:id/weekly-summary', async (req, res) => {
 
     // Verify teacher has access to this group
     const [[access]] = await db.query(
-      `SELECT pg.group_id FROM project_groups pg
+      `SELECT pg.group_id, pg.created_at FROM project_groups pg
        JOIN course_teacher_sections cts ON cts.section_id = pg.section_id
        WHERE pg.group_id = ? AND cts.course_teacher_id = ? AND pg.is_active = 1`,
       [groupId, teacherId]
@@ -759,7 +759,13 @@ router.get('/groups/:id/weekly-summary', async (req, res) => {
       w.total_members = members.length;
     });
 
-    res.json({ weeks, members, total_members: members.length });
+    const msPerWeek = 1000 * 60 * 60 * 24 * 7;
+    const createdAt = new Date(access.created_at);
+    let activeWeek = Math.floor((Date.now() - createdAt.getTime()) / msPerWeek) + 1;
+    if (activeWeek < 1) activeWeek = 1;
+    if (activeWeek > 12) activeWeek = 12;
+
+    res.json({ weeks, members, total_members: members.length, active_week: activeWeek });
   } catch (err) {
     console.error('Teacher weekly summary error:', err);
     res.status(500).json({ error: 'Failed to load weekly summary' });
@@ -984,7 +990,7 @@ router.get('/supervising-groups', async (req, res) => {
         `SELECT week_no, supervisor_status, submitted_at FROM weekly_progress_reports
          WHERE group_id = ? ORDER BY week_no DESC, submitted_at DESC LIMIT 10`, [g.group_id]);
 
-      if (latestReports.length === 0) { g.color_status = 'yellow'; }
+      if (latestReports.length === 0) { g.color_status = 'green'; }
       else {
         const lw = latestReports[0].week_no;
         const lr = latestReports.filter(r => r.week_no === lw);
@@ -992,7 +998,7 @@ router.get('/supervising-groups', async (req, res) => {
         const someP = lr.some(r => r.supervisor_status === 'PENDING');
         const days = (Date.now() - new Date(latestReports[0].submitted_at)) / (1000*60*60*24);
         if (days > 7 && someP) g.color_status = 'red';
-        else if (allA && lr.length >= g.member_count) g.color_status = 'green';
+        else if (allA && !someP) g.color_status = 'green';
         else g.color_status = 'yellow';
       }
 
@@ -1018,7 +1024,7 @@ router.get('/supervising-groups/:id/weekly-summary', async (req, res) => {
   try {
     const supId = req.session.user.user_id;
     const [[group]] = await db.query(
-      'SELECT group_id FROM project_groups WHERE group_id=? AND supervisor_id=?',
+      'SELECT group_id, created_at FROM project_groups WHERE group_id=? AND supervisor_id=?',
       [req.params.id, supId]);
     if (!group) return res.status(403).json({ error: 'Not your group' });
 
@@ -1048,7 +1054,13 @@ router.get('/supervising-groups/:id/weekly-summary', async (req, res) => {
       w.rejected_count = w.reports.filter(r => r.supervisor_status === 'REJECTED').length;
       w.total_members = members.length;
     });
-    res.json({ weeks, members, total_members: members.length });
+    const msPerWeek = 1000 * 60 * 60 * 24 * 7;
+    const createdAt = new Date(group.created_at);
+    let activeWeek = Math.floor((Date.now() - createdAt.getTime()) / msPerWeek) + 1;
+    if (activeWeek < 1) activeWeek = 1;
+    if (activeWeek > 12) activeWeek = 12;
+
+    res.json({ weeks, members, total_members: members.length, active_week: activeWeek });
   } catch (err) {
     console.error('Supervising weekly-summary error:', err);
     res.status(500).json({ error: 'Failed to load weekly summary' });

@@ -537,7 +537,7 @@ router.get("/assign-supervisor/groups", async (req, res) => {
     }
 
     const [groups] = await db.query(
-      `SELECT pg.group_id, pg.group_code, s.section_code,
+      `SELECT pg.group_id, pg.group_code, pg.group_name, pg.project_title, s.section_code,
               fs.stage_name, pd.domain_name,
               pg.supervisor_id,
               u_sup.full_name as supervisor_name,
@@ -586,6 +586,59 @@ router.put("/assign-supervisor", async (req, res) => {
     res.json({ success: true, message: "Supervisor assigned successfully" });
   } catch (err) {
     res.status(500).json({ error: "Failed to assign supervisor" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DELETE /api/admin/groups/:id — Drop a group
+// ═══════════════════════════════════════════════════════════════════════════
+router.delete("/groups/:id", async (req, res) => {
+  try {
+    const groupId = req.params.id;
+
+    // Get all students in the group before dropping
+    const [members] = await db.query(
+      "SELECT student_id FROM group_members WHERE group_id=?", 
+      [groupId]
+    );
+
+    await db.query("UPDATE project_groups SET is_active=0, deleted_at=NOW(), project_status='DROPPED' WHERE group_id=?", [groupId]);
+
+    // Revert students to Pre-FYDP state so they can request another supervisor
+    for (const row of members) {
+      await db.query(
+        "UPDATE users SET role='PRE_FYDP_STUDENT' WHERE user_id=?",
+        [row.student_id]
+      );
+      await db.query(
+        "UPDATE user_profiles SET profile_type='PRE_FYDP', availability_status='LOOKING' WHERE user_id=? AND (profile_type='FYDP' OR profile_type='PRE_FYDP')",
+        [row.student_id]
+      );
+      
+      // Find their pre_fydp_group_id and cancel any accepted supervisor requests
+      const [pfGroupRows] = await db.query(
+        "SELECT group_id FROM pre_fydp_group_members WHERE user_id=?",
+        [row.student_id]
+      );
+      if (pfGroupRows.length > 0) {
+        const pfGroupId = pfGroupRows[0].group_id;
+        await db.query(
+          "UPDATE supervisor_requests SET request_status='CANCELLED', rejection_reason='Group was dropped by Admin', responded_at=NOW() WHERE pre_fydp_group_id=? AND request_status='ACCEPTED'",
+          [pfGroupId]
+        );
+        
+        // Remove the Pre-FYDP group data so students can start fresh
+        await db.query("DELETE FROM pre_fydp_group_members WHERE group_id=?", [pfGroupId]);
+        await db.query("DELETE FROM pre_fydp_join_requests WHERE group_id=?", [pfGroupId]);
+        await db.query("DELETE FROM pre_fydp_group_required_skills WHERE group_id=?", [pfGroupId]);
+        await db.query("DELETE FROM pre_fydp_groups WHERE group_id=?", [pfGroupId]);
+      }
+    }
+
+    res.json({ success: true, message: "Group dropped successfully" });
+  } catch (err) {
+    console.error("Drop group error:", err);
+    res.status(500).json({ error: "Failed to drop group" });
   }
 });
 
@@ -926,6 +979,187 @@ router.delete('/teacher-sections/:id', async (req, res) => {
     res.json({ success: true, message: 'Assignment removed' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to remove assignment' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SUPERVISOR REQUEST MANAGEMENT (Admin Oversight)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── All Supervisor Requests (Admin View) ───────────────────────────────────
+router.get('/supervisor-requests', async (req, res) => {
+  try {
+    const { status, supervisor_id } = req.query;
+
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (status) {
+      where += ' AND sr.request_status = ?';
+      params.push(status);
+    }
+    if (supervisor_id) {
+      where += ' AND sr.supervisor_id = ?';
+      params.push(supervisor_id);
+    }
+
+    const [requests] = await db.query(
+      `SELECT sr.*,
+              g.group_name, g.description as group_description,
+              pd.domain_name,
+              u_sup.full_name as supervisor_name, d_sup.short_code as supervisor_dept,
+              u_lead.full_name as leader_name,
+              (SELECT COUNT(*) FROM pre_fydp_group_members WHERE group_id = g.group_id) as member_count
+       FROM supervisor_requests sr
+       JOIN pre_fydp_groups g ON g.group_id = sr.pre_fydp_group_id
+       JOIN project_domains pd ON pd.domain_id = g.domain_id
+       JOIN users u_sup ON u_sup.user_id = sr.supervisor_id
+       JOIN departments d_sup ON d_sup.department_id = u_sup.department_id
+       JOIN users u_lead ON u_lead.user_id = g.created_by
+       ${where}
+       ORDER BY
+         CASE sr.request_status WHEN 'PENDING' THEN 0 WHEN 'ACCEPTED' THEN 1 ELSE 2 END,
+         sr.created_at DESC`,
+      params
+    );
+
+    res.json({ requests });
+  } catch (err) {
+    console.error('Admin supervisor requests error:', err);
+    res.status(500).json({ error: 'Failed to load supervisor requests' });
+  }
+});
+
+// ── Supervisor Slot Usage Overview ─────────────────────────────────────────
+router.get('/supervisor-slots', async (req, res) => {
+  try {
+    const [supervisors] = await db.query(`
+      SELECT u.user_id, u.full_name, d.short_code as department,
+             (SELECT COUNT(*) FROM project_groups pg
+              JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+              WHERE pg.supervisor_id = u.user_id AND pg.is_active = 1
+              AND fs.stage_name = 'FYDP-1') as fydp1_count,
+             (SELECT COUNT(*) FROM project_groups pg
+              JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+              WHERE pg.supervisor_id = u.user_id AND pg.is_active = 1
+              AND fs.stage_name = 'FYDP-2') as fydp2_count,
+             (SELECT COUNT(*) FROM project_groups pg
+              JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+              WHERE pg.supervisor_id = u.user_id AND pg.is_active = 1
+              AND fs.stage_name = 'FYDP-3') as fydp3_count,
+             (SELECT COUNT(*) FROM supervisor_requests sr
+              WHERE sr.supervisor_id = u.user_id AND sr.request_status = 'PENDING') as pending_requests,
+             (SELECT COUNT(*) FROM supervisor_requests sr
+              WHERE sr.supervisor_id = u.user_id AND sr.request_status = 'ACCEPTED') as accepted_requests
+      FROM users u
+      JOIN departments d ON d.department_id = u.department_id
+      WHERE u.role IN ('SUPERVISOR', 'COURSE_TEACHER') AND u.is_active = 1
+      ORDER BY u.full_name
+    `);
+
+    res.json({ supervisors });
+  } catch (err) {
+    console.error('Supervisor slots error:', err);
+    res.status(500).json({ error: 'Failed to load supervisor slots' });
+  }
+});
+
+// ── Manual Group-to-Supervisor Assignment (Admin Override) ─────────────────
+router.post('/manual-assign', async (req, res) => {
+  try {
+    const { pre_fydp_group_id, supervisor_id, project_title } = req.body;
+    const adminId = req.session.user.user_id;
+
+    if (!pre_fydp_group_id || !supervisor_id) {
+      return res.status(400).json({ error: 'pre_fydp_group_id and supervisor_id are required' });
+    }
+
+    // Get group info
+    const [[group]] = await db.query(
+      `SELECT g.*, pd.domain_name,
+              (SELECT COUNT(*) FROM pre_fydp_group_members WHERE group_id = g.group_id) as member_count
+       FROM pre_fydp_groups g
+       JOIN project_domains pd ON pd.domain_id = g.domain_id
+       WHERE g.group_id = ?`, [pre_fydp_group_id]
+    );
+    if (!group) return res.status(404).json({ error: 'Pre-FYDP group not found' });
+
+    // Check supervisor slot
+    const [[slotCheck]] = await db.query(
+      `SELECT COUNT(*) as fydp1_count FROM project_groups pg
+       JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+       WHERE pg.supervisor_id = ? AND pg.is_active = 1 AND fs.stage_name = 'FYDP-1'`,
+      [supervisor_id]
+    );
+    if (slotCheck.fydp1_count >= 3) {
+      return res.status(400).json({ error: 'Supervisor already has 3 FYDP-1 groups' });
+    }
+
+    // Get stage and section
+    const [[fydp1Stage]] = await db.query(`SELECT stage_id FROM fydp_stages WHERE stage_name = 'FYDP-1'`);
+    const [[defaultSection]] = await db.query(`SELECT section_id FROM sections WHERE is_active = 1 ORDER BY section_id LIMIT 1`);
+
+    // Generate group code
+    const [[maxCode]] = await db.query(
+      `SELECT MAX(CAST(SUBSTRING(group_code, 6) AS UNSIGNED)) as max_num FROM project_groups WHERE group_code LIKE 'UIU-G%'`
+    );
+    const nextNum = (maxCode?.max_num || 0) + 1;
+    const groupCode = `UIU-G${String(nextNum).padStart(3, '0')}`;
+
+    const title = project_title || group.group_name;
+
+    // Create project group
+    const [pgResult] = await db.query(
+      `INSERT INTO project_groups (group_code, project_title, project_domain_id, supervisor_id, current_stage_id, section_id, project_status, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', 1)`,
+      [groupCode, title, group.domain_id, supervisor_id, fydp1Stage.stage_id, defaultSection.section_id]
+    );
+    const newGroupId = pgResult.insertId;
+
+    // Move members
+    const [members] = await db.query(
+      `SELECT user_id, member_role FROM pre_fydp_group_members WHERE group_id = ?`, [pre_fydp_group_id]
+    );
+    const roleMap = { 'Lead': 'TEAM_LEAD', 'Frontend': 'DEVELOPER', 'Backend': 'DEVELOPER', 'ML Engineer': 'DEVELOPER', 'DevOps': 'DEVELOPER', 'Security': 'DEVELOPER', 'Tester': 'TESTER', 'Data Engineer': 'DATA_ENGINEER', 'Other': 'DEVELOPER' };
+
+    for (const m of members) {
+      await db.query(`INSERT INTO group_members (group_id, student_id, member_role) VALUES (?, ?, ?)`,
+        [newGroupId, m.user_id, roleMap[m.member_role] || 'DEVELOPER']);
+      await db.query(`UPDATE users SET role = 'STUDENT' WHERE user_id = ? AND role = 'PRE_FYDP_STUDENT'`, [m.user_id]);
+      await db.query(`UPDATE user_profiles SET profile_type = 'FYDP', availability_status = 'IN_TEAM' WHERE user_id = ? AND profile_type = 'PRE_FYDP'`, [m.user_id]);
+
+      // Notify member
+      await db.query(
+        `INSERT INTO notifications (user_id, notification_type, title, message, is_read) VALUES (?, 'SYSTEM_ALERT', ?, ?, 0)`,
+        [m.user_id, `🎉 Admin Assigned — Welcome to FYDP-1!`, `Admin has assigned your group "${group.group_name}" to FYDP-1 with group code ${groupCode}. You are now an FYDP Student!`]
+      );
+    }
+
+    // Close pre-FYDP group
+    await db.query(`UPDATE pre_fydp_groups SET group_status = 'CLOSED' WHERE group_id = ?`, [pre_fydp_group_id]);
+
+    // Cancel any pending supervisor requests for this group
+    await db.query(
+      `UPDATE supervisor_requests SET request_status = 'AUTO_REJECTED', rejection_reason = 'Admin manually assigned group', responded_at = NOW()
+       WHERE pre_fydp_group_id = ? AND request_status = 'PENDING'`,
+      [pre_fydp_group_id]
+    );
+
+    // Notify supervisor
+    await db.query(
+      `INSERT INTO notifications (user_id, notification_type, title, message, is_read) VALUES (?, 'SYSTEM_ALERT', ?, ?, 0)`,
+      [supervisor_id, `📋 New Group Assigned by Admin`, `Admin has assigned group "${group.group_name}" (${groupCode}) to you for FYDP-1.`]
+    );
+
+    res.json({
+      success: true,
+      message: `Group "${group.group_name}" assigned to supervisor as ${groupCode}`,
+      group_code: groupCode,
+      new_group_id: newGroupId
+    });
+  } catch (err) {
+    console.error('Manual assign error:', err);
+    res.status(500).json({ error: err.message || 'Failed to manually assign group' });
   }
 });
 

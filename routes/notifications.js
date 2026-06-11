@@ -116,6 +116,15 @@ function enrichNotification(n, role) {
     }
   }
 
+  // Supervisor request notifications
+  if (t === 'SUPERVISOR_REQUEST_RECEIVED') {
+    link = isSupervisor ? '/supervisor/requests' : '/notifications';
+  } else if (t === 'SUPERVISOR_REQUEST_ACCEPTED') {
+    link = isPreFydp || isStudent ? '/student/dashboard' : '/notifications';
+  } else if (t === 'SUPERVISOR_REQUEST_REJECTED' || t === 'SUPERVISOR_SLOT_FULL') {
+    link = isPreFydp ? '/pre-fydp/dashboard' : '/notifications';
+  }
+
   n.link = link;
   return n;
 }

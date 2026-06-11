@@ -224,6 +224,23 @@
     async function loadNotifications() {
       try {
         const user = await getCurrentUser();
+
+        // PRE_FYDP_STUDENT: skip old DB notifications entirely — show only live join-request alerts
+        if (user.role === 'PRE_FYDP_STUDENT') {
+          let notifs = [];
+          if (currentPage === 1) {
+            try {
+              const pfData = await apiFetch('/api/pre-fydp/dashboard-stats');
+              if (pfData && pfData.incoming_requests > 0) {
+                notifs.push({ notification_id: 'pf', is_read: 0, title: '🤝 Join Requests', message: `You have ${pfData.incoming_requests} pending join request(s) for your group.`, created_at: new Date().toISOString(), link: '/pre-fydp/my-requests', notification_type: 'SYSTEM_ALERT' });
+              }
+            } catch(e) { /* silent */ }
+          }
+          renderNotifications(notifs);
+          renderPagination({ totalPages: 0 });
+          return;
+        }
+
         const promises = [apiFetch(`/api/notifications?page=${currentPage}&limit=15`)];
         
         // Inject virtual notifications only on page 1
@@ -236,7 +253,7 @@
             promises.push(apiFetch('/api/chat/unread-count').catch(()=>null));
             promises.push(apiFetch('/api/chat/group-unread-count').catch(()=>null));
             promises.push(apiFetch('/api/teacher/stats').catch(()=>null));
-          } else if (user.role === 'STUDENT' || user.role === 'PRE_FYDP_STUDENT') {
+          } else if (user.role === 'STUDENT') {
             promises.push(apiFetch('/api/chat/unread-count').catch(()=>null));
             promises.push(apiFetch('/api/chat/group-unread-count').catch(()=>null));
           }

@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Group Requests — Supervisor</title>
+  <meta name="description" content="Review and manage FYDP-1 group requests from Pre-FYDP students">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background:#0d0f1e !important; color:#e2e8f0 !important; font-family:'Inter','Segoe UI',sans-serif; }
+    .main-content { background:#0d0f1e !important; }
+    .page-content { background:#0d0f1e !important; padding:20px 24px !important; }
+    .top-header { background:#0d0f1e !important; border-bottom:1px solid #1e2240 !important; }
+
+    /* Sidebar */
+    .sidebar { background:#12152a !important; border-right:1px solid #1e2240 !important; position:fixed !important; width:230px !important; transition:width 0.25s ease !important; }
+    .sidebar-header { padding:16px 16px !important; }
+    .sidebar-nav { padding:8px 10px !important; }
+    .sidebar-nav .nav-label { padding:8px 10px 4px !important; font-size:0.62rem !important; }
+    .sidebar-nav a { padding:9px 12px !important; margin-bottom:1px !important; font-size:0.83rem !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; display:flex !important; align-items:center !important; gap:10px !important; border-radius:8px !important; }
+    .sidebar-nav a .nav-icon { font-size:16px !important; width:18px !important; flex-shrink:0 !important; }
+    .sidebar-footer { padding:12px 14px !important; }
+    .main-content { margin-left:230px !important; width:calc(100% - 230px) !important; }
+    .sidebar.sidebar-collapsed { width:64px !important; }
+    .sidebar.sidebar-collapsed .brand-text, .sidebar.sidebar-collapsed .nav-label, .sidebar.sidebar-collapsed .sidebar-user .user-info, .sidebar.sidebar-collapsed a span:last-child { display:none !important; }
+    .sidebar.sidebar-collapsed .sidebar-nav a { justify-content:center; padding:12px 0; }
+    .sidebar.sidebar-collapsed .brand { justify-content:center; }
+    .sidebar.sidebar-collapsed + .main-content { margin-left:64px !important; width:calc(100% - 64px) !important; }
+
+    /* Stats Row */
+    .sr-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+    .sr-stat-card { background:#161929; border:1px solid #1e2240; border-radius:14px; padding:18px 20px; display:flex; align-items:center; gap:14px; transition:all 0.2s; }
+    .sr-stat-card:hover { border-color:#3d4466; transform:translateY(-2px); }
+    .sr-stat-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+    .sr-stat-icon.pending { background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; }
+    .sr-stat-icon.accepted { background:linear-gradient(135deg,#10b981,#059669); color:#fff; }
+    .sr-stat-icon.rejected { background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; }
+    .sr-stat-icon.slots { background:linear-gradient(135deg,#6c5ce7,#7c3aed); color:#fff; }
+    .sr-stat-value { font-size:1.8rem; font-weight:900; color:#fff; line-height:1; }
+    .sr-stat-label { font-size:0.78rem; color:#94a3b8; font-weight:600; margin-top:2px; }
+
+    /* Filters */
+    .sr-filters { display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+    .sr-filter-btn { background:#1a1d2e; border:1px solid #2d3354; color:#94a3b8; padding:7px 16px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .sr-filter-btn:hover { border-color:#6c5ce7; color:#e2e8f0; }
+    .sr-filter-btn.active { background:#6c5ce740; border-color:#6c5ce7; color:#a78bfa; }
+
+    /* Request Cards */
+    .sr-cards { display:flex; flex-direction:column; gap:16px; }
+    .sr-card { background:#161929; border:1px solid #1e2240; border-radius:16px; overflow:hidden; transition:all 0.25s; }
+    .sr-card:hover { border-color:#2d3354; box-shadow:0 4px 20px rgba(0,0,0,0.2); }
+    .sr-card-header { padding:20px 24px 14px; display:flex; align-items:flex-start; gap:16px; }
+    .sr-card-avatar { width:50px; height:50px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:800; color:#fff; flex-shrink:0; }
+    .sr-card-info { flex:1; min-width:0; }
+    .sr-card-name { font-size:1.05rem; font-weight:800; color:#fff; margin:0; display:flex; align-items:center; gap:8px; }
+    .sr-card-meta { font-size:0.78rem; color:#64748b; margin-top:3px; }
+    .sr-card-status { padding:4px 12px; border-radius:20px; font-size:0.72rem; font-weight:700; flex-shrink:0; text-transform:uppercase; letter-spacing:0.04em; }
+    .sr-card-status.pending { background:#f59e0b20; color:#f59e0b; border:1px solid #f59e0b30; }
+    .sr-card-status.accepted { background:#10b98120; color:#10b981; border:1px solid #10b98130; }
+    .sr-card-status.rejected { background:#ef444420; color:#ef4444; border:1px solid #ef444430; }
+
+    .sr-card-body { padding:0 24px 16px; }
+    .sr-proposal { background:#0d0f1e; border:1px solid #1e2240; border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+    .sr-proposal-title { font-size:0.92rem; font-weight:700; color:#e2e8f0; margin-bottom:6px; }
+    .sr-proposal-abstract { font-size:0.82rem; color:#94a3b8; line-height:1.55; }
+    .sr-proposal-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.06em; color:#475569; font-weight:700; margin-bottom:4px; }
+
+    /* Members list */
+    .sr-members { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+    .sr-member { display:flex; align-items:center; gap:8px; background:#0d0f1e; border:1px solid #1e2240; border-radius:10px; padding:8px 12px; }
+    .sr-member-avatar { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700; color:#fff; flex-shrink:0; }
+    .sr-member-name { font-size:0.78rem; font-weight:600; color:#e2e8f0; }
+    .sr-member-role { font-size:0.65rem; color:#64748b; }
+    .sr-member-id { font-size:0.65rem; color:#475569; }
+
+    /* Skills */
+    .sr-skills { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+    .sr-skill { background:#6c5ce720; color:#a78bfa; border:1px solid #6c5ce730; padding:3px 10px; border-radius:16px; font-size:0.72rem; font-weight:600; }
+
+    /* Info row */
+    .sr-info-row { display:flex; gap:16px; margin-bottom:14px; flex-wrap:wrap; }
+    .sr-info-item { display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#94a3b8; }
+    .sr-info-item i { color:#475569; font-size:0.75rem; }
+
+    /* Actions */
+    .sr-card-actions { padding:0 24px 20px; display:flex; gap:10px; }
+    .sr-btn { padding:10px 20px; border-radius:10px; font-size:0.85rem; font-weight:700; cursor:pointer; border:none; transition:all 0.2s; display:flex; align-items:center; gap:8px; }
+    .sr-btn:hover { transform:translateY(-1px); }
+    .sr-btn.accept { background:linear-gradient(135deg,#10b981,#059669); color:#fff; }
+    .sr-btn.accept:hover { background:linear-gradient(135deg,#059669,#047857); box-shadow:0 4px 12px rgba(16,185,129,0.3); }
+    .sr-btn.reject { background:#1a1d2e; border:1px solid #ef444440; color:#ef4444; }
+    .sr-btn.reject:hover { background:#ef444420; border-color:#ef4444; }
+    .sr-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+    /* Empty state */
+    .sr-empty { text-align:center; padding:60px 20px; }
+    .sr-empty i { font-size:3rem; color:#1e2240; margin-bottom:16px; display:block; }
+    .sr-empty h3 { font-size:1.1rem; font-weight:800; color:#475569; margin:0 0 8px; }
+    .sr-empty p { font-size:0.85rem; color:#3d4466; }
+
+    /* Reject modal */
+    .sr-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:1000; display:none; align-items:center; justify-content:center; }
+    .sr-overlay.show { display:flex; }
+    .sr-modal { background:#161929; border:1px solid #1e2240; border-radius:16px; width:100%; max-width:480px; padding:28px; }
+    .sr-modal h3 { font-size:1.1rem; font-weight:800; color:#fff; margin:0 0 6px; }
+    .sr-modal p { font-size:0.82rem; color:#64748b; margin:0 0 16px; }
+    .sr-modal textarea { width:100%; background:#0d0f1e; border:1px solid #2d3354; color:#e2e8f0; border-radius:10px; padding:12px; font-size:0.85rem; resize:vertical; min-height:100px; outline:none; font-family:inherit; }
+    .sr-modal textarea:focus { border-color:#6c5ce7; }
+    .sr-modal-actions { display:flex; gap:10px; margin-top:16px; justify-content:flex-end; }
+
+    /* Slot indicator */
+    .sr-slot-bar { display:flex; gap:6px; margin-top:10px; }
+    .sr-slot { width:32px; height:6px; border-radius:3px; background:#1e2240; }
+    .sr-slot.filled { background:linear-gradient(90deg,#6c5ce7,#a78bfa); }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+          <div class="brand-text"><h3>FYDP System</h3><p>Supervisor Panel</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/supervisor/dashboard"><span class="nav-icon"><i class="fas fa-th-large"></i></span> Dashboard</a>
+        <a href="/supervisor/groups"><span class="nav-icon"><i class="fas fa-users"></i></span> My Groups</a>
+        <a href="/supervisor/approvals"><span class="nav-icon"><i class="fas fa-clipboard-check"></i></span> Pending Approvals</a>
+        <a href="/supervisor/student-inbox"><span class="nav-icon"><i class="fas fa-inbox"></i></span> Student Messages</a>
+        <a href="/supervisor/requests" class="active"><span class="nav-icon"><i class="fas fa-user-plus"></i></span> Group Requests <span id="fydp1ReqBadgeSide" class="badge" style="display:none;margin-left:auto;font-size:0.65rem;padding:2px 6px;background:#f59e0b;color:#fff;border-radius:10px;">0</span></a>
+        <a href="/supervisor/chat"><span class="nav-icon"><i class="fas fa-comments"></i></span> Chat with Teachers</a>
+        <div class="nav-label" style="margin-top:20px;">Account</div>
+        <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span> My Profile</a>
+        <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span> Notifications</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="userAvatar">SV</div>
+          <div class="user-info"><h4 id="userName">Supervisor</h4><p>Supervisor</p></div>
+          <button onclick="logout()" style="background:none;border:none;cursor:pointer;color:#475569;margin-left:auto;" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="top-header">
+        <div class="breadcrumb"><i class="fas fa-home"></i> Supervisor / <span>Group Requests</span></div>
+        <div class="header-actions">
+          <div class="notif-wrap">
+            <button onclick="toggleNotifDropdown()" id="notifBell">
+              <i class="fas fa-bell"></i>
+              <span id="notifBadge">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button onclick="markAllNotifRead()">Mark All Read</button>
+              </div>
+              <div class="notif-dropdown-body" id="notifDropdownBody">
+                <div style="padding:20px;text-align:center;color:#64748b;">
+                  <i class="fas fa-spinner fa-spin" style="margin-bottom:8px;display:block;"></i>
+                  Loading...
+                </div>
+              </div>
+              <div class="notif-dropdown-footer">
+                <a href="/notifications">View All Notifications</a>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <!-- Page Title -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;">
+              <i class="fas fa-user-plus" style="color:#fff;font-size:1.1rem;"></i>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h1 style="font-size:1.4rem;font-weight:800;color:#fff;margin:0;">Group Requests</h1>
+                <span id="liveTag" style="background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40;padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;">0 Pending</span>
+              </div>
+              <p style="color:#64748b;font-size:0.82rem;margin:3px 0 0;">Pre-FYDP groups requesting you as their supervisor</p>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.82rem;color:#94a3b8;">My FYDP-1 Slots</div>
+            <div class="sr-slot-bar" id="slotBar">
+              <div class="sr-slot"></div>
+              <div class="sr-slot"></div>
+              <div class="sr-slot"></div>
+            </div>
+            <div style="font-size:0.72rem;color:#475569;margin-top:4px;" id="slotText">0/3 used</div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="sr-stats">
+          <div class="sr-stat-card">
+            <div class="sr-stat-icon pending"><i class="fas fa-clock"></i></div>
+            <div><div class="sr-stat-value" id="statPending">0</div><div class="sr-stat-label">Pending</div></div>
+          </div>
+          <div class="sr-stat-card">
+            <div class="sr-stat-icon accepted"><i class="fas fa-check-circle"></i></div>
+            <div><div class="sr-stat-value" id="statAccepted">0</div><div class="sr-stat-label">Accepted</div></div>
+          </div>
+          <div class="sr-stat-card">
+            <div class="sr-stat-icon rejected"><i class="fas fa-times-circle"></i></div>
+            <div><div class="sr-stat-value" id="statRejected">0</div><div class="sr-stat-label">Rejected</div></div>
+          </div>
+          <div class="sr-stat-card">
+            <div class="sr-stat-icon slots"><i class="fas fa-layer-group"></i></div>
+            <div><div class="sr-stat-value" id="statSlots">3</div><div class="sr-stat-label">Slots Available</div></div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="sr-filters">
+          <button class="sr-filter-btn active" onclick="filterRequests('')" data-filter="">All</button>
+          <button class="sr-filter-btn" onclick="filterRequests('PENDING')" data-filter="PENDING">Pending</button>
+          <button class="sr-filter-btn" onclick="filterRequests('ACCEPTED')" data-filter="ACCEPTED">Accepted</button>
+          <button class="sr-filter-btn" onclick="filterRequests('REJECTED')" data-filter="REJECTED">Rejected</button>
+        </div>
+
+        <!-- Request Cards -->
+        <div class="sr-cards" id="requestCards">
+          <div class="sr-empty">
+            <i class="fas fa-spinner fa-spin"></i>
+            <h3>Loading requests...</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reject Modal -->
+  <div class="sr-overlay" id="rejectModal">
+    <div class="sr-modal">
+      <h3><i class="fas fa-times-circle" style="color:#ef4444;margin-right:8px;"></i>Reject Request</h3>
+      <p>Please provide an optional reason for rejecting this request. The group will be notified.</p>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:4px;">Group: <strong id="rejectGroupName" style="color:#fff;"></strong></div>
+      </div>
+      <textarea id="rejectReason" placeholder="e.g. I am not available this semester, or your project domain doesn't match my expertise..."></textarea>
+      <div class="sr-modal-actions">
+        <button class="sr-btn reject" onclick="closeRejectModal()" style="border:1px solid #2d3354;color:#94a3b8;">Cancel</button>
+        <button class="sr-btn" style="background:#ef4444;color:#fff;" onclick="confirmReject()"><i class="fas fa-times"></i> Reject</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accept Confirm Modal -->
+  <div class="sr-overlay" id="acceptModal">
+    <div class="sr-modal">
+      <h3><i class="fas fa-check-circle" style="color:#10b981;margin-right:8px;"></i>Accept Group Request</h3>
+      <p>Are you sure you want to accept this group? This will:</p>
+      <ul style="font-size:0.82rem;color:#94a3b8;padding-left:20px;margin:12px 0;">
+        <li>Transition the group to <strong style="color:#a78bfa;">FYDP-1</strong></li>
+        <li>Assign you as their supervisor</li>
+        <li>Change all members from Pre-FYDP to FYDP Student</li>
+        <li>Auto-reject their other pending supervisor requests</li>
+      </ul>
+      <div style="background:#10b98120;border:1px solid #10b98130;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+        <div style="font-size:0.82rem;color:#10b981;font-weight:700;">Group: <span id="acceptGroupName"></span></div>
+        <div style="font-size:0.78rem;color:#34d399;">Project: <span id="acceptProjectTitle"></span></div>
+      </div>
+      <div class="sr-modal-actions">
+        <button class="sr-btn" onclick="closeAcceptModal()" style="background:#1a1d2e;border:1px solid #2d3354;color:#94a3b8;">Cancel</button>
+        <button class="sr-btn accept" onclick="confirmAccept()"><i class="fas fa-check"></i> Accept & Assign</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
+    function hashColor(str) {
+      let h = 0; for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+      return COLORS[Math.abs(h) % COLORS.length];
+    }
+    function getInit(name) {
+      return (name || 'G').split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+    }
+    function timeAgo(d) {
+      const diff = Date.now() - new Date(d).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      const days = Math.floor(hrs / 24);
+      return `${days}d ago`;
+    }
+
+    let allRequests = [];
+    let currentFilter = '';
+    let currentRejectId = null;
+    let currentAcceptId = null;
+    let myFydp1Count = 0;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.full_name;
+        document.getElementById('userAvatar').textContent = getInit(user.full_name);
+      }
+      loadRequests();
+    });
+
+    async function loadRequests() {
+      try {
+        const data = await apiFetch('/api/supervisor/fydp1-requests');
+        allRequests = data.requests || [];
+
+        // Compute stats
+        const pending = allRequests.filter(r => r.request_status === 'PENDING').length;
+        const accepted = allRequests.filter(r => r.request_status === 'ACCEPTED').length;
+        const rejected = allRequests.filter(r => ['REJECTED','AUTO_REJECTED'].includes(r.request_status)).length;
+
+        document.getElementById('statPending').textContent = pending;
+        document.getElementById('statAccepted').textContent = accepted;
+        document.getElementById('statRejected').textContent = rejected;
+        document.getElementById('liveTag').textContent = `${pending} Pending`;
+
+        // Load slot info
+        try {
+          const statsData = await apiFetch('/api/supervisor/stats');
+          const stageBreakdown = statsData.stageBreakdown || [];
+          const fydp1 = stageBreakdown.find(s => s.stage_name === 'FYDP-1');
+          myFydp1Count = fydp1 ? (fydp1.count || 0) : 0;
+        } catch(e) {
+          myFydp1Count = accepted; // fallback
+        }
+        const slotsUsed = myFydp1Count;
+        const slotsAvail = Math.max(0, 3 - slotsUsed);
+        document.getElementById('statSlots').textContent = slotsAvail;
+        document.getElementById('slotText').textContent = `${slotsUsed}/3 used`;
+        const slots = document.querySelectorAll('#slotBar .sr-slot');
+        slots.forEach((s, i) => {
+          if (i < slotsUsed) s.classList.add('filled');
+          else s.classList.remove('filled');
+        });
+
+        // Badge
+        const badge = document.getElementById('fydp1ReqBadgeSide');
+        if (badge && pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+
+        renderRequests();
+      } catch(err) {
+        console.error('Load requests error:', err);
+        document.getElementById('requestCards').innerHTML = `
+          <div class="sr-empty">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Failed to load requests</h3>
+            <p>${err.message}</p>
+          </div>`;
+      }
+    }
+
+    function filterRequests(status) {
+      currentFilter = status;
+      document.querySelectorAll('.sr-filter-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.filter === status);
+      });
+      renderRequests();
+    }
+
+    function renderRequests() {
+      const container = document.getElementById('requestCards');
+      let filtered = allRequests;
+      if (currentFilter) {
+        if (currentFilter === 'REJECTED') {
+          filtered = allRequests.filter(r => ['REJECTED','AUTO_REJECTED'].includes(r.request_status));
+        } else {
+          filtered = allRequests.filter(r => r.request_status === currentFilter);
+        }
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="sr-empty">
+            <i class="fas fa-inbox"></i>
+            <h3>No ${currentFilter ? currentFilter.toLowerCase() : ''} requests</h3>
+            <p>Pre-FYDP groups that want you as their FYDP-1 supervisor will appear here.</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(r => {
+        const color = hashColor(r.group_name || 'G');
+        const isPending = r.request_status === 'PENDING';
+        const statusClass = isPending ? 'pending' : (r.request_status === 'ACCEPTED' ? 'accepted' : 'rejected');
+        const statusLabel = r.request_status === 'AUTO_REJECTED' ? 'Auto-Rejected' : r.request_status;
+        const members = r.members || [];
+        const skills = r.required_skills || [];
+
+        const memberCards = members.map((m, i) => {
+          const mColor = hashColor(m.full_name || 'M');
+          return `<div class="sr-member">
+            <div class="sr-member-avatar" style="background:${mColor}">${getInit(m.full_name)}</div>
+            <div>
+              <div class="sr-member-name">${escapeHtml(m.full_name)}</div>
+              <div class="sr-member-role">${escapeHtml(m.member_role)} · ${escapeHtml(m.department || '')}</div>
+              <div class="sr-member-id">${escapeHtml(m.university_id || '')}</div>
+            </div>
+          </div>`;
+        }).join('');
+
+        const skillTags = skills.map(s => `<span class="sr-skill">${escapeHtml(s)}</span>`).join('');
+
+        const actions = isPending ? `
+          <div class="sr-card-actions">
+            <button class="sr-btn accept" onclick="showAcceptModal(${r.request_id}, '${escapeHtml(r.group_name)}', '${escapeHtml(r.project_title)}')" ${myFydp1Count >= 3 ? 'disabled title="You have reached 3 groups"' : ''}>
+              <i class="fas fa-check"></i> Accept Group
+            </button>
+            <button class="sr-btn reject" onclick="showRejectModal(${r.request_id}, '${escapeHtml(r.group_name)}')">
+              <i class="fas fa-times"></i> Reject
+            </button>
+          </div>` : '';
+
+        const rejectionInfo = (r.request_status === 'REJECTED' || r.request_status === 'AUTO_REJECTED') && r.rejection_reason
+          ? `<div style="background:#ef444410;border:1px solid #ef444420;border-radius:8px;padding:10px 14px;margin-bottom:14px;">
+               <div style="font-size:0.72rem;color:#ef4444;font-weight:700;margin-bottom:4px;">Rejection Reason</div>
+               <div style="font-size:0.82rem;color:#f87171;">${escapeHtml(r.rejection_reason)}</div>
+             </div>` : '';
+
+        return `
+          <div class="sr-card">
+            <div class="sr-card-header">
+              <div class="sr-card-avatar" style="background:${color}">${getInit(r.group_name)}</div>
+              <div class="sr-card-info">
+                <h3 class="sr-card-name">${escapeHtml(r.group_name)}</h3>
+                <div class="sr-card-meta">
+                  <i class="fas fa-user"></i> Lead: ${escapeHtml(r.leader_name || 'Unknown')} (${escapeHtml(r.leader_dept || '')})
+                  · <i class="fas fa-clock"></i> ${timeAgo(r.created_at)}
+                </div>
+              </div>
+              <span class="sr-card-status ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="sr-card-body">
+              <!-- Proposal -->
+              <div class="sr-proposal">
+                <div class="sr-proposal-label">Project Proposal</div>
+                <div class="sr-proposal-title">${escapeHtml(r.project_title)}</div>
+                ${r.project_abstract ? `<div class="sr-proposal-abstract">${escapeHtml(r.project_abstract)}</div>` : ''}
+              </div>
+
+              ${rejectionInfo}
+
+              <!-- Info Row -->
+              <div class="sr-info-row">
+                <div class="sr-info-item"><i class="fas fa-layer-group"></i> ${escapeHtml(r.domain_name || '')}</div>
+                <div class="sr-info-item"><i class="fas fa-users"></i> ${r.member_count || members.length} Members</div>
+                ${r.github_url ? `<div class="sr-info-item"><i class="fab fa-github"></i> <a href="${r.github_url.startsWith('http') ? r.github_url : 'https://github.com/' + r.github_url}" target="_blank" style="color:#a78bfa;text-decoration:none;">GitHub</a></div>` : ''}
+              </div>
+
+              <!-- Skills -->
+              ${skills.length ? `<div style="margin-bottom:14px;"><div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:#475569;font-weight:700;margin-bottom:6px;">Required Skills</div><div class="sr-skills">${skillTags}</div></div>` : ''}
+
+              <!-- Members -->
+              <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:#475569;font-weight:700;margin-bottom:8px;">Team Members</div>
+              <div class="sr-members">${memberCards}</div>
+            </div>
+            ${actions}
+          </div>`;
+      }).join('');
+    }
+
+    // ── Accept Flow ──
+    function showAcceptModal(requestId, groupName, projectTitle) {
+      currentAcceptId = requestId;
+      document.getElementById('acceptGroupName').textContent = groupName;
+      document.getElementById('acceptProjectTitle').textContent = projectTitle;
+      document.getElementById('acceptModal').classList.add('show');
+    }
+    function closeAcceptModal() {
+      document.getElementById('acceptModal').classList.remove('show');
+      currentAcceptId = null;
+    }
+    async function confirmAccept() {
+      if (!currentAcceptId) return;
+      const btn = document.querySelector('#acceptModal .sr-btn.accept');
+      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      try {
+        const result = await apiFetch(`/api/supervisor/fydp1-requests/${currentAcceptId}`, {
+          method: 'PATCH',
+          body: { action: 'accept' }
+        });
+        closeAcceptModal();
+        showToast(result.message || 'Group accepted!', 'success');
+        loadRequests();
+      } catch(err) {
+        showToast(err.message, 'error');
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Accept & Assign';
+      }
+    }
+
+    // ── Reject Flow ──
+    function showRejectModal(requestId, groupName) {
+      currentRejectId = requestId;
+      document.getElementById('rejectGroupName').textContent = groupName;
+      document.getElementById('rejectReason').value = '';
+      document.getElementById('rejectModal').classList.add('show');
+    }
+    function closeRejectModal() {
+      document.getElementById('rejectModal').classList.remove('show');
+      currentRejectId = null;
+    }
+    async function confirmReject() {
+      if (!currentRejectId) return;
+      try {
+        const reason = document.getElementById('rejectReason').value.trim();
+        await apiFetch(`/api/supervisor/fydp1-requests/${currentRejectId}`, {
+          method: 'PATCH',
+          body: { action: 'reject', rejection_reason: reason || null }
+        });
+        closeRejectModal();
+        showToast('Request rejected', 'info');
+        loadRequests();
+      } catch(err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // ── Toast ──
+    function showToast(msg, type = 'info') {
+      const t = document.createElement('div');
+      const bg = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#6c5ce7';
+      t.style.cssText = `position:fixed;bottom:30px;right:30px;background:${bg};color:#fff;padding:14px 24px;border-radius:12px;font-size:0.88rem;font-weight:600;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,0.3);animation:slideUp 0.3s ease;`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+
+    // Close modals on overlay click
+    document.getElementById('rejectModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeRejectModal();
+    });
+    document.getElementById('acceptModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeAcceptModal();
+    });
+  </script>
+  <style>
+    @keyframes slideUp { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+  </style>
+</body>
+</html>

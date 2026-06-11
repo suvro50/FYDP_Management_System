@@ -132,6 +132,9 @@ app.get('/supervisor/chat', isAuth, requireRole('SUPERVISOR', 'COURSE_TEACHER'),
 app.get('/supervisor/student-inbox', isAuth, requireRole('SUPERVISOR'), (req, res) => {
   res.sendFile(path.join(__dirname, 'views/supervisor/student_inbox.html'));
 });
+app.get('/supervisor/requests', isAuth, requireRole('SUPERVISOR', 'COURSE_TEACHER'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views/supervisor/supervisor_requests.html'));
+});
 
 // Notifications page (all roles)
 app.get('/notifications', isAuth, (req, res) => {
@@ -169,6 +172,9 @@ app.get('/teacher/students', isAuth, requireRole('COURSE_TEACHER'), (req, res) =
 app.get('/teacher/grades', isAuth, requireRole('COURSE_TEACHER'), (req, res) => {
   res.sendFile(path.join(__dirname, 'views/teacher/grades.html'));
 });
+app.get('/teacher/group-requests', isAuth, requireRole('COURSE_TEACHER'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'views/teacher/group_requests.html'));
+});
 
 // ── Pre-FYDP Student Pages ─────────────────────────────────────────────────
 app.get('/pre-fydp/dashboard', isAuth, requireRole('PRE_FYDP_STUDENT'), (req, res) => {
@@ -185,11 +191,17 @@ app.get('/pre-fydp/profile-settings', isAuth, requireRole('PRE_FYDP_STUDENT'), (
 });
 
 // Student pages (Dynamic based on Group Status)
-app.get('/student/dashboard', isAuth, requireRole('STUDENT'), checkGroupStatus, (req, res) => {
+app.get('/student/dashboard', isAuth, requireRole('STUDENT'), checkGroupStatus, async (req, res) => {
   if (req.activeGroup) {
     res.sendFile(path.join(__dirname, 'views/student/dashboard_fydp.html'));
   } else {
-    res.sendFile(path.join(__dirname, 'views/student/dashboard_matchmaking.html'));
+    // If a STUDENT has no active group, they belong in Pre-FYDP
+    const db = require('./config/db');
+    await db.query("UPDATE users SET role='PRE_FYDP_STUDENT' WHERE user_id=?", [req.session.user.user_id]);
+    await db.query("UPDATE user_profiles SET profile_type='PRE_FYDP' WHERE user_id=?", [req.session.user.user_id]);
+    
+    req.session.user.role = 'PRE_FYDP_STUDENT';
+    return req.session.save(() => res.redirect('/pre-fydp/dashboard'));
   }
 });
 app.get('/student/submit-report', isAuth, requireRole('STUDENT'), (req, res) => {

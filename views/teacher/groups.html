@@ -163,10 +163,12 @@
     .wl-dot.all-approved { background:#10b981; }
     .wl-dot.none { background:#1e2240; border:1px solid #2d3354; }
     .week-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-    .week-card { background:#0d0f1e; border:1px solid #1e2240; border-radius:10px; padding:14px 12px; cursor:pointer; transition:all 0.2s; }
+    .week-card { background:#0d0f1e; border:1px solid #1e2240; border-radius:10px; padding:14px 12px; cursor:pointer; transition:all 0.2s; position:relative; }
     .week-card:hover { border-color:var(--accent); transform:translateY(-2px); }
     .week-card.all-approved { border-color:rgba(16,185,129,0.4); background:rgba(16,185,129,0.05); }
     .week-card.no-sub { opacity:0.5; cursor:default; }
+    .week-card.active-week { border-color:#3b82f6; box-shadow:0 0 12px rgba(59,130,246,0.25); opacity:1; cursor:pointer; }
+
     .wk-label { font-size:0.6rem; font-weight:700; letter-spacing:1px; color:#475569; text-transform:uppercase; }
     .wk-num { font-size:1.5rem; font-weight:800; color:#fff; line-height:1; margin:4px 0; }
     .wk-num.all-approved { color:#10b981; }
@@ -290,6 +292,7 @@
         <a href="/teacher/inbox"><span class="nav-icon"><i class="fas fa-clock"></i></span><span>Pending Approvals</span></a>
         <a href="/teacher/student-inbox"><span class="nav-icon"><i class="fas fa-comments"></i></span><span>Student Messages</span></a>
         <a href="/teacher/supervisor-chat"><span class="nav-icon"><i class="fas fa-user-tie"></i></span><span>Chat with Supervisors</span></a>
+        <a href="/teacher/group-requests"><span class="nav-icon"><i class="fas fa-user-plus"></i></span><span>Group Requests</span></a>
         <div class="nav-label">Account</div>
         <a href="/profile"><span class="nav-icon"><i class="fas fa-user"></i></span><span>My Profile</span></a>
         <a href="/notifications"><span class="nav-icon"><i class="fas fa-bell"></i></span><span>Notifications</span></a>
@@ -799,14 +802,14 @@
             const cardClass = allApproved ? 'all-approved' : '';
             const dotClass = hasAnyApproved ? 'green' : 'gray';
             const numClass = allApproved ? 'all-approved' : '';
-            html += `<div class="week-card ${cardClass}" onclick="openWeekDetail(${NAV.group.group_id}, ${i})">
+            html += `<div class="week-card ${cardClass} ${i === res.active_week ? 'active-week' : ''}" onclick="openWeekDetail(${NAV.group.group_id}, ${i})">
               <div class="wk-label">WEEK</div>
               <div class="wk-num ${numClass}">${i}</div>
               <div class="wk-stats">${w.approved_count}/${total}</div>
               <div class="wk-dot ${dotClass}"></div>
             </div>`;
           } else {
-            html += `<div class="week-card no-sub">
+            html += `<div class="week-card no-sub ${i === res.active_week ? 'active-week' : ''}" onclick="openWeekDetail(${NAV.group.group_id}, ${i})">
               <div class="wk-label">WEEK</div>
               <div class="wk-num">${i}</div>
               <div class="wk-stats">0/${total}</div>

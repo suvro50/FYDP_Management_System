@@ -268,6 +268,7 @@ router.post('/submit-report', checkGroupStatus, uploadReport, async (req, res) =
       return res.status(400).json({ error: 'Invalid week number' });
     }
 
+
     // ── Sequential Enforcement ──────────────────────────────────────────
     // Fetch all reports for this student in this group
     const [allMyReports] = await db.query(

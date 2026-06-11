@@ -35,12 +35,20 @@ function getTransporter() {
  * Verify that the email domain has valid MX records (i.e., the domain can receive emails).
  * This catches typos in the domain and non-existent subdomains before we even try to send.
  * Uses Google DNS (8.8.8.8) as a fallback if the system DNS resolver fails.
+ * NOTE: UIU institutional emails (*.uiu.ac.bd) are always skipped — they don't have
+ *       public MX records but are valid institutional addresses.
  * @param {string} email - The email address to verify
  * @returns {Promise<boolean>} - true if MX records exist or DNS is unavailable (fail-open)
  */
 async function verifyEmailDomain(email) {
   const domain = email.split("@")[1];
   if (!domain) return false;
+
+  // UIU institutional emails — skip MX check, always allow
+  if (domain.toLowerCase().endsWith("uiu.ac.bd")) {
+    console.log(`✅ UIU institutional email — skipping MX check for domain: ${domain}`);
+    return true;
+  }
 
   // Try system DNS first, then fallback to Google DNS
   const resolvers = [
@@ -80,13 +88,14 @@ async function verifyEmailDomain(email) {
 }
 
 /**
- * Send an email with domain validation.
- * First checks if the recipient domain has MX records, then attempts to send.
+ * Send an email.
+ * For UIU institutional emails (*.uiu.ac.bd), skips MX record validation and sends directly.
+ * For all other domains, first validates MX records to catch typos.
  * @param {object} options - { to, subject, html }
  * @returns {Promise<boolean>}
  */
 async function sendEmail({ to, subject, html }) {
-  // Step 1: Verify the recipient's email domain has MX records
+  // Step 1: Validate email domain (UIU emails skip MX check automatically)
   const domainValid = await verifyEmailDomain(to);
   if (!domainValid) {
     const domain = to.split("@")[1];

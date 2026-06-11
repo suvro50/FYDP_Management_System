@@ -220,7 +220,7 @@
             <thead>
               <tr>
                 <th style="white-space:nowrap;">Group Code</th>
-                <th>Project Title</th>
+                <th>Group & Title</th>
                 <th style="white-space:nowrap;">Domain</th>
                 <th style="white-space:nowrap;">Stage</th>
                 <th style="white-space:nowrap;">Supervisor</th>
@@ -378,7 +378,10 @@
     tbody.innerHTML = groups.map(g => `
       <tr>
         <td><strong style="color:#818cf8;">${escapeHtml(g.group_code)}</strong></td>
-        <td style="max-width:200px;font-size:0.82rem;">${escapeHtml(g.project_title)}</td>
+        <td style="max-width:200px;">
+          ${g.group_name ? `<div style="font-weight:700;color:#e2e8f0;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(g.group_name)}">${escapeHtml(g.group_name)}</div>` : ''}
+          <div style="font-size:0.75rem;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(g.project_title || 'No Title')}">${escapeHtml(g.project_title || 'No title set')}</div>
+        </td>
         <td><span class="ab ab-blue">${escapeHtml(g.domain_name)}</span></td>
         <td style="white-space:nowrap;">${getStageBadge(g.stage_name)}</td>
         <td style="font-size:0.82rem;">${escapeHtml(g.supervisor_name)}</td>
@@ -507,9 +510,9 @@
       const groups = data.groups;
       if (!groups.length) { showToast('No data to export', 'warning'); hideLoading(); return; }
 
-      const headers = ['Group Code', 'Project Title', 'Domain', 'Stage', 'Supervisor', 'Members', 'Section', 'Status'];
+      const headers = ['Group Code', 'Group Name', 'Project Title', 'Domain', 'Stage', 'Supervisor', 'Members', 'Section', 'Status'];
       const rows = groups.map(g => [
-        g.group_code, g.project_title, g.domain_name, g.stage_name,
+        g.group_code, (g.group_name || ''), (g.project_title || ''), g.domain_name, g.stage_name,
         g.supervisor_name, g.member_count, g.section_code || '', g.project_status
       ]);
 

@@ -55,14 +55,24 @@ router.get('/my-group-status', async (req, res) => {
   try {
     const userId = req.session.user.user_id;
     const [rows] = await db.query(
-      `SELECT gm.group_id, g.group_name FROM pre_fydp_group_members gm
+      `SELECT gm.group_id, gm.member_role, g.group_name, g.max_members,
+              (SELECT COUNT(*) FROM pre_fydp_group_members WHERE group_id = gm.group_id) as member_count
+       FROM pre_fydp_group_members gm
        JOIN pre_fydp_groups g ON gm.group_id = g.group_id
        WHERE gm.user_id = ?`, [userId]
     );
     if (rows.length > 0) {
-      res.json({ in_team: true, group_id: rows[0].group_id, group_name: rows[0].group_name });
+      res.json({
+        in_team: true,
+        group_id: rows[0].group_id,
+        group_name: rows[0].group_name,
+        is_lead: rows[0].member_role === 'Lead',
+        is_full: rows[0].member_count >= 4, // Eligible for supervisor request (min 4 members)
+        member_count: rows[0].member_count,
+        max_members: rows[0].max_members
+      });
     } else {
-      res.json({ in_team: false, group_id: null, group_name: null });
+      res.json({ in_team: false, group_id: null, group_name: null, is_lead: false, is_full: false });
     }
   } catch (err) {
     res.status(500).json({ error: 'Failed to check group status' });
@@ -927,6 +937,245 @@ router.post('/drop-team', async (req, res) => {
   } catch (err) {
     console.error('Pre-FYDP drop team error:', err);
     res.status(500).json({ error: 'Failed to drop team' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SUPERVISOR REQUEST SYSTEM — Pre-FYDP → FYDP-1 Transition
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── List Available Supervisors (with FYDP-1 slot usage) ────────────────────
+router.get('/supervisors', async (req, res) => {
+  try {
+    const [supervisors] = await db.query(`
+      SELECT u.user_id, u.full_name, u.email, d.short_code as department,
+             d.department_name,
+             (SELECT COUNT(*) FROM project_groups pg
+              JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+              WHERE pg.supervisor_id = u.user_id AND pg.is_active = 1
+              AND fs.stage_name = 'FYDP-1') as fydp1_groups,
+             (SELECT COUNT(*) FROM project_groups pg
+              JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+              WHERE pg.supervisor_id = u.user_id AND pg.is_active = 1
+              AND fs.stage_name = 'FYDP-2') as fydp2_groups,
+             (SELECT COUNT(*) FROM project_groups pg
+              JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+              WHERE pg.supervisor_id = u.user_id AND pg.is_active = 1
+              AND fs.stage_name = 'FYDP-3') as fydp3_groups,
+             (SELECT COUNT(*) FROM supervisor_requests sr
+              WHERE sr.supervisor_id = u.user_id AND sr.request_status = 'PENDING') as pending_requests
+      FROM users u
+      JOIN departments d ON d.department_id = u.department_id
+      WHERE u.role IN ('SUPERVISOR', 'COURSE_TEACHER') AND u.is_active = 1 AND u.account_status = 'ACTIVE'
+      ORDER BY u.full_name
+    `);
+
+    // Add slot availability info
+    const enriched = supervisors.map(s => ({
+      ...s,
+      fydp1_slots_remaining: Math.max(0, 3 - s.fydp1_groups),
+      fydp1_available: s.fydp1_groups < 3,
+      total_groups: s.fydp1_groups + s.fydp2_groups + s.fydp3_groups
+    }));
+
+    res.json(enriched);
+  } catch (err) {
+    console.error('List supervisors error:', err);
+    res.status(500).json({ error: 'Failed to load supervisors' });
+  }
+});
+
+// ── Send Supervisor Request ────────────────────────────────────────────────
+router.post('/supervisor-request', async (req, res) => {
+  try {
+    const userId = req.session.user.user_id;
+    const { supervisor_id, project_title, project_abstract } = req.body;
+
+    if (!supervisor_id || !project_title) {
+      return res.status(400).json({ error: 'Supervisor and project title are required' });
+    }
+
+    // 1. Check user is in a group and is the Lead
+    const [membership] = await db.query(
+      `SELECT gm.group_id, gm.member_role, g.group_name, g.max_members, g.domain_id,
+              (SELECT COUNT(*) FROM pre_fydp_group_members WHERE group_id = gm.group_id) as member_count
+       FROM pre_fydp_group_members gm
+       JOIN pre_fydp_groups g ON g.group_id = gm.group_id
+       WHERE gm.user_id = ?`, [userId]
+    );
+    if (membership.length === 0) {
+      return res.status(400).json({ error: 'You are not in any group' });
+    }
+    const myGroup = membership[0];
+    if (myGroup.member_role !== 'Lead') {
+      return res.status(403).json({ error: 'Only the group leader can send supervisor requests' });
+    }
+
+    // 2. Check group has minimum required members (min 4)
+    if (myGroup.member_count < 4) {
+      return res.status(400).json({
+        error: `Your group needs at least 4 members to request a supervisor. Current: ${myGroup.member_count}/${myGroup.max_members}`
+      });
+    }
+
+    // 3. Check if already accepted by any supervisor
+    const [acceptedReqs] = await db.query(
+      `SELECT sr.request_id, u.full_name as supervisor_name
+       FROM supervisor_requests sr
+       JOIN users u ON u.user_id = sr.supervisor_id
+       WHERE sr.pre_fydp_group_id = ? AND sr.request_status = 'ACCEPTED'`,
+      [myGroup.group_id]
+    );
+    if (acceptedReqs.length > 0) {
+      return res.status(400).json({
+        error: `Your group has already been accepted by ${acceptedReqs[0].supervisor_name}. You cannot send more requests.`
+      });
+    }
+
+    // 4. Check if already sent to this supervisor
+    const [existingReq] = await db.query(
+      `SELECT * FROM supervisor_requests
+       WHERE pre_fydp_group_id = ? AND supervisor_id = ? AND request_status IN ('PENDING', 'ACCEPTED')`,
+      [myGroup.group_id, supervisor_id]
+    );
+    if (existingReq.length > 0) {
+      return res.status(400).json({ error: 'You already have a pending or accepted request with this supervisor' });
+    }
+
+    // 5. Check supervisor has FYDP-1 slots available
+    const [[slotCheck]] = await db.query(
+      `SELECT COUNT(*) as fydp1_count FROM project_groups pg
+       JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+       WHERE pg.supervisor_id = ? AND pg.is_active = 1 AND fs.stage_name = 'FYDP-1'`,
+      [supervisor_id]
+    );
+    if (slotCheck.fydp1_count >= 3) {
+      return res.status(400).json({
+        error: 'This supervisor already has 3 groups in FYDP-1. Please choose another supervisor.'
+      });
+    }
+
+    // 6. Insert the request
+    const [result] = await db.query(
+      `INSERT INTO supervisor_requests (pre_fydp_group_id, supervisor_id, project_title, project_abstract)
+       VALUES (?, ?, ?, ?)`,
+      [myGroup.group_id, supervisor_id, project_title.trim(), project_abstract?.trim() || null]
+    );
+
+    // 7. Notify supervisor
+    const [[supInfo]] = await db.query(
+      `SELECT full_name FROM users WHERE user_id = ?`, [supervisor_id]
+    );
+    await db.query(
+      `INSERT INTO notifications (user_id, notification_type, title, message, reference_entity_id, reference_entity_type, is_read)
+       VALUES (?, 'SUPERVISOR_REQUEST_RECEIVED', ?, ?, ?, 'supervisor_requests', 0)`,
+      [
+        supervisor_id,
+        `📋 New FYDP-1 Group Request — ${myGroup.group_name}`,
+        `Group "${myGroup.group_name}" (${myGroup.member_count} members) wants you as their FYDP-1 supervisor. Project: "${project_title.trim()}". Review the request in your FYDP-1 Requests page.`,
+        result.insertId
+      ]
+    );
+
+    // Real-time notification
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${supervisor_id}`).emit('notification', {
+        title: `📋 New FYDP-1 Group Request`,
+        message: `Group "${myGroup.group_name}" wants you as their supervisor.`
+      });
+    }
+
+    res.json({
+      success: true,
+      request_id: result.insertId,
+      message: `Supervisor request sent to ${supInfo?.full_name || 'supervisor'} successfully!`
+    });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'You already have a request with this supervisor' });
+    }
+    console.error('Supervisor request error:', err);
+    res.status(500).json({ error: 'Failed to send supervisor request' });
+  }
+});
+
+// ── My Supervisor Requests (Group Leader) ──────────────────────────────────
+router.get('/my-supervisor-requests', async (req, res) => {
+  try {
+    const userId = req.session.user.user_id;
+
+    // Get user's group
+    const [membership] = await db.query(
+      `SELECT gm.group_id FROM pre_fydp_group_members gm
+       WHERE gm.user_id = ? AND gm.member_role = 'Lead'`, [userId]
+    );
+    if (membership.length === 0) {
+      return res.json([]);
+    }
+    const groupId = membership[0].group_id;
+
+    const [requests] = await db.query(
+      `SELECT sr.*, u.full_name as supervisor_name, d.short_code as supervisor_dept,
+              d.department_name as supervisor_department
+       FROM supervisor_requests sr
+       JOIN users u ON u.user_id = sr.supervisor_id
+       JOIN departments d ON d.department_id = u.department_id
+       WHERE sr.pre_fydp_group_id = ?
+       ORDER BY sr.created_at DESC`,
+      [groupId]
+    );
+
+    res.json(requests);
+  } catch (err) {
+    console.error('My supervisor requests error:', err);
+    res.status(500).json({ error: 'Failed to load supervisor requests' });
+  }
+});
+
+// ── Cancel Supervisor Request ──────────────────────────────────────────────
+router.delete('/supervisor-request/:id', async (req, res) => {
+  try {
+    const userId = req.session.user.user_id;
+    const requestId = req.params.id;
+
+    // Verify the request belongs to user's group and is PENDING
+    const [rows] = await db.query(
+      `SELECT sr.*, g.created_by, g.group_name, u.full_name as supervisor_name
+       FROM supervisor_requests sr
+       JOIN pre_fydp_groups g ON g.group_id = sr.pre_fydp_group_id
+       JOIN users u ON u.user_id = sr.supervisor_id
+       WHERE sr.request_id = ? AND sr.request_status = 'PENDING'`,
+      [requestId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Request not found or already processed' });
+    }
+    if (rows[0].created_by !== userId) {
+      return res.status(403).json({ error: 'Only the group leader can cancel this request' });
+    }
+
+    await db.query(
+      `UPDATE supervisor_requests SET request_status = 'CANCELLED', responded_at = NOW() WHERE request_id = ?`,
+      [requestId]
+    );
+
+    // Notify supervisor
+    await db.query(
+      `INSERT INTO notifications (user_id, notification_type, title, message, is_read)
+       VALUES (?, 'SYSTEM_ALERT', ?, ?, 0)`,
+      [
+        rows[0].supervisor_id,
+        `🚫 Request Cancelled — ${rows[0].group_name}`,
+        `Group "${rows[0].group_name}" has cancelled their FYDP-1 supervisor request.`
+      ]
+    );
+
+    res.json({ success: true, message: 'Supervisor request cancelled' });
+  } catch (err) {
+    console.error('Cancel supervisor request error:', err);
+    res.status(500).json({ error: 'Failed to cancel supervisor request' });
   }
 });
 

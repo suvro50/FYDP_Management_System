@@ -113,7 +113,7 @@ router.get('/groups', async (req, res) => {
 
     // Get all my groups with full details
     const [groups] = await db.query(
-      `SELECT pg.group_id, pg.group_code, pg.project_title, pg.supervisor_id,
+      `SELECT pg.group_id, pg.group_code, pg.group_name, pg.project_title, pg.supervisor_id,
               pg.is_active, pg.created_at,
               fs.stage_name, fs.stage_order, pd.domain_name,
               s.section_code,
@@ -170,7 +170,7 @@ router.get('/groups', async (req, res) => {
       // 🟡 Yellow = No reports yet OR some reports still pending
       // 🔴 Red = 7+ days since last submission with unresolved pending
       if (latestReports.length === 0) {
-        g.color_status = 'yellow'; // No reports yet = pending (not overdue)
+        g.color_status = 'green'; // No reports yet = approved (nothing pending)
       } else {
         const latestWeek = latestReports[0].week_no;
         const reportsForLatest = latestReports.filter(r => r.week_no === latestWeek);
@@ -544,7 +544,7 @@ router.get('/groups/:id/weekly-summary', async (req, res) => {
   try {
     const supId = req.session.user.user_id;
     const [[group]] = await db.query(
-      'SELECT group_id FROM project_groups WHERE group_id=? AND supervisor_id=?',
+      'SELECT group_id, created_at FROM project_groups WHERE group_id=? AND supervisor_id=?',
       [req.params.id, supId]
     );
     if (!group) return res.status(403).json({ error: 'Not your group' });
@@ -597,7 +597,18 @@ router.get('/groups/:id/weekly-summary', async (req, res) => {
       w.total_members = members.length;
     });
 
-    res.json({ weeks, members, total_members: members.length });
+    const msPerWeek = 1000 * 60 * 60 * 24 * 7;
+    const createdAt = new Date(group.created_at);
+    let activeWeek = Math.floor((Date.now() - createdAt.getTime()) / msPerWeek) + 1;
+    if (activeWeek < 1) activeWeek = 1;
+    if (activeWeek > 12) activeWeek = 12;
+
+    res.json({
+      weeks,
+      members,
+      total_members: members.length,
+      active_week: activeWeek
+    });
   } catch (err) {
     console.error('Weekly summary error:', err);
     res.status(500).json({ error: 'Failed to load weekly summary' });
@@ -991,5 +1002,386 @@ router.post('/task-submissions/:id/review', async (req, res) => {
   }
 });
 
-module.exports = router;
+// ══════════════════════════════════════════════════════════════════════════
+// FYDP-1 SUPERVISOR REQUEST MANAGEMENT
+// Pre-FYDP groups send requests → supervisor accepts/rejects
+// On accept: group transitions from pre_fydp_groups → project_groups (FYDP-1)
+// ══════════════════════════════════════════════════════════════════════════
 
+// ── Stats for dashboard badge ──────────────────────────────────────────────
+router.get('/fydp1-request-stats', async (req, res) => {
+  try {
+    const supId = req.session.user.user_id;
+    const [[{ pending_count }]] = await db.query(
+      `SELECT COUNT(*) as pending_count FROM supervisor_requests
+       WHERE supervisor_id = ? AND request_status = 'PENDING'`,
+      [supId]
+    );
+    res.json({ pending_count });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load request stats' });
+  }
+});
+
+// ── List FYDP-1 Requests (PENDING/ACCEPTED/REJECTED) ──────────────────────
+router.get('/fydp1-requests', async (req, res) => {
+  try {
+    const supId = req.session.user.user_id;
+    const statusFilter = req.query.status || '';
+
+    let where = 'WHERE sr.supervisor_id = ?';
+    const params = [supId];
+
+    if (statusFilter) {
+      where += ' AND sr.request_status = ?';
+      params.push(statusFilter);
+    }
+
+    const [requests] = await db.query(
+      `SELECT sr.*,
+              g.group_name, g.description as group_description, g.max_members,
+              g.github_url, g.created_by,
+              pd.domain_name,
+              u_lead.full_name as leader_name, u_lead.email as leader_email,
+              d_lead.short_code as leader_dept,
+              (SELECT COUNT(*) FROM pre_fydp_group_members WHERE group_id = g.group_id) as member_count
+       FROM supervisor_requests sr
+       JOIN pre_fydp_groups g ON g.group_id = sr.pre_fydp_group_id
+       JOIN project_domains pd ON pd.domain_id = g.domain_id
+       JOIN users u_lead ON u_lead.user_id = g.created_by
+       JOIN departments d_lead ON d_lead.department_id = u_lead.department_id
+       ${where}
+       ORDER BY
+         CASE sr.request_status WHEN 'PENDING' THEN 0 WHEN 'ACCEPTED' THEN 1 ELSE 2 END,
+         sr.created_at DESC`,
+      params
+    );
+
+    // Enrich with group members and skills
+    for (const req_item of requests) {
+      const [members] = await db.query(
+        `SELECT gm.user_id, gm.member_role, u.full_name, u.email,
+                d.short_code as department, u.university_id
+         FROM pre_fydp_group_members gm
+         JOIN users u ON u.user_id = gm.user_id
+         JOIN departments d ON d.department_id = u.department_id
+         WHERE gm.group_id = ?`,
+        [req_item.pre_fydp_group_id]
+      );
+      req_item.members = members;
+
+      const [skills] = await db.query(
+        `SELECT s.skill_name FROM pre_fydp_group_required_skills pgrs
+         JOIN skills s ON s.skill_id = pgrs.skill_id
+         WHERE pgrs.group_id = ?`,
+        [req_item.pre_fydp_group_id]
+      );
+      req_item.required_skills = skills.map(s => s.skill_name);
+    }
+
+    res.json({ requests });
+  } catch (err) {
+    console.error('FYDP-1 requests error:', err);
+    res.status(500).json({ error: 'Failed to load FYDP-1 requests' });
+  }
+});
+
+// ── Accept/Reject FYDP-1 Request ──────────────────────────────────────────
+router.patch('/fydp1-requests/:id', async (req, res) => {
+  const conn = await db.getConnection();
+  try {
+    const supId = req.session.user.user_id;
+    const supName = req.session.user.full_name;
+    const requestId = req.params.id;
+    const { action, rejection_reason } = req.body; // 'accept' or 'reject'
+
+    if (!action || !['accept', 'reject'].includes(action)) {
+      conn.release();
+      return res.status(400).json({ error: 'Action must be "accept" or "reject"' });
+    }
+
+    await conn.beginTransaction();
+
+    // 1. Get the request and verify ownership
+    const [[request]] = await conn.query(
+      `SELECT sr.*, g.group_name, g.domain_id, g.max_members, g.github_url, g.created_by,
+              pd.domain_name,
+              (SELECT COUNT(*) FROM pre_fydp_group_members WHERE group_id = g.group_id) as member_count
+       FROM supervisor_requests sr
+       JOIN pre_fydp_groups g ON g.group_id = sr.pre_fydp_group_id
+       JOIN project_domains pd ON pd.domain_id = g.domain_id
+       WHERE sr.request_id = ? AND sr.supervisor_id = ?`,
+      [requestId, supId]
+    );
+
+    if (!request) {
+      await conn.rollback();
+      conn.release();
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    if (request.request_status !== 'PENDING') {
+      await conn.rollback();
+      conn.release();
+      return res.status(400).json({ error: `This request is already ${request.request_status.toLowerCase()}` });
+    }
+
+    if (action === 'reject') {
+      // ── REJECT ─────────────────────────────────────────────────────
+      await conn.query(
+        `UPDATE supervisor_requests
+         SET request_status = 'REJECTED', rejection_reason = ?, responded_at = NOW()
+         WHERE request_id = ?`,
+        [rejection_reason || null, requestId]
+      );
+
+      await conn.commit();
+      conn.release();
+
+      // Notify group leader
+      await db.query(
+        `INSERT INTO notifications (user_id, notification_type, title, message, reference_entity_id, reference_entity_type, is_read)
+         VALUES (?, 'SUPERVISOR_REQUEST_REJECTED', ?, ?, ?, 'supervisor_requests', 0)`,
+        [
+          request.created_by,
+          `❌ Supervisor Request Rejected — ${supName}`,
+          `${supName} has declined your FYDP-1 supervisor request for "${request.group_name}".${rejection_reason ? ` Reason: ${rejection_reason}` : ''} You can request another supervisor.`,
+          requestId
+        ]
+      );
+
+      // Real-time
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user_${request.created_by}`).emit('notification', {
+          title: `❌ Supervisor Request Rejected`,
+          message: `${supName} declined your request. Choose another supervisor.`
+        });
+      }
+
+      return res.json({ success: true, message: 'Request rejected' });
+    }
+
+    // ── ACCEPT ─────────────────────────────────────────────────────────
+    // 2. Check FYDP-1 slot availability (max 3)
+    const [[slotCheck]] = await conn.query(
+      `SELECT COUNT(*) as fydp1_count FROM project_groups pg
+       JOIN fydp_stages fs ON fs.stage_id = pg.current_stage_id
+       WHERE pg.supervisor_id = ? AND pg.is_active = 1 AND fs.stage_name = 'FYDP-1'`,
+      [supId]
+    );
+    if (slotCheck.fydp1_count >= 3) {
+      await conn.rollback();
+      conn.release();
+      return res.status(400).json({
+        error: 'You already have 3 groups in FYDP-1. You cannot accept more groups.'
+      });
+    }
+
+    // 3. Get FYDP-1 stage_id
+    const [[fydp1Stage]] = await conn.query(
+      `SELECT stage_id FROM fydp_stages WHERE stage_name = 'FYDP-1'`
+    );
+    if (!fydp1Stage) {
+      await conn.rollback();
+      conn.release();
+      return res.status(500).json({ error: 'FYDP-1 stage not found in database' });
+    }
+
+    // 4. Get default section (first available)
+    const [[defaultSection]] = await conn.query(
+      `SELECT section_id FROM sections WHERE is_active = 1 ORDER BY section_id LIMIT 1`
+    );
+    if (!defaultSection) {
+      await conn.rollback();
+      conn.release();
+      return res.status(500).json({ error: 'No active section found for assignment' });
+    }
+
+    // 5. Auto-generate group code (UIU-GXXX)
+    const [[maxCode]] = await conn.query(
+      `SELECT MAX(CAST(SUBSTRING(group_code, 6) AS UNSIGNED)) as max_num
+       FROM project_groups WHERE group_code LIKE 'UIU-G%'`
+    );
+    const nextNum = (maxCode?.max_num || 0) + 1;
+    const groupCode = `UIU-G${String(nextNum).padStart(3, '0')}`;
+
+    // 6. Create project_groups entry (FYDP-1)
+    const [pgResult] = await conn.query(
+      `INSERT INTO project_groups
+         (group_code, group_name, project_title, project_domain_id, supervisor_id,
+          current_stage_id, section_id, project_status, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE', 1)`,
+      [groupCode, request.group_name, request.project_title, request.domain_id, supId,
+       fydp1Stage.stage_id, defaultSection.section_id]
+    );
+    const newGroupId = pgResult.insertId;
+
+    // 7. Get all pre-FYDP group members
+    const [preFydpMembers] = await conn.query(
+      `SELECT gm.user_id, gm.member_role FROM pre_fydp_group_members gm
+       WHERE gm.group_id = ?`, [request.pre_fydp_group_id]
+    );
+
+    // 8. Map pre-FYDP members → FYDP group_members
+    const roleMap = {
+      'Lead': 'TEAM_LEAD',
+      'Frontend': 'DEVELOPER',
+      'Backend': 'DEVELOPER',
+      'ML Engineer': 'DEVELOPER',
+      'DevOps': 'DEVELOPER',
+      'Security': 'DEVELOPER',
+      'Tester': 'TESTER',
+      'Data Engineer': 'DATA_ENGINEER',
+      'Other': 'DEVELOPER'
+    };
+
+    for (const member of preFydpMembers) {
+      const fydpRole = roleMap[member.member_role] || 'DEVELOPER';
+      await conn.query(
+        `INSERT INTO group_members (group_id, student_id, member_role)
+         VALUES (?, ?, ?)`,
+        [newGroupId, member.user_id, fydpRole]
+      );
+
+      // 9. Change user role from PRE_FYDP_STUDENT → STUDENT
+      await conn.query(
+        `UPDATE users SET role = 'STUDENT' WHERE user_id = ? AND role = 'PRE_FYDP_STUDENT'`,
+        [member.user_id]
+      );
+
+      // 10. Update user_profiles: PRE_FYDP → FYDP
+      await conn.query(
+        `UPDATE user_profiles SET profile_type = 'FYDP', availability_status = 'IN_TEAM'
+         WHERE user_id = ? AND profile_type = 'PRE_FYDP'`,
+        [member.user_id]
+      );
+    }
+
+    // 11. Mark supervisor request as ACCEPTED
+    await conn.query(
+      `UPDATE supervisor_requests
+       SET request_status = 'ACCEPTED', responded_at = NOW()
+       WHERE request_id = ?`,
+      [requestId]
+    );
+
+    // 12. Auto-reject all OTHER pending requests from this group
+    const [otherPendingFromGroup] = await conn.query(
+      `SELECT sr.request_id, sr.supervisor_id, u.full_name as other_sup_name
+       FROM supervisor_requests sr
+       JOIN users u ON u.user_id = sr.supervisor_id
+       WHERE sr.pre_fydp_group_id = ? AND sr.request_id != ? AND sr.request_status = 'PENDING'`,
+      [request.pre_fydp_group_id, requestId]
+    );
+
+    for (const otherReq of otherPendingFromGroup) {
+      await conn.query(
+        `UPDATE supervisor_requests
+         SET request_status = 'AUTO_REJECTED', rejection_reason = 'Group was accepted by another supervisor', responded_at = NOW()
+         WHERE request_id = ?`,
+        [otherReq.request_id]
+      );
+    }
+
+    // 13. Check if supervisor now has 3 FYDP-1 groups → auto-reject remaining pending requests to this supervisor
+    const newFydp1Count = slotCheck.fydp1_count + 1;
+    if (newFydp1Count >= 3) {
+      const [remainingPending] = await conn.query(
+        `SELECT sr.request_id, sr.pre_fydp_group_id, g.created_by, g.group_name
+         FROM supervisor_requests sr
+         JOIN pre_fydp_groups g ON g.group_id = sr.pre_fydp_group_id
+         WHERE sr.supervisor_id = ? AND sr.request_status = 'PENDING'`,
+        [supId]
+      );
+
+      for (const pendReq of remainingPending) {
+        await conn.query(
+          `UPDATE supervisor_requests
+           SET request_status = 'AUTO_REJECTED', rejection_reason = 'Supervisor has reached maximum 3 groups for FYDP-1', responded_at = NOW()
+           WHERE request_id = ?`,
+          [pendReq.request_id]
+        );
+      }
+
+      // Notify those groups after commit
+      // (store for post-commit notifications)
+      request._autoRejectedForSlotFull = remainingPending;
+    }
+
+    // 14. Mark the pre-FYDP group as CLOSED
+    await conn.query(
+      `UPDATE pre_fydp_groups SET group_status = 'CLOSED' WHERE group_id = ?`,
+      [request.pre_fydp_group_id]
+    );
+
+    await conn.commit();
+    conn.release();
+
+    // ── Post-commit notifications (outside transaction) ──────────────
+
+    // Notify all group members
+    for (const member of preFydpMembers) {
+      await db.query(
+        `INSERT INTO notifications (user_id, notification_type, title, message, reference_entity_id, reference_entity_type, is_read)
+         VALUES (?, 'SUPERVISOR_REQUEST_ACCEPTED', ?, ?, ?, 'supervisor_requests', 0)`,
+        [
+          member.user_id,
+          `🎉 Supervisor Accepted — Welcome to FYDP-1!`,
+          `${supName} has accepted your group "${request.group_name}" for FYDP-1! Your group code is ${groupCode}. You have been promoted to FYDP Student. Good luck!`,
+          requestId
+        ]
+      );
+
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user_${member.user_id}`).emit('notification', {
+          title: `🎉 Welcome to FYDP-1!`,
+          message: `${supName} accepted your group. You are now an FYDP Student!`
+        });
+      }
+    }
+
+    // Notify other supervisors whose requests were auto-rejected
+    for (const otherReq of otherPendingFromGroup) {
+      await db.query(
+        `INSERT INTO notifications (user_id, notification_type, title, message, is_read)
+         VALUES (?, 'SYSTEM_ALERT', ?, ?, 0)`,
+        [
+          otherReq.supervisor_id,
+          `ℹ️ Request Auto-Closed — ${request.group_name}`,
+          `The group "${request.group_name}" has been accepted by another supervisor. Their request to you has been automatically closed.`
+        ]
+      );
+    }
+
+    // Notify groups auto-rejected due to slot full
+    if (request._autoRejectedForSlotFull) {
+      for (const pendReq of request._autoRejectedForSlotFull) {
+        await db.query(
+          `INSERT INTO notifications (user_id, notification_type, title, message, is_read)
+           VALUES (?, 'SUPERVISOR_SLOT_FULL', ?, ?, 0)`,
+          [
+            pendReq.created_by,
+            `⚠️ Supervisor Full — ${supName}`,
+            `${supName} has reached the maximum of 3 groups for FYDP-1. Your request has been automatically declined. Please choose another supervisor.`
+          ]
+        );
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Group "${request.group_name}" accepted and transitioned to FYDP-1! Group code: ${groupCode}`,
+      group_code: groupCode,
+      new_group_id: newGroupId
+    });
+
+  } catch (err) {
+    try { await conn.rollback(); } catch(e) {}
+    conn.release();
+    console.error('Accept/Reject FYDP-1 request error:', err);
+    res.status(500).json({ error: err.message || 'Failed to process request' });
+  }
+});
+
+module.exports = router;
