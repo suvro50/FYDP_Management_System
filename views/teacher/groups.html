@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Groups â€” Course Teacher | FYDP System</title>
+  <title>My Groups — Course Teacher | FYDP System</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
@@ -339,13 +339,13 @@
         <div class="view" id="viewSections">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
             <div>
-              <div class="groups-page-title" id="sectionPageTitle">FYDP-1 â€” Sections</div>
-              <div class="groups-page-sub" id="sectionPageSub">Final Year Design Project I Â· Semester 7 Â· Fall 2025</div>
+              <div class="groups-page-title" id="sectionPageTitle">FYDP-1 — Sections</div>
+              <div class="groups-page-sub" id="sectionPageSub">Final Year Design Project I · Semester 7 · Fall 2025</div>
             </div>
             <button class="btn-back" onclick="goBack('stages')"><i class="fas fa-arrow-left"></i> Back</button>
           </div>
           <div class="groups-banner" style="margin-bottom:24px;">
-            <div class="groups-banner-left"><i class="fas fa-users" style="font-size:1.1rem;"></i> <span id="sectionBannerText">3 Sections Â· Semester 7 Â· Fall 2025</span></div>
+            <div class="groups-banner-left"><i class="fas fa-users" style="font-size:1.1rem;"></i> <span id="sectionBannerText">3 Sections · Semester 7 · Fall 2025</span></div>
             <div class="groups-banner-right">
               <span><span class="legend-dot approved"></span> Approved</span>
               <span><span class="legend-dot pending"></span> Pending</span>
@@ -359,13 +359,13 @@
         <div class="view" id="viewGroups">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
             <div>
-              <div class="groups-page-title" id="groupsPageTitle">FYDP-1 Â· Section A â€” Groups</div>
-              <div class="groups-page-sub" id="groupsPageSub">Final Year Design Project I Â· Semester 7 Â· Fall 2025</div>
+              <div class="groups-page-title" id="groupsPageTitle">FYDP-1 · Section A — Groups</div>
+              <div class="groups-page-sub" id="groupsPageSub">Final Year Design Project I · Semester 7 · Fall 2025</div>
             </div>
             <button class="btn-back" onclick="goBack('sections')"><i class="fas fa-arrow-left"></i> Back</button>
           </div>
           <div class="groups-banner">
-            <div class="groups-banner-left"><i class="fas fa-flask" style="font-size:1.1rem;"></i> <span id="groupsBannerText">7 Research Groups Â· Semester 7 Â· Fall 2025</span></div>
+            <div class="groups-banner-left"><i class="fas fa-flask" style="font-size:1.1rem;"></i> <span id="groupsBannerText">7 Research Groups · Semester 7 · Fall 2025</span></div>
             <div class="groups-banner-right">
               <span><span class="legend-dot approved"></span> Approved</span>
               <span><span class="legend-dot pending"></span> Pending</span>
@@ -638,9 +638,9 @@
     function renderSections() {
       const s = NAV.stage;
       const label = stageLabels[s.stage_name] || s.stage_name;
-      document.getElementById('sectionPageTitle').textContent = `${s.stage_name} â€” Sections`;
-      document.getElementById('sectionPageSub').textContent = `${label} Â· Semester ${6+s.stage_order} Â· Fall 2025`;
-      document.getElementById('sectionBannerText').textContent = `${s.total_sections} Sections Â· Semester ${6+s.stage_order} Â· Fall 2025`;
+      document.getElementById('sectionPageTitle').textContent = `${s.stage_name} — Sections`;
+      document.getElementById('sectionPageSub').textContent = `${label} · Semester ${6+s.stage_order} · Fall 2025`;
+      document.getElementById('sectionBannerText').textContent = `${s.total_sections} Sections · Semester ${6+s.stage_order} · Fall 2025`;
 
       const c = document.getElementById('sectionCards');
       c.innerHTML = s.sections.map((sec, i) => {
@@ -672,9 +672,9 @@
     function renderGroups() {
       const sec = NAV.section;
       const s = NAV.stage;
-      document.getElementById('groupsPageTitle').textContent = `${s.stage_name} Â· Section ${sec.section_code.replace('CSE-','')} â€” Groups`;
-      document.getElementById('groupsPageSub').textContent = `${stageLabels[s.stage_name]} Â· Semester ${6+s.stage_order} Â· Fall 2025`;
-      document.getElementById('groupsBannerText').textContent = `${sec.groups.length} Research Groups Â· Semester ${6+s.stage_order} Â· Fall 2025`;
+      document.getElementById('groupsPageTitle').textContent = `${s.stage_name} · Section ${sec.section_code.replace('CSE-','')} — Groups`;
+      document.getElementById('groupsPageSub').textContent = `${stageLabels[s.stage_name]} · Semester ${6+s.stage_order} · Fall 2025`;
+      document.getElementById('groupsBannerText').textContent = `${sec.groups.length} Research Groups · Semester ${6+s.stage_order} · Fall 2025`;
 
       const c = document.getElementById('groupCards');
       c.innerHTML = sec.groups.map((g, i) => {
@@ -835,7 +835,7 @@
           <div class="at-icon"><i class="fas fa-plus"></i></div>
           <div>
             <div class="at-title">Assign New Task</div>
-            <div class="at-sub">${esc(g.group_code)} Â· ${g.stage_name} Â· ${g.member_count} members</div>
+            <div class="at-sub">${esc(g.group_code)} · ${g.stage_name} · ${g.member_count} members</div>
           </div>
         </div>
         <form id="taskForm" onsubmit="submitTask(event, ${groupId})">
@@ -927,7 +927,7 @@
             const statusBadge = r.supervisor_status === 'APPROVED'
               ? '<span class="wr-s-status approved"><i class="fas fa-check-circle" style="margin-right:4px;"></i> Approved</span>'
               : '<span class="wr-s-status" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-clock" style="margin-right:4px;"></i> Pending</span>';
-            const submitted = r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'â€”';
+            const submitted = r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—';
             const signed = r.supervisor_signed_at ? new Date(r.supervisor_signed_at).toLocaleString() : 'Not signed yet';
             return `
             <div class="wr-student-card">

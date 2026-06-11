@@ -183,7 +183,7 @@ router.get('/groups', async (req, res) => {
         [g.group_id]
       );
       if (latestReports.length === 0) {
-        g.color_status = 'red';
+        g.color_status = 'green';
       } else {
         const latestWeek = latestReports[0].week_no;
         const latest = latestReports.filter(r => r.week_no === latestWeek);
