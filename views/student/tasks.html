@@ -172,59 +172,84 @@
       background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3);
     }
 
-    /* ── Submit Modal ───────────────────────────────────────── */
+    /* ── Submit Modal ───────────────────────────────────── */
     .tsm-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(5,7,18,0.88); z-index: 1500;
       display: none; align-items: center; justify-content: center;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     }
-    .tsm-overlay.active { display: flex; }
+    .tsm-overlay.active { display: flex; animation: tsmFadeIn 0.25s ease; }
+    @keyframes tsmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes tsmSlideUp { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
     .tsm-modal {
-      background: #161929; border: 1px solid #2d3354; border-radius: 16px;
-      width: 90%; max-width: 520px; overflow: hidden;
+      background: linear-gradient(170deg, #1a1d35 0%, #161929 50%, #131525 100%);
+      border: 1px solid #2d3354; border-radius: 20px;
+      width: 90%; max-width: 540px; overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,58,237,0.08);
+      animation: tsmSlideUp 0.35s cubic-bezier(0.16,1,0.3,1);
     }
     .tsm-header {
-      padding: 20px 24px; border-bottom: 1px solid #1e2240;
+      padding: 22px 28px; border-bottom: 1px solid rgba(124,58,237,0.12);
       display: flex; align-items: center; justify-content: space-between;
+      background: rgba(124,58,237,0.04);
     }
-    .tsm-header h3 { font-size: 1.1rem; font-weight: 700; color: #e2e8f0; margin: 0; }
-    .tsm-close { background: none; border: none; color: #64748b; font-size: 1.4rem; cursor: pointer; line-height: 1; }
-    .tsm-close:hover { color: #fff; }
-    .tsm-body { padding: 20px 24px; }
+    .tsm-header h3 { font-size: 1.15rem; font-weight: 700; color: #e2e8f0; margin: 0; display: flex; align-items: center; gap: 10px; }
+    .tsm-header-icon { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, rgba(108,92,231,0.2), rgba(124,58,237,0.25)); display: flex; align-items: center; justify-content: center; color: #a78bfa; font-size: 0.9rem; }
+    .tsm-close { background: none; border: none; color: #64748b; font-size: 1.4rem; cursor: pointer; line-height: 1; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s; }
+    .tsm-close:hover { color: #fff; background: rgba(255,255,255,0.06); }
+    .tsm-body { padding: 24px 28px; }
     .tsm-task-info {
-      padding: 14px 16px; background: #0d0f1e; border: 1px solid #1e2240;
-      border-radius: 10px; margin-bottom: 18px;
+      padding: 16px 18px; background: rgba(13,15,30,0.7); border: 1px solid #1e2240;
+      border-radius: 12px; margin-bottom: 22px; display: flex; align-items: flex-start; gap: 14px;
     }
-    .tsm-task-title { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
-    .tsm-task-meta { font-size: 0.78rem; color: #64748b; }
-    .tsm-field { margin-bottom: 16px; }
-    .tsm-label { display: block; font-size: 0.78rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tsm-task-icon { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(99,102,241,0.15)); display: flex; align-items: center; justify-content: center; color: #a78bfa; font-size: 0.9rem; flex-shrink: 0; }
+    .tsm-task-title { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; line-height: 1.4; }
+    .tsm-task-meta { font-size: 0.78rem; color: #64748b; display: flex; align-items: center; gap: 6px; }
+    .tsm-task-meta i { font-size: 0.65rem; color: #4a4f6f; }
+    .tsm-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(124,58,237,0.15), transparent); margin-bottom: 20px; }
+    .tsm-field { margin-bottom: 18px; }
+    .tsm-label { display: flex; align-items: center; gap: 6px; font-size: 0.76rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tsm-label .tsm-required { color: #ef4444; font-size: 0.85rem; font-weight: 700; }
+    .tsm-label .tsm-optional { color: #4a5568; font-size: 0.7rem; font-weight: 500; text-transform: lowercase; letter-spacing: 0; font-style: italic; }
+    .tsm-input {
+      width: 100%; padding: 12px 16px; background: #0d0f1e; border: 1px solid #2d3354;
+      border-radius: 10px; color: #e2e8f0; font-size: 0.88rem; font-family: inherit;
+      outline: none; box-sizing: border-box; transition: all 0.2s;
+    }
+    .tsm-input:focus { border-color: #6c5ce7; box-shadow: 0 0 0 3px rgba(108,92,231,0.12); }
+    .tsm-input::placeholder { color: #3a3f5c; }
+    .tsm-input.tsm-error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
+    .tsm-error-msg { display: none; font-size: 0.74rem; color: #ef4444; margin-top: 6px; align-items: center; gap: 5px; }
+    .tsm-error-msg.visible { display: flex; }
+    .tsm-error-msg i { font-size: 0.7rem; }
     .tsm-textarea {
       width: 100%; padding: 12px 16px; background: #0d0f1e; border: 1px solid #2d3354;
       border-radius: 10px; color: #e2e8f0; font-size: 0.88rem; font-family: inherit;
-      outline: none; resize: vertical; min-height: 90px; box-sizing: border-box;
+      outline: none; resize: vertical; min-height: 90px; box-sizing: border-box; transition: all 0.2s;
     }
-    .tsm-textarea:focus { border-color: #6c5ce7; }
-    .tsm-textarea::placeholder { color: #2d3354; }
+    .tsm-textarea:focus { border-color: #6c5ce7; box-shadow: 0 0 0 3px rgba(108,92,231,0.12); }
+    .tsm-textarea::placeholder { color: #3a3f5c; }
     .tsm-file-area {
-      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
-      background: #0d0f1e; border: 1px solid #2d3354; border-radius: 10px;
-      cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+      background: #0d0f1e; border: 1.5px dashed #2d3354; border-radius: 12px;
+      cursor: pointer; transition: all 0.25s;
     }
-    .tsm-file-area:hover { border-color: #6c5ce7; }
-    .tsm-file-area i { color: #6c5ce7; font-size: 1.1rem; }
-    .tsm-file-area span { color: #94a3b8; font-size: 0.85rem; }
+    .tsm-file-area:hover { border-color: #6c5ce7; background: rgba(108,92,231,0.04); }
+    .tsm-file-area i { color: #6c5ce7; font-size: 1.2rem; }
+    .tsm-file-area span { color: #64748b; font-size: 0.84rem; }
     .tsm-file-name { color: #e2e8f0 !important; font-weight: 600; }
     .tsm-footer {
-      padding: 16px 24px; border-top: 1px solid #1e2240;
-      display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+      padding: 18px 28px; border-top: 1px solid rgba(124,58,237,0.1);
+      display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+      background: rgba(0,0,0,0.15);
     }
     .tsm-btn-cancel {
-      padding: 10px 20px; border-radius: 10px; background: transparent;
+      padding: 11px 22px; border-radius: 10px; background: transparent;
       border: 1px solid #2d3354; color: #94a3b8; font-size: 0.88rem;
       font-weight: 600; cursor: pointer; transition: all 0.2s;
     }
-    .tsm-btn-cancel:hover { border-color: #64748b; color: #e2e8f0; }
+    .tsm-btn-cancel:hover { border-color: #64748b; color: #e2e8f0; background: rgba(255,255,255,0.03); }
     .tsm-btn-submit {
       padding: 10px 24px; border-radius: 10px;
       background: linear-gradient(135deg, #6c5ce7, #7c3aed);
@@ -365,21 +390,33 @@
   <div class="tsm-overlay" id="tsmOverlay">
     <div class="tsm-modal">
       <div class="tsm-header">
-        <h3><i class="fas fa-paper-plane" style="color:#6c5ce7;margin-right:8px;"></i> Submit Task</h3>
+        <h3><span class="tsm-header-icon"><i class="fas fa-paper-plane"></i></span> Submit Task</h3>
         <button class="tsm-close" onclick="closeTsm()">&times;</button>
       </div>
       <div class="tsm-body">
         <div class="tsm-task-info">
-          <div class="tsm-task-title" id="tsmTaskTitle"></div>
-          <div class="tsm-task-meta" id="tsmTaskMeta"></div>
+          <div class="tsm-task-icon"><i class="fas fa-clipboard-list"></i></div>
+          <div>
+            <div class="tsm-task-title" id="tsmTaskTitle"></div>
+            <div class="tsm-task-meta" id="tsmTaskMeta"></div>
+          </div>
         </div>
+        <div class="tsm-divider"></div>
         <input type="hidden" id="tsmTaskId">
+        <!-- Mandatory: Submission Title -->
         <div class="tsm-field">
-          <label class="tsm-label">Notes / Comments (optional)</label>
+          <label class="tsm-label">Submission Title <span class="tsm-required">*</span></label>
+          <input type="text" class="tsm-input" id="tsmTitle" placeholder="e.g., Literature Review Draft, Circuit Diagram v2..." maxlength="150">
+          <div class="tsm-error-msg" id="tsmTitleError"><i class="fas fa-exclamation-circle"></i> Submission title is required</div>
+        </div>
+        <!-- Optional: Notes -->
+        <div class="tsm-field">
+          <label class="tsm-label">Notes / Comments <span class="tsm-optional">(optional)</span></label>
           <textarea class="tsm-textarea" id="tsmNotes" placeholder="Describe what you've done, any challenges, or additional notes..."></textarea>
         </div>
+        <!-- Optional: File -->
         <div class="tsm-field">
-          <label class="tsm-label">Attach File (optional)</label>
+          <label class="tsm-label">Attach File <span class="tsm-optional">(optional)</span></label>
           <div class="tsm-file-area" onclick="document.getElementById('tsmFile').click()">
             <i class="fas fa-cloud-upload-alt"></i>
             <span id="tsmFileName">Click to upload PDF, Doc, ZIP, or image (max 80MB)</span>
@@ -739,12 +776,16 @@
       if (!task) return;
       document.getElementById('tsmTaskId').value = taskId;
       document.getElementById('tsmTaskTitle').textContent = task.title;
-      document.getElementById('tsmTaskMeta').textContent = `Week ${task.week_no} · ${task.creator_name}`;
+      document.getElementById('tsmTaskMeta').innerHTML = `<i class="fas fa-calendar-week"></i> Week ${task.week_no} <i class="fas fa-circle" style="font-size:0.2rem;"></i> ${escapeHtml(task.creator_name)}`;
+      document.getElementById('tsmTitle').value = '';
+      document.getElementById('tsmTitle').classList.remove('tsm-error');
+      document.getElementById('tsmTitleError').classList.remove('visible');
       document.getElementById('tsmNotes').value = '';
       document.getElementById('tsmFile').value = '';
       document.getElementById('tsmFileName').textContent = 'Click to upload PDF, Doc, ZIP, or image (max 80MB)';
       document.getElementById('tsmFileName').classList.remove('tsm-file-name');
       document.getElementById('tsmSubmitBtn').disabled = false;
+      document.getElementById('tsmSubmitBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Submit Task';
       document.getElementById('tsmOverlay').classList.add('active');
     }
 
@@ -768,15 +809,29 @@
 
     async function submitTask() {
       const taskId = document.getElementById('tsmTaskId').value;
+      const titleInput = document.getElementById('tsmTitle');
+      const title = titleInput.value.trim();
       const notes = document.getElementById('tsmNotes').value.trim();
       const file = document.getElementById('tsmFile').files[0];
       const btn = document.getElementById('tsmSubmitBtn');
+      const titleError = document.getElementById('tsmTitleError');
+
+      // Validate mandatory title
+      if (!title) {
+        titleInput.classList.add('tsm-error');
+        titleError.classList.add('visible');
+        titleInput.focus();
+        return;
+      }
+      titleInput.classList.remove('tsm-error');
+      titleError.classList.remove('visible');
 
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
 
       try {
         const fd = new FormData();
+        fd.append('submission_title', title);
         if (notes) fd.append('notes', notes);
         if (file) fd.append('submission_file', file);
 

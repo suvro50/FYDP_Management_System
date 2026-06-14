@@ -712,7 +712,12 @@ router.post('/tasks/:taskId/submit', checkGroupStatus, taskSubmitUpload.single('
     const studentId = req.session.user.user_id;
     const groupId = req.activeGroup.group_id;
     const taskId = req.params.taskId;
-    const { notes } = req.body;
+    const { notes, submission_title } = req.body;
+
+    // Validate mandatory submission title
+    if (!submission_title || !submission_title.trim()) {
+      return res.status(400).json({ error: 'Submission title is required' });
+    }
 
     // Verify the task exists and belongs to this group
     const [[task]] = await db.query(
@@ -756,9 +761,9 @@ router.post('/tasks/:taskId/submit', checkGroupStatus, taskSubmitUpload.single('
     const fileName = req.file ? req.file.originalname : null;
 
     await db.query(
-      `INSERT INTO group_task_submissions (task_id, student_id, group_id, notes, file_path, file_name)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [taskId, studentId, groupId, notes || null, filePath, fileName]
+      `INSERT INTO group_task_submissions (task_id, student_id, submission_title, group_id, notes, file_path, file_name)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [taskId, studentId, submission_title.trim(), groupId, notes || null, filePath, fileName]
     );
 
     // Notify supervisor

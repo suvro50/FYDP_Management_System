@@ -215,39 +215,43 @@ function escapeHtml(str) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STRICT BROWSER CLOSE LOGOUT (Defeats Chrome Session Restore)
+// STRICT BROWSER CLOSE LOGOUT — Professional Heartbeat Approach
+// Instant detection (0ms delay). Every open tab writes a heartbeat timestamp
+// to localStorage every 2s. On fresh browser open, if the heartbeat is stale
+// (>4s old) it means all tabs were closed → force logout immediately.
 // ═══════════════════════════════════════════════════════════════════════════
-const bc = new BroadcastChannel('fydp_session');
+(function () {
+  const HB_KEY  = 'fydp_hb';       // localStorage key for heartbeat timestamp
+  const HB_MS   = 2000;            // heartbeat interval: write every 2 seconds
+  const STALE_MS = 4000;           // stale threshold: 4 seconds without heartbeat
 
-if (!sessionStorage.getItem('tab_initialized')) {
-  sessionStorage.setItem('tab_initialized', 'true');
-  let hasOtherTabs = false;
-  
-  bc.onmessage = (e) => { 
-    if (e.data === 'ping') bc.postMessage('pong'); 
-    else if (e.data === 'pong') hasOtherTabs = true; 
-  };
-  
-  bc.postMessage('ping');
-  
-  // Wait to see if any other tab responds
-  setTimeout(() => {
-    const onLoginPage = window.location.pathname === '/login' ||
-                        document.body.classList.contains('login-page') ||
-                        !!document.querySelector('.login-wrapper');
-    if (!hasOtherTabs && !onLoginPage) {
-      // No other tabs and not on login page: this is a fresh browser session (even if cookie survived)
-      fetch('/auth/logout', { method: 'POST' }).then(() => {
-        window.location.href = '/login';
-      });
+  const onLoginPage = window.location.pathname === '/login' ||
+                      document.body.classList.contains('login-page') ||
+                      !!document.querySelector('.login-wrapper');
+
+  // ── Fresh browser session detection (instant, synchronous) ──────────────
+  if (!sessionStorage.getItem('tab_initialized')) {
+    sessionStorage.setItem('tab_initialized', 'true');
+
+    if (!onLoginPage) {
+      const lastBeat = parseInt(localStorage.getItem(HB_KEY) || '0', 10);
+      const elapsed  = Date.now() - lastBeat;
+
+      if (elapsed > STALE_MS) {
+        // Heartbeat is stale → browser was closed → force logout instantly
+        localStorage.removeItem(HB_KEY);
+        fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' })
+          .finally(() => { window.location.href = '/login'; });
+        return; // stop further script initialization
+      }
     }
-  }, 200);
-} else {
-  // Tab already initialized, just listen for pings from new tabs
-  bc.onmessage = (e) => { 
-    if (e.data === 'ping') bc.postMessage('pong'); 
-  };
-}
+  }
+
+  // ── Heartbeat: all tabs continuously write timestamp ────────────────────
+  function beat() { localStorage.setItem(HB_KEY, String(Date.now())); }
+  beat();                                    // write immediately on load
+  setInterval(beat, HB_MS);                  // then every 2 seconds
+})();
 
 // DARK MODE — Scoped to Pre-FYDP pages only (pages with #darkModeToggle button).
 // Other dashboards are dark-only and should never get light-mode applied.

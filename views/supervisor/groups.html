@@ -1907,6 +1907,7 @@
               <div class="ts-card-info">
                 <div class="ts-card-name">${escapeHtml(s.student_name)} <span class="ts-card-uid">${escapeHtml(s.student_uid)}</span></div>
                 <div class="ts-card-task">${escapeHtml(s.task_title)}</div>
+                ${s.submission_title ? `<div style="font-size:0.8rem;color:#a78bfa;font-weight:600;margin-top:2px;"><i class="fas fa-tag" style="font-size:0.65rem;margin-right:4px;opacity:0.7;"></i>${escapeHtml(s.submission_title)}</div>` : ''}
                 <div class="ts-card-date">${subDate}</div>
               </div>
               <div class="ts-card-right">
@@ -1916,6 +1917,11 @@
               </div>
             </div>
             <div class="ts-card-detail">
+              ${s.submission_title ? `
+                <div class="ts-detail-section">
+                  <span class="ts-detail-label">Submission Title</span>
+                  <div style="font-size:0.9rem;color:#e2e8f0;font-weight:600;">${escapeHtml(s.submission_title)}</div>
+                </div>` : ''}
               ${s.notes ? `
                 <div class="ts-detail-section">
                   <span class="ts-detail-label">Student Notes</span>
